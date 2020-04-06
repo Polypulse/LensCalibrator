@@ -1,0 +1,38 @@
+#pragma once
+
+Texture2D InTexture;
+SamplerState InTextureSampler;
+
+struct InputVS
+{
+	float4 Position : ATTRIBUTE0;
+	float2 UV : ATTRIBUTE1;
+};
+
+struct OutputVS
+{
+	float4	Position : SV_POSITION;
+	float4	UV : TEXCOORD0;
+};
+
+struct OutputPS
+{
+	float4 Color : SV_Target0;
+};
+
+OutputVS MainVS(InputVS IN)
+{
+	OutputVS Out;
+	
+	Out.Position = float4(IN.Position.xy * 2.0 - 1.0, 0, 1);
+	Out.UV = float4(IN.UV, 0.0f, 1.0f);
+
+	return Out;
+}
+
+OutputPS MainPS(OutputVS IN)
+{
+	OutputPS Out;
+	Out.Color = InTexture.Sample(InTextureSampler, IN.UV);
+    	return Out;
+}
