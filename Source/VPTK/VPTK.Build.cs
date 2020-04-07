@@ -10,6 +10,8 @@ public class VPTK : ModuleRules
 	public VPTK(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		bool isDebug = Target.Configuration == UnrealTargetConfiguration.Debug;
+		Console.WriteLine(isDebug ? "Compiling debug build." : "Compiling release build.");
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
@@ -57,7 +59,7 @@ public class VPTK : ModuleRules
 		PublicAdditionalLibraries.AddRange(files);
 
 		/*
-		string[] files = Directory.GetFiles(Path.Combine(ModuleDirectory, "../../ThirdParty/OpenCV/Binaries/Release/Dynamic"));
+		files = Directory.GetFiles(Path.Combine(ModuleDirectory, "../../ThirdParty/OpenCV/Binaries/Release/Dynamic"));
 		files = files.Where(f => Path.GetExtension(f) == ".dll").ToArray();
 		PublicDelayLoadDLLs.AddRange(files);
 		*/

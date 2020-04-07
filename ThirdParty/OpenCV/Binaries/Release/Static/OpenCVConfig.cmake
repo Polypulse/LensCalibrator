@@ -96,11 +96,18 @@ endif()
 
 
 
+if(NOT TARGET ippicv)
+  add_library(ippicv STATIC IMPORTED)
+  set_target_properties(ippicv PROPERTIES
+    IMPORTED_LINK_INTERFACE_LIBRARIES ""
+    IMPORTED_LOCATION "${OpenCV_INSTALL_PATH}/x64/vc16/staticlib/ippicvmt.lib"
+  )
+endif()
 
 
 
 # Some additional settings are required if OpenCV is built as static libs
-set(OpenCV_SHARED ON)
+set(OpenCV_SHARED OFF)
 
 # Enables mangled install paths, that help with side by side installs
 set(OpenCV_USE_MANGLED_PATHS FALSE)
