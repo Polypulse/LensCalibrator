@@ -11,6 +11,10 @@
 #include "RHIStaticStates.h"
 #include "Engine/RendererSettings.h"
 #include "PixelShaderUtils.h"
+// #include "GameViewportClient.h"
+#include "SceneViewport.h"
+#include "FileHelper.h"
+// #include "SceneRenderTargets.h"
 
 #include "BlitShader.h"
 
@@ -77,17 +81,42 @@ void ULensSolver::BeginDetectPoints(UMediaTexture* inputMediaTexture, float inpu
 	float zoomLevel = inputZoomLevel;
 
 	ULensSolver * lensSolver = this;
+	if (GEngine == nullptr || GEngine->GameViewport == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No game viewport available."));
+		return;
+	}
+
+	FSceneViewport * sceneViewport = GEngine->GameViewport->GetGameViewport();
+	GEngine->GameViewport->bDisableWorldRendering = 1;
+	sceneViewport->SetGameRenderingEnabled(false);
+
+	// sceneViewport->SetGameRenderingEnabled(0);
+	if (sceneViewport == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No game scene viewport available."));
+		return;
+	}
+
+	FTexture2DRHIRef texture2DRHIRef = sceneViewport->GetRenderTargetTexture();
+	if (!texture2DRHIRef.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No game scene viewport render texture available."));
+		return;
+	}
 
 	ENQUEUE_RENDER_COMMAND(ProcessMediaTexture)
 	(
-		[lensSolver, cachedMediaTextureReference, queuedSolvedPoints, zoomLevel](FRHICommandListImmediate& RHICmdList)
+		[lensSolver, cachedMediaTextureReference, sceneViewport, queuedSolvedPoints, zoomLevel](FRHICommandListImmediate& RHICmdList)
 		{
-			lensSolver->DetectPointsRenderThread(RHICmdList, cachedMediaTextureReference, queuedSolvedPoints, zoomLevel);
+			lensSolver->DetectPointsRenderThread(RHICmdList, cachedMediaTextureReference, sceneViewport, queuedSolvedPoints, zoomLevel);
 		}
 	);
+
+	// GEngine->GameViewport->Viewport->Draw();
 }
 
-void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UMediaTexture* mediaTexture, TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints, float zoomLevel)
+void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UMediaTexture* mediaTexture, FSceneViewport * sceneViewport, TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints, float zoomLevel)
 {
 	int width = mediaTexture->GetWidth();
 	int height = mediaTexture->GetHeight();
@@ -111,8 +140,21 @@ void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList,
 		allocated = true;
 	}
 
-	FRHIRenderPassInfo RPInfo(renderTexture, ERenderTargetActions::Clear_Store);
+	/*
+	FRHIRenderPassInfo RPInfo(texture2DRHIRef, ERenderTargetActions::Clear_Store);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("CopyMediaTexturePass"));
+	*/
+	FTexture2DRHIRef texture2DRHIRef = sceneViewport->GetRenderTargetTexture();
+	width = texture2DRHIRef->GetSizeX();
+	height = texture2DRHIRef->GetSizeY();
+
+	/*
+	sceneViewport->BeginRenderFrame(RHICmdList);
+	sceneViewport->SetRenderTargetTextureRenderThread(texture2DRHIRef);
+	*/
+
+	FRHIRenderPassInfo RPInfo(texture2DRHIRef, ERenderTargetActions::Clear_Store);
+	RHICmdList.BeginRenderPass(RPInfo, TEXT("PresentAndCopyMediaTexture"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
 		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
@@ -139,9 +181,17 @@ void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList,
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}
 
+	// sceneViewport->EndRenderFrame(RHICmdList, true, false);
 	RHICmdList.EndRenderPass();
 
-	FRHITexture2D * texture = renderTexture->GetTexture2D();
+	sceneViewport->Draw(true);
+
+	FRHITexture2D * texture2D = texture2DRHIRef->GetTexture2D();
+	// RHICmdList.CopyToResolveTarget(renderTexture, texture2DRHIRef, FResolveParams());
+
+	/*
+	FRHITexture2D * texture = texture2DRHIRef->GetTexture2D();
+	*/
 	TArray<FColor> Bitmap;
 
 	FReadSurfaceDataFlags ReadDataFlags;
@@ -150,9 +200,16 @@ void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList,
 	ReadDataFlags.SetMip(0);
 
 	UE_LOG(LogTemp, Log, TEXT("Reading pixels from rect: (%d, %d, %d, %d)."), 0, 0, width, height);
-	RHICmdList.ReadSurfaceData(texture, FIntRect(0, 0, width, height), Bitmap, ReadDataFlags);
+	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), Bitmap, ReadDataFlags);
+
+
+	uint32 ExtendXWithMSAA = Bitmap.Num() / texture2D->GetSizeY();
+	FString outputPath = FString("D:/output.bmp");
+	FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture2D->GetSizeY(), Bitmap.GetData());
 
 	// threadLock.Lock();
+	if (workers.Num() == 0)
+		return;
 
 	workers.Sort([](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) {
 		return workerA.getWorkLoadDel.Execute() > workerB.getWorkLoadDel.Execute();
@@ -201,6 +258,9 @@ void ULensSolver::PollSolvedPoints()
 	threadLock.Unlock();
 	*/
 
+	if (this == nullptr)
+		return;
+
 	bool isQueued = queuedSolvedPoints.IsEmpty() == false;
 	bool outputIsQueued = isQueued;
 	this->SolvedPointsQueued(outputIsQueued);
@@ -213,6 +273,9 @@ void ULensSolver::PollSolvedPoints()
 			UE_LOG(LogTemp, Error, TEXT("Failed to dequeue solved points."));
 			return;
 		}
+
+		if (this == nullptr)
+			return;
 
 		this->DequeueSolvedPoints(solvedPoints);
 		isQueued = queuedSolvedPoints.IsEmpty() == false;

@@ -71,13 +71,13 @@ void FLensSolverWorker::DoWork()
 		// UE_LOG(LogTemp, Log, TEXT("Wrote test bitmap with: %d pixels to file."), Bitmap.Num());
 
 		static cv::Mat image(workUnit.height, workUnit.width, cv::DataType<unsigned char>::type);
-		if (image.cols != workUnit.width || image.rows != workUnit.height)
+		if (image.rows != workUnit.height || image.cols != workUnit.width)
 			image = cv::Mat(workUnit.height, workUnit.width, cv::DataType<unsigned char>::type);
 
 		for (int i = 0; i < workUnit.width * workUnit.height; i++)
-			image.at<unsigned char>(cv::Point((i % workUnit.width), workUnit.height - (i / workUnit.width))) = workUnit.pixels[i].R;
+			image.at<unsigned char>(cv::Point(i % workUnit.width, i / workUnit.width)) = workUnit.pixels[i].R;
 
-		cv::imwrite("D:\\output.jpg", image);
+		// cv::imwrite("D:\\output.jpg", image);
 
 		/*
 		cv::Mat gray(width, height, CV_8U);

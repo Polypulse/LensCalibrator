@@ -54,7 +54,7 @@ public class VPTK : ModuleRules
 			}
 			);
 
-		string[] files = Directory.GetFiles(Path.Combine(ModuleDirectory, "../../ThirdParty/OpenCV/Binaries/Release/Static"));
+		string[] files = Directory.GetFiles(Path.Combine(ModuleDirectory, isDebug ? "../../ThirdParty/OpenCV/Binaries/Debug/Static" : "../../ThirdParty/OpenCV/Binaries/Release/Static"));
 		files = files.Where(f => Path.GetExtension(f) == ".lib").ToArray();
 		PublicAdditionalLibraries.AddRange(files);
 

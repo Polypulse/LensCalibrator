@@ -47,7 +47,7 @@ private:
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPointsPtr;
 
 	void BeginDetectPoints(UMediaTexture* inputMediaTexture, float inputZoomLevel, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
-	void DetectPointsRenderThread (FRHICommandListImmediate& RHICmdList, UMediaTexture * mediaTexture, TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints, float zoomLevel);
+	void DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UMediaTexture* mediaTexture, FSceneViewport * sceneViewport, TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints, float zoomLevel);
 
 	mutable FCriticalSection threadLock;
 	TArray<FWorkerInterfaceContainer> workers;
