@@ -15,6 +15,7 @@ struct FLensSolverWorkUnit
 
 	int width;
 	int height;
+	FIntPoint cornerCount;
 	float zoomLevel;
 
 	TArray<FColor> pixels;
@@ -27,7 +28,7 @@ class FLensSolverWorker : public FNonAbandonableTask
 public:
 	DECLARE_DELEGATE_OneParam(OnSolvePointsDel, FSolvedPoints)
 	DECLARE_DELEGATE_RetVal(int, GetWorkLoadDel)
-	DECLARE_DELEGATE_FourParams(QueueWorkUnitDel, TArray<FColor>, int, int, float)
+	DECLARE_DELEGATE_FiveParams(QueueWorkUnitDel, FLensSolverWorkUnit)
 	DECLARE_DELEGATE_RetVal(bool, IsClosingDel)
 
 private:
@@ -38,6 +39,8 @@ private:
 
 	mutable int workUnitCount;
 	mutable bool exited;
+
+	// static UTexture2D * CreateTexture2D(TArray<uint8> * rawData, int width, int height);
 
 	void QueueSolvedPointsError(float zoomLevel);
 	void QueueSolvedPoints(FSolvedPoints solvedPoints);
@@ -64,7 +67,8 @@ public:
 
 protected:
 
+	
 	void DoWork();
 	int GetWorkLoad ();
-	void QueueWorkUnit(TArray<FColor> inputPixels, int width, int height, float inputNormalizedZoomLevel);
+	void QueueWorkUnit(FLensSolverWorkUnit workUnit);
 };

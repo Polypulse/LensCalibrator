@@ -22,6 +22,7 @@ public class VPTK : ModuleRules
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
+				Path.Combine(ModuleDirectory, "../../ThirdParty/OpenCV/Include")
 			}
 			);
 			
@@ -43,6 +44,7 @@ public class VPTK : ModuleRules
 				"SlateCore",
 				"MediaAssets",
 				"RenderCore",
+				"ImageWrapper",
 				"RHI",
 			}
 			);

@@ -15,4 +15,11 @@ struct FSolvedPoints
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	bool success;
+
+	/*
+	TArray<uint8> visualizationData;
+	int width;
+	int height;
+	*/
+	// UTexture2D * visualizationTexture;
 };

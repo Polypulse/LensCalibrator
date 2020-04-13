@@ -9,6 +9,12 @@
 #include "opencv2/imgproc/types_c.h"
 #pragma pop_macro("check")
 
+#include "Engine.h"
+#include "IImageWrapperModule.h"
+#include "IImageWrapper.h"
+#include "RenderUtils.h"
+#include "Engine/Texture2D.h"
+
 #include "Queue.h"
 
 FLensSolverWorker::FLensSolverWorker(
@@ -37,16 +43,9 @@ int FLensSolverWorker::GetWorkLoad ()
 	return count; 
 }
 
-void FLensSolverWorker::QueueWorkUnit(TArray<FColor> inputPixels, int width, int height, float inputNormalizedZoomLevel)
+void FLensSolverWorker::QueueWorkUnit(FLensSolverWorkUnit workUnit)
 {
-	FLensSolverWorkUnit workerUnit;
-	workerUnit.width = width;
-	workerUnit.height = height;
-	workerUnit.zoomLevel = inputNormalizedZoomLevel;
-	workerUnit.pixels = inputPixels;
-
-	workQueue.Enqueue(workerUnit);
-
+	workQueue.Enqueue(workUnit);
 	// threadLock.Lock();
 	workUnitCount++;
 	// threadLock.Unlock();
@@ -70,12 +69,12 @@ void FLensSolverWorker::DoWork()
 		// FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture->GetSizeY(), Bitmap.GetData());
 		// UE_LOG(LogTemp, Log, TEXT("Wrote test bitmap with: %d pixels to file."), Bitmap.Num());
 
-		static cv::Mat image(workUnit.height, workUnit.width, cv::DataType<unsigned char>::type);
+		cv::Mat image(workUnit.height, workUnit.width, cv::DataType<uint8>::type);
 		if (image.rows != workUnit.height || image.cols != workUnit.width)
-			image = cv::Mat(workUnit.height, workUnit.width, cv::DataType<unsigned char>::type);
+			image = cv::Mat(workUnit.height, workUnit.width, cv::DataType<uint8>::type);
 
 		for (int i = 0; i < workUnit.width * workUnit.height; i++)
-			image.at<unsigned char>(cv::Point(i % workUnit.width, i / workUnit.width)) = workUnit.pixels[i].R;
+			image.at<uint8>(i / workUnit.width, i % workUnit.width) = workUnit.pixels[i].R;
 
 		// cv::imwrite("D:\\output.jpg", image);
 
@@ -85,7 +84,7 @@ void FLensSolverWorker::DoWork()
 		*/
 
 		std::vector<cv::Point2f> corners;
-		cv::Size patternSize(9, 6);
+		cv::Size patternSize(workUnit.cornerCount.X, workUnit.cornerCount.Y);
 		bool patternFound = false;
 
 		try
@@ -107,6 +106,15 @@ void FLensSolverWorker::DoWork()
 			continue;
 		}
 
+		cv::TermCriteria cornerSubPixCriteria(
+			cv::TermCriteria::MAX_ITER + cv::TermCriteria::EPS,
+			50, 
+			0.0001
+		);
+
+		cv::cornerSubPix(image, corners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
+		cv::drawChessboardCorners(image, patternSize, corners, patternFound);
+
 		// UE_LOG(LogTemp, Log, TEXT("Chessboard detected."));
 		static TArray<FVector2D> pointsCache;
 		if (pointsCache.Num() != corners.size())
@@ -119,10 +127,32 @@ void FLensSolverWorker::DoWork()
 			pointsCache[i] = FVector2D(corners[i].x, corners[i].y);
 		}
 
+		/*
+		TArray<uint8> visualizationData;
+		int count = workUnit.width * workUnit.height * 4;
+		visualizationData.SetNum(count);
+
+		for (int i = 0; i < workUnit.width * workUnit.height * 4; i += 4)
+		{
+			uint8 value = image.at<uint8>((i / 4) / workUnit.width, (i / 4) % workUnit.width);
+
+			visualizationData[i] = value;
+			visualizationData[i + 1] = value;
+			visualizationData[i + 2] = value;
+			visualizationData[i + 3] = value;
+		}
+		*/
+
 		FSolvedPoints solvedPoints;
 		solvedPoints.points = pointsCache;
 		solvedPoints.zoomLevel = workUnit.zoomLevel;
 		solvedPoints.success = true;
+
+		/*
+		solvedPoints.width = workUnit.width;
+		solvedPoints.height = workUnit.height;
+		solvedPoints.visualizationData = visualizationData;
+		*/
 
 		QueueSolvedPoints(solvedPoints);
 	}

@@ -46,8 +46,11 @@ private:
 	TQueue<FSolvedPoints> queuedSolvedPoints;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPointsPtr;
 
-	void BeginDetectPoints(UMediaTexture* inputMediaTexture, float inputZoomLevel, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
-	void DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UMediaTexture* mediaTexture, FSceneViewport * sceneViewport, TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints, float zoomLevel);
+	void BeginDetectPoints(UMediaTexture* inputMediaTexture, float inputZoomLevel, FIntPoint cornerCount, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
+	void DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UMediaTexture* mediaTexture, float zoomLevel, FIntPoint cornerCount,TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints);
+
+	UTexture2D * CreateTexture2D(TArray<uint8> * rawData, int width, int height);
+	void VisualizeCalibration (FRHICommandListImmediate& RHICmdList, FSceneViewport* sceneViewport, FSolvedPoints solvedPoints, UTexture2D * visualizationTexture);
 
 	mutable FCriticalSection threadLock;
 	TArray<FWorkerInterfaceContainer> workers;
@@ -92,7 +95,7 @@ public:
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	void ProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue);
+	void ProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void PollSolvedPoints ();
