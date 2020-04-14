@@ -5,6 +5,15 @@
 #include "Async/AsyncWork.h"
 #include "SolvedPoints.h"
 
+#pragma push_macro("check")
+#undef check
+#include "opencv2/opencv.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/core/mat.hpp"
+#include "opencv2/imgproc/types_c.h"
+#pragma pop_macro("check")
+
 #include "LensSolverWorker.generated.h"
 
 
@@ -38,6 +47,7 @@ private:
 	TQueue<FLensSolverWorkUnit> workQueue;
 
 	mutable int workUnitCount;
+	int workerID;
 	mutable bool exited;
 
 	// static UTexture2D * CreateTexture2D(TArray<uint8> * rawData, int width, int height);
@@ -51,7 +61,8 @@ public:
 		IsClosingDel * inputIsClosingDel,
 		GetWorkLoadDel * inputGetWorkLoadDel,
 		QueueWorkUnitDel * inputQueueWorkUnitDel,
-		OnSolvePointsDel inputOnSolvePointsDel);
+		OnSolvePointsDel inputOnSolvePointsDel,
+		int inputWorkerID);
 
 	~FLensSolverWorker() 
 	{

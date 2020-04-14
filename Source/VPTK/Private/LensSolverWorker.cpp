@@ -1,14 +1,5 @@
 #include "LensSolverWorker.h"
 
-#pragma push_macro("check")
-#undef check
-#include "opencv2/opencv.hpp"
-#include "opencv2/core.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/core/mat.hpp"
-#include "opencv2/imgproc/types_c.h"
-#pragma pop_macro("check")
-
 #include "Engine.h"
 #include "IImageWrapperModule.h"
 #include "IImageWrapper.h"
@@ -21,7 +12,8 @@ FLensSolverWorker::FLensSolverWorker(
 	IsClosingDel * inputIsClosingDel,
 	GetWorkLoadDel * inputGetWorkLoadDel,
 	QueueWorkUnitDel * inputQueueWorkUnitDel,
-	OnSolvePointsDel inputOnSolvePointsDel)
+	OnSolvePointsDel inputOnSolvePointsDel,
+	int inputWorkerID)
 : 
 	onSolvePointsDel(inputOnSolvePointsDel)
 {
@@ -30,6 +22,7 @@ FLensSolverWorker::FLensSolverWorker(
 	inputIsClosingDel->BindRaw(this, &FLensSolverWorker::IsClosing);
 
 	workUnitCount = 0;
+	workerID = inputWorkerID;
 	exited = false;
 }
 
@@ -53,6 +46,8 @@ void FLensSolverWorker::QueueWorkUnit(FLensSolverWorkUnit workUnit)
 
 void FLensSolverWorker::DoWork()
 {
+	static cv::Mat image;
+
 	while (!exited)
 	{
 		if (workQueue.IsEmpty())
@@ -60,6 +55,8 @@ void FLensSolverWorker::DoWork()
 
 		FLensSolverWorkUnit workUnit;
 		workQueue.Dequeue(workUnit);
+
+		UE_LOG(LogTemp, Log, TEXT("Worker (%d) with current workload: %d dequeued work unit."), workerID, workUnitCount);
 
 		// threadLock.Lock();
 		workUnitCount--;
@@ -69,9 +66,11 @@ void FLensSolverWorker::DoWork()
 		// FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture->GetSizeY(), Bitmap.GetData());
 		// UE_LOG(LogTemp, Log, TEXT("Wrote test bitmap with: %d pixels to file."), Bitmap.Num());
 
-		cv::Mat image(workUnit.height, workUnit.width, cv::DataType<uint8>::type);
 		if (image.rows != workUnit.height || image.cols != workUnit.width)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Reallocating OpenCV mat from size: (%d, %d) to: (%d, %d)."), image.cols, image.rows, workUnit.width, workUnit.height);
 			image = cv::Mat(workUnit.height, workUnit.width, cv::DataType<uint8>::type);
+		}
 
 		for (int i = 0; i < workUnit.width * workUnit.height; i++)
 			image.at<uint8>(i / workUnit.width, i % workUnit.width) = workUnit.pixels[i].R;
@@ -113,10 +112,10 @@ void FLensSolverWorker::DoWork()
 		);
 
 		cv::cornerSubPix(image, corners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
-		cv::drawChessboardCorners(image, patternSize, corners, patternFound);
+		// cv::drawChessboardCorners(image, patternSize, corners, patternFound);
 
 		// UE_LOG(LogTemp, Log, TEXT("Chessboard detected."));
-		static TArray<FVector2D> pointsCache;
+		TArray<FVector2D> pointsCache;
 		if (pointsCache.Num() != corners.size())
 			pointsCache.SetNum(corners.size());
 
@@ -156,6 +155,7 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.visualizationData = visualizationData;
 		*/
 
+		UE_LOG(LogTemp, Log, TEXT("Worker (%d) finished with work unit."), workerID);
 		QueueSolvedPoints(solvedPoints);
 	}
 
