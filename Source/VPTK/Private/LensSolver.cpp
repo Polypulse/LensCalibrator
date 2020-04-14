@@ -124,6 +124,46 @@ void ULensSolver::BeginDetectPoints(UMediaTexture* inputMediaTexture, float inpu
 	// GEngine->GameViewport->Viewport->Draw();
 }
 
+void ULensSolver::BeginDetectPoints(TArray<UTexture2D*> inputTextures, TArray<float> inputZoomLevels, FIntPoint cornerCount, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+{
+	if (inputTextures.Num() == 0 || inputZoomLevels.Num() == 0)
+		return;
+
+	if (inputTextures.Num() != inputZoomLevels.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("The texture and zoom level count does not match!"));
+		return;
+	}
+
+	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
+	for (int i = 0; i < inputTextures.Num(); i++)
+	{
+		if (inputTextures[i] == nullptr ||
+			inputTextures[i]->GetSizeX() <= 2 ||
+			inputTextures[i]->GetSizeY() <= 2)
+		{
+			UE_LOG(LogTemp, Error, TEXT("The input texture at index: %d is null!"), i);
+			return;
+		}
+
+		UTexture2D* cachedTextureReference = inputTextures[i];
+		float zoomLevel = inputZoomLevels[i];
+		int width = inputTextures[i]->GetSizeX();
+		int height = inputTextures[i]->GetSizeY();
+
+		ULensSolver * lensSolver = this;
+		ENQUEUE_RENDER_COMMAND(ProcessMediaTexture)
+		(
+			[lensSolver, cachedTextureReference, width, height, zoomLevel, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
+			{
+				lensSolver->DetectPointsRenderThread(RHICmdList, cachedTextureReference, width, height, zoomLevel, cornerCount, queuedSolvedPoints);
+			}
+		);
+	}
+
+	// GEngine->GameViewport->Viewport->Draw();
+}
+
 void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UTexture* texture, int width, int height, float zoomLevel, FIntPoint cornerCount,TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints)
 {
 	if (!allocated)
@@ -311,6 +351,10 @@ void ULensSolver::ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoo
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 	BeginDetectPoints(inputTexture, normalizedZoomValue, cornerCount, queuedSolvedPointsPtr);
+}
+
+void ULensSolver::ProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount)
+{
 }
 
 /*
