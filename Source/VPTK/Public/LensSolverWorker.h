@@ -28,7 +28,7 @@ class FLensSolverWorker : public FNonAbandonableTask
 public:
 	DECLARE_DELEGATE_OneParam(OnSolvePointsDel, FSolvedPoints)
 	DECLARE_DELEGATE_RetVal(int, GetWorkLoadDel)
-	DECLARE_DELEGATE_FiveParams(QueueWorkUnitDel, FLensSolverWorkUnit)
+	DECLARE_DELEGATE_OneParam(QueueWorkUnitDel, FLensSolverWorkUnit)
 	DECLARE_DELEGATE_RetVal(bool, IsClosingDel)
 
 private:

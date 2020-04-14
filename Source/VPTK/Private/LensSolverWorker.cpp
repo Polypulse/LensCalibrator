@@ -148,9 +148,11 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.zoomLevel = workUnit.zoomLevel;
 		solvedPoints.success = true;
 
-		/*
 		solvedPoints.width = workUnit.width;
 		solvedPoints.height = workUnit.height;
+		solvedPoints.visualizationData = workUnit.pixels;
+
+		/*
 		solvedPoints.visualizationData = visualizationData;
 		*/
 

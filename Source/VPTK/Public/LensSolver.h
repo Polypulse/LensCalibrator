@@ -41,6 +41,7 @@ public:
 private:
 
 	FTexture2DRHIRef renderTexture;
+	UTexture2D * visualizationTexture;
 	bool allocated;
 
 	TQueue<FSolvedPoints> queuedSolvedPoints;
@@ -49,8 +50,8 @@ private:
 	void BeginDetectPoints(UMediaTexture* inputMediaTexture, float inputZoomLevel, FIntPoint cornerCount, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 	void DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UMediaTexture* mediaTexture, float zoomLevel, FIntPoint cornerCount,TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints);
 
-	UTexture2D * CreateTexture2D(TArray<uint8> * rawData, int width, int height);
-	void VisualizeCalibration (FRHICommandListImmediate& RHICmdList, FSceneViewport* sceneViewport, FSolvedPoints solvedPoints, UTexture2D * visualizationTexture);
+	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
+	void VisualizeCalibration(FRHICommandListImmediate& RHICmdList, FSceneViewport* sceneViewport, UTexture2D * visualizationTexture, FSolvedPoints solvedPoints);
 
 	mutable FCriticalSection threadLock;
 	TArray<FWorkerInterfaceContainer> workers;

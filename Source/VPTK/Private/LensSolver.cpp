@@ -61,6 +61,8 @@ void ULensSolver::BeginPlay()
 		workerInterfaceContainer.worker->StartBackgroundTask();
 		workers.Add(workerInterfaceContainer);
 	}
+
+	visualizationTexture = nullptr;
 }
 
 void ULensSolver::EndPlay(const EEndPlayReason::Type EndPlayReason) 
@@ -180,22 +182,25 @@ void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList,
 	workers[0].queueWorkUnitDel.Execute(workerUnit);
 }
 
-UTexture2D * ULensSolver::CreateTexture2D(TArray<uint8> * rawData, int width, int height)
+UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height)
 {
-	UTexture2D * texture = UTexture2D::CreateTransient(width, height, EPixelFormat::PF_B8G8R8A8);
-	if (texture == nullptr)
+	if (visualizationTexture == nullptr || visualizationTexture->GetSizeX() != width || visualizationTexture->GetSizeY() != height)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Unable to create transient texture"));
-		return nullptr;
+		visualizationTexture = UTexture2D::CreateTransient(width, height, EPixelFormat::PF_B8G8R8A8);
+		if (visualizationTexture == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Unable to create transient texture"));
+			return nullptr;
+		}
+
+		visualizationTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+		visualizationTexture->PlatformData->Mips[0].SizeX = width;
+		visualizationTexture->PlatformData->Mips[0].SizeY = height;
+		visualizationTexture->PlatformData->Mips[0].BulkData.Realloc(rawData->Num());
+		visualizationTexture->PlatformData->Mips[0].BulkData.Unlock();
 	}
 
-	texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-	texture->PlatformData->Mips[0].SizeX = width;
-	texture->PlatformData->Mips[0].SizeY = height;
-	texture->PlatformData->Mips[0].BulkData.Realloc(rawData->Num());
-	texture->PlatformData->Mips[0].BulkData.Unlock();
-
-	uint8 * textureData = (uint8*)texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+	uint8 * textureData = (uint8*)visualizationTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 
 	if (textureData == nullptr)
 	{
@@ -204,17 +209,17 @@ UTexture2D * ULensSolver::CreateTexture2D(TArray<uint8> * rawData, int width, in
 	}
 	
 	FMemory::Memcpy(textureData, rawData->GetData(), rawData->Num());
-	texture->PlatformData->Mips[0].BulkData.Unlock();
+	visualizationTexture->PlatformData->Mips[0].BulkData.Unlock();
 
 	// texture->Resource = texture->CreateResource();
-	texture->UpdateResource();
-	texture->RefreshSamplerStates();
+	visualizationTexture->UpdateResource();
+	visualizationTexture->RefreshSamplerStates();
 
-	return texture;
+	return visualizationTexture;
 }
 
 
-void ULensSolver::VisualizeCalibration(FRHICommandListImmediate& RHICmdList, FSceneViewport* sceneViewport, FSolvedPoints solvedPoints, UTexture2D * visualizationTexture)
+void ULensSolver::VisualizeCalibration(FRHICommandListImmediate& RHICmdList, FSceneViewport* sceneViewport, UTexture2D * visualizationTexture, FSolvedPoints solvedPoints)
 {
 	FTextureRHIRef visualizationTextureRHIRef = visualizationTexture->Resource->TextureRHI;
 
@@ -330,16 +335,17 @@ void ULensSolver::PollSolvedPoints()
 			GEngine->GameViewport->bDisableWorldRendering = 1;
 			sceneViewport->SetGameRenderingEnabled(false);
 
-			// UTexture2D * visualizationTexture = CreateTexture2D(&lastSolvedPoints.visualizationData, lastSolvedPoints.width, lastSolvedPoints.height);
+			UTexture2D * visualizationTexture = CreateTexture2D(&lastSolvedPoints.visualizationData, lastSolvedPoints.width, lastSolvedPoints.height);
+			lastSolvedPoints.visualizationData.Empty();
 
 			if (sceneViewport != nullptr)
 			{
 				ULensSolver * lensSolver = this;
 				ENQUEUE_RENDER_COMMAND(VisualizeCalibration)
 				(
-					[lensSolver, sceneViewport, lastSolvedPoints](FRHICommandListImmediate& RHICmdList)
+					[lensSolver, sceneViewport, visualizationTexture, lastSolvedPoints](FRHICommandListImmediate& RHICmdList)
 					{
-						lensSolver->VisualizeCalibration(RHICmdList, sceneViewport, lastSolvedPoints);
+						lensSolver->VisualizeCalibration(RHICmdList, sceneViewport, visualizationTexture, lastSolvedPoints);
 					}
 				);
 			}

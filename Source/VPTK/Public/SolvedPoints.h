@@ -16,6 +16,10 @@ struct FSolvedPoints
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	bool success;
 
+	TArray<FColor> visualizationData;
+	int width;
+	int height;
+
 	/*
 	TArray<uint8> visualizationData;
 	int width;
