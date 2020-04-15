@@ -286,7 +286,7 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.fovX = fovX;
 		solvedPoints.fovY = fovY;
 		solvedPoints.focalLength = focalLength;
-		solvedPoints.aspectRatio = aspectRatio;
+		solvedPoints.aspectRatio = workUnit.width / (float)workUnit.height;
 		solvedPoints.perspectiveMatrix = perspectiveMatrix;
 
 		solvedPoints.points = pointsCache;
