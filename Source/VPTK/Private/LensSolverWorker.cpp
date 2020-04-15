@@ -204,14 +204,14 @@ void FLensSolverWorker::DoWork()
 		catch (std::exception e)
 		{
 			UE_LOG(LogTemp, Log, TEXT("OpenCV exception occurred: %s"), e.what());
-			QueueSolvedPointsError(workUnit.zoomLevel);
+			QueueSolvedPointsError(workUnit.jobInfo, workUnit.zoomLevel);
 			continue;
 		}
 
 		if (!patternFound)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("No pattern in view."));
-			QueueSolvedPointsError(workUnit.zoomLevel);
+			QueueSolvedPointsError(workUnit.jobInfo, workUnit.zoomLevel);
 			continue;
 		}
 
@@ -278,6 +278,7 @@ void FLensSolverWorker::DoWork()
 
 		FSolvedPoints solvedPoints;
 
+		solvedPoints.jobInfo = workUnit.jobInfo;
 		solvedPoints.zoomLevel = workUnit.zoomLevel;
 		solvedPoints.success = true;
 		solvedPoints.width = workUnit.width;
@@ -298,11 +299,12 @@ void FLensSolverWorker::DoWork()
 	exited = true;
 }
 
-void FLensSolverWorker::QueueSolvedPointsError(float zoomLevel)
+void FLensSolverWorker::QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel)
 {
 	static TArray<FVector2D> emptyPoints;
 
 	FSolvedPoints solvedPoints;
+	solvedPoints.jobInfo = jobInfo;
 	solvedPoints.points = emptyPoints;
 	solvedPoints.zoomLevel = zoomLevel;
 	solvedPoints.success = false;

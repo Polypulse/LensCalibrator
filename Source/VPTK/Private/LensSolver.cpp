@@ -33,6 +33,24 @@ void ULensSolver::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	FireWorkers();
 }
 
+FJobInfo ULensSolver::RegisterJob(int workUnitCount, UJobType jobType)
+{
+	FJobInfo jobInfo;
+	jobInfo.jobID = FGuid::NewGuid().ToString();
+	jobInfo.workUnitCount = workUnitCount;
+	jobInfo.jobType = jobType;
+
+	FJob job;
+	job.jobInfo = jobInfo;
+	job.completedWorkUnits = 0;
+
+	jobs.Add(jobInfo.jobID, job);
+
+	UE_LOG(LogTemp, Log, TEXT("Registered new job: \"%s\"."), *jobInfo.jobID);
+
+	return jobInfo;
+}
+
 int ULensSolver::GetWorkerCount()
 {
 	threadLock.Lock();
@@ -100,7 +118,7 @@ void ULensSolver::BeginDetectPoints(
 	int height = inputTexture->GetSizeY();
 
 	ULensSolver * lensSolver = this;
-	ENQUEUE_RENDER_COMMAND(ProcessMediaTexture)
+	ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
 	(
 		[lensSolver, jobInfo, inputTexture, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
 		{
@@ -152,7 +170,7 @@ void ULensSolver::BeginDetectPoints(
 	int height = inputMediaTexture->GetHeight();
 
 	ULensSolver * lensSolver = this;
-	ENQUEUE_RENDER_COMMAND(ProcessMediaTexture)
+	ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
 	(
 		[lensSolver, jobInfo, cachedMediaTextureReference, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
 		{
@@ -299,6 +317,7 @@ void ULensSolver::DetectPointsRenderThread(
 	});
 
 	FLensSolverWorkUnit workerUnit;
+	workerUnit.jobInfo = jobInfo;
 	workerUnit.width = width;
 	workerUnit.height = height;
 	workerUnit.cornerCount = cornerCount;
@@ -401,33 +420,23 @@ bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* 
 		!url.IsEmpty();
 }
 
-FJobInfo ULensSolver::ProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::OneTimeProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 
-	FJobInfo jobInfo;
-	jobInfo.jobID = FGuid::NewGuid().ToString();
-	jobInfo.jobSize = 1;
-	jobInfo.jobType = UJobType::OneTime;
-
+	FJobInfo jobInfo = RegisterJob(1, UJobType::OneTime);
 	BeginDetectPoints(jobInfo, inputMediaTexture, normalizedZoomValue, cornerCount, squareSize, queuedSolvedPointsPtr);
-
 	return jobInfo;
 }
 
-FJobInfo ULensSolver::ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::OneTimeProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 
-	FJobInfo jobInfo;
-	jobInfo.jobID = FGuid::NewGuid().ToString();
-	jobInfo.jobSize = 1;
-	jobInfo.jobType = UJobType::OneTime;
-
+	FJobInfo jobInfo = RegisterJob(1, UJobType::OneTime);
 	BeginDetectPoints(jobInfo, inputTexture, normalizedZoomValue, cornerCount, squareSize, queuedSolvedPointsPtr);
-
 	return jobInfo;
 }
 
@@ -436,28 +445,18 @@ FJobInfo ULensSolver::OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputText
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 
-	FJobInfo jobInfo;
-	jobInfo.jobID = FGuid::NewGuid().ToString();
-	jobInfo.jobSize = inputTextures.Num();
-	jobInfo.jobType = UJobType::OneTime;
-
+	FJobInfo jobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
 	BeginDetectPoints(jobInfo, inputTextures, normalizedZoomValues, cornerCount, squareSize, queuedSolvedPointsPtr);
-
 	return jobInfo;
 }
 
-FJobInfo ULensSolver::ProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::OneTimeProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 
-	FJobInfo jobInfo;
-	jobInfo.jobID = FGuid::NewGuid().ToString();
-	jobInfo.jobSize = inputTextures.Num();
-	jobInfo.jobType = UJobType::OneTime;
-
+	FJobInfo jobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
 	BeginDetectPoints(jobInfo, inputTextures, normalizedZoomValues, cornerCount, squareSize, queuedSolvedPointsPtr);
-
 	return jobInfo;
 }
 
@@ -530,7 +529,6 @@ void ULensSolver::PollSolvedPoints()
 
 	bool isQueued = queuedSolvedPoints.IsEmpty() == false;
 	bool outputIsQueued = isQueued;
-	this->SolvedPointsQueued(outputIsQueued);
 
 	FSolvedPoints lastSolvedPoints;
 	bool dequeued = false;
@@ -546,6 +544,22 @@ void ULensSolver::PollSolvedPoints()
 		UE_LOG(LogTemp, Log, TEXT("Dequeued solved points."));
 		dequeued = true;
 
+		if (!jobs.Contains(lastSolvedPoints.jobInfo.jobID))
+		{
+			UE_LOG(LogTemp, Fatal, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
+			return;
+		}
+
+		FJob *job = jobs.Find(lastSolvedPoints.jobInfo.jobID);
+		job->completedWorkUnits++;
+
+		if (job->completedWorkUnits >= lastSolvedPoints.jobInfo.workUnitCount)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *lastSolvedPoints.jobInfo.jobID);
+			this->FinishedJob(lastSolvedPoints.jobInfo);
+			jobs.Remove(lastSolvedPoints.jobInfo.jobID);
+		}
+		
 		if (this == nullptr)
 			return;
 

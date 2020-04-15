@@ -58,7 +58,7 @@ private:
 	void TransformVectorFromCVToUE4(FVector& v);
 	FMatrix GeneratePerspectiveMatrixFromFocalLength (cv::Size & imageSize, cv::Point2d principlePoint, float focalLength);
 	FTransform GenerateTransformFromRAndTVecs (std::vector<cv::Mat> & rvecs, std::vector<cv::Mat> & tvecs);
-	void QueueSolvedPointsError(float zoomLevel);
+	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
 	void QueueSolvedPoints(FSolvedPoints solvedPoints);
 	bool IsClosing ();
 

@@ -8,6 +8,9 @@ struct FSolvedPoints
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	FJobInfo jobInfo;
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	bool success;
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
