@@ -47,6 +47,11 @@ private:
 	TQueue<FSolvedPoints> queuedSolvedPoints;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPointsPtr;
 
+	mutable FCriticalSection threadLock;
+	TArray<FWorkerInterfaceContainer> workers;
+
+	int GetWorkerCount ();
+
 	bool ValidateCommonVariables(
 		FIntPoint cornerCount,
 		float inputZoomLevel,
@@ -93,9 +98,6 @@ private:
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
 	void VisualizeCalibration(FRHICommandListImmediate& RHICmdList, FSceneViewport* sceneViewport, UTexture2D * visualizationTexture, FSolvedPoints solvedPoints);
-
-	mutable FCriticalSection threadLock;
-	TArray<FWorkerInterfaceContainer> workers;
 
 	void FireWorkers();
 
@@ -147,6 +149,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void ProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);
+
+	UFUNCTION(BlueprintCallable, Category="VPTK")
+	void StartBackgroundImageProcessors();
+
+	UFUNCTION(BlueprintCallable, Category="VPTK")
+	void StopBackgroundImageprocessors();
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void PollSolvedPoints ();

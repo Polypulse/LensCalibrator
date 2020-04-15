@@ -20,58 +20,27 @@
 
 void ULensSolver::FireWorkers()
 {
-	if (workers.Num() > 0)
-	{
-		for (int i = 0; i < workers.Num(); i++)
-		{
-			if (workers[i].isClosingDel.IsBound())
-			{
-				workers[i].isClosingDel.Execute();
-				workers[i].isClosingDel.Unbind();
-			}
-
-			if (workers[i].getWorkLoadDel.IsBound())
-				workers[i].getWorkLoadDel.Unbind();
-
-			if (workers[i].queueWorkUnitDel.IsBound())
-				workers[i].queueWorkUnitDel.Unbind();
-		}
-
-		workers.Empty();
-	}
-
-	queuedSolvedPoints.Empty();
 }
 
 void ULensSolver::BeginPlay()
 {
 	Super::BeginPlay();
-
-	onSolvePointsDel.BindUObject(this, &ULensSolver::OnSolvedPoints);
-	for (int i = 0; i < 12; i++)
-	{
-		FWorkerInterfaceContainer workerInterfaceContainer;
-
-		UE_LOG(LogTemp, Log, TEXT("Starting lens solver worker: %d"), i);
-
-		workerInterfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorker>(
-			&workerInterfaceContainer.isClosingDel,
-			&workerInterfaceContainer.getWorkLoadDel, 
-			&workerInterfaceContainer.queueWorkUnitDel,
-			onSolvePointsDel,
-			i);
-
-		workerInterfaceContainer.worker->StartBackgroundTask();
-		workers.Add(workerInterfaceContainer);
-	}
-
-	visualizationTexture = nullptr;
 }
 
 void ULensSolver::EndPlay(const EEndPlayReason::Type EndPlayReason) 
 {
 	Super::EndPlay(EndPlayReason);
 	FireWorkers();
+}
+
+int ULensSolver::GetWorkerCount()
+{
+	threadLock.Lock();
+	int workercount = workers.Num();
+	threadLock.Unlock();
+
+	return workercount;
+;
 }
 
 bool ULensSolver::ValidateCommonVariables(FIntPoint cornerCount, float inputZoomLevel, float inputSquareSize)
@@ -107,6 +76,12 @@ void ULensSolver::BeginDetectPoints(UTexture2D* inputTexture, float inputZoomLev
 	if (!ValidateCommonVariables(cornerCount, inputZoomLevel, inputSquareSize))
 		return;
 
+	if (GetWorkerCount() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot process any textures, you need to execute StartBackgroundTextureProcessors in order to process textures."));
+		return;
+	}
+
 	UTexture2D* cachedTextureReference = inputTexture;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 
@@ -135,6 +110,12 @@ void ULensSolver::BeginDetectPoints(UMediaTexture* inputMediaTexture, float inpu
 
 	if (!ValidateCommonVariables(cornerCount, inputZoomLevel, inputSquareSize))
 		return;
+
+	if (GetWorkerCount() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot process any textures, you need to execute StartBackgroundTextureProcessors in order to process textures."));
+		return;
+	}
 
 	UMediaTexture* cachedMediaTextureReference = inputMediaTexture;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
@@ -262,6 +243,7 @@ void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList,
 	FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
 	*/
 
+	threadLock.Lock();
 	if (workers.Num() == 0)
 		return;
 
@@ -278,6 +260,7 @@ void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList,
 	workerUnit.pixels = surfaceData;
 
 	workers[0].queueWorkUnitDel.Execute(workerUnit);
+	threadLock.Unlock();
 }
 
 UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height)
@@ -397,6 +380,58 @@ void ULensSolver::ProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures,
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 	BeginDetectPoints(inputTextures, normalizedZoomValues, cornerCount, squareSize, queuedSolvedPointsPtr);
+}
+
+void ULensSolver::StartBackgroundImageProcessors()
+{
+	threadLock.Lock();
+	onSolvePointsDel.BindUObject(this, &ULensSolver::OnSolvedPoints);
+	for (int i = 0; i < 12; i++)
+	{
+		FWorkerInterfaceContainer workerInterfaceContainer;
+
+		UE_LOG(LogTemp, Log, TEXT("Starting lens solver worker: %d"), i);
+
+		workerInterfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorker>(
+			&workerInterfaceContainer.isClosingDel,
+			&workerInterfaceContainer.getWorkLoadDel, 
+			&workerInterfaceContainer.queueWorkUnitDel,
+			onSolvePointsDel,
+			i);
+
+		workerInterfaceContainer.worker->StartBackgroundTask();
+		workers.Add(workerInterfaceContainer);
+	}
+
+	visualizationTexture = nullptr;
+	threadLock.Unlock();
+}
+
+void ULensSolver::StopBackgroundImageprocessors()
+{
+	threadLock.Lock();
+	if (workers.Num() > 0)
+	{
+		for (int i = 0; i < workers.Num(); i++)
+		{
+			if (workers[i].isClosingDel.IsBound())
+			{
+				workers[i].isClosingDel.Execute();
+				workers[i].isClosingDel.Unbind();
+			}
+
+			if (workers[i].getWorkLoadDel.IsBound())
+				workers[i].getWorkLoadDel.Unbind();
+
+			if (workers[i].queueWorkUnitDel.IsBound())
+				workers[i].queueWorkUnitDel.Unbind();
+		}
+
+		workers.Empty();
+	}
+
+	queuedSolvedPoints.Empty();
+	threadLock.Unlock();
 }
 
 /*
