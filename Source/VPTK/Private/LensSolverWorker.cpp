@@ -129,8 +129,8 @@ FTransform FLensSolverWorker::GenerateTransformFromRAndTVecs(std::vector<cv::Mat
 void FLensSolverWorker::DoWork()
 {
 	int 
-		flags  = cv::CALIB_USE_INTRINSIC_GUESS;
-		flags |= cv::CALIB_FIX_ASPECT_RATIO;
+		flags = cv::CALIB_FIX_ASPECT_RATIO;
+		// flags |= cv::CALIB_USE_INTRINSIC_GUESS;
 		flags |= cv::CALIB_FIX_PRINCIPAL_POINT;
 		flags |= cv::CALIB_ZERO_TANGENT_DIST;
 		// flags |= cv::CALIB_FIX_K1;
@@ -245,12 +245,13 @@ void FLensSolverWorker::DoWork()
 		cv::calibrationMatrixValues(cameraMatrix, imageSize, (double)imageSize.width, (double)imageSize.height, fovX, fovY, focalLength, principalPoint, aspectRatio);
 		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(imageSize, principalPoint, focalLength);
 
-		UE_LOG(LogTemp, Log, TEXT("Completed camera calibration with solve error: %f for zoom value: %f with results: (\n\tFov X: %f,\n\tFov Y: %f,\n\tFocal Length: %f\n)"),
+		UE_LOG(LogTemp, Log, TEXT("Completed camera calibration with solve error: %f for zoom value: %f with results: (\n\tFov X: %f,\n\tFov Y: %f,\n\tFocal Length: %f,\n\tAspect Ratio: %f\n)"),
 			error,
 			workUnit.zoomLevel,
 			fovX,
 			fovY,
-			focalLength);
+			focalLength,
+			aspectRatio);
 
 		/*
 		TArray<uint8> visualizationData;
@@ -284,6 +285,7 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.fovX = fovX;
 		solvedPoints.fovY = fovY;
 		solvedPoints.focalLength = focalLength;
+		solvedPoints.aspectRatio = aspectRatio;
 		solvedPoints.perspectiveMatrix = perspectiveMatrix;
 
 		solvedPoints.points = pointsCache;

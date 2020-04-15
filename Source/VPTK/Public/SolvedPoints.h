@@ -29,6 +29,9 @@ struct FSolvedPoints
 	float focalLength;
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	float aspectRatio;
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	FMatrix perspectiveMatrix;
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
