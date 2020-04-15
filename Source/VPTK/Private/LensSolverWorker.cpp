@@ -143,7 +143,7 @@ void FLensSolverWorker::DoWork()
 
 	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
-	static cv::Mat image;
+	cv::Mat image;
 
 	cv::Point2d principalPoint(0, 0);
 	double fovX = 0, fovY = 0, focalLength = 0, aspectRatio = 0;
