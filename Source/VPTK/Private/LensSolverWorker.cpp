@@ -24,6 +24,8 @@ FLensSolverWorker::FLensSolverWorker(
 	workUnitCount = 0;
 	workerID = inputWorkerID;
 	exited = false;
+
+	calibrationVisualizationOutputPath = FString(FPaths::GameDevelopersDir() + "/CalibrationVisualizations/");
 }
 
 int FLensSolverWorker::GetWorkLoad () 
@@ -187,7 +189,7 @@ void FLensSolverWorker::DoWork()
 		for (int i = 0; i < workUnit.width * workUnit.height; i++)
 			image.at<uint8>(i / workUnit.width, i % workUnit.width) = workUnit.pixels[i].R;
 
-		// cv::imwrite("D:\\output.jpg", image);
+
 
 		/*
 		cv::Mat gray(width, height, CV_8U);
@@ -222,6 +224,7 @@ void FLensSolverWorker::DoWork()
 		);
 
 		cv::cornerSubPix(image, corners[0], cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
+
 		// cv::drawChessboardCorners(image, patternSize, corners, patternFound);
 
 		// UE_LOG(LogTemp, Log, TEXT("Chessboard detected."));
@@ -294,6 +297,18 @@ void FLensSolverWorker::DoWork()
 
 		UE_LOG(LogTemp, Log, TEXT("Worker (%d) finished with work unit."), workerID);
 		QueueSolvedPoints(solvedPoints);
+
+		cv::drawChessboardCorners(image, patternSize, corners, patternFound);
+		
+		FString partialOutputPath = calibrationVisualizationOutputPath + FString("image-");
+
+		int index = 0;
+		while (FPaths::FileExists(FString::Printf(TEXT("%s%d.jpg"), *partialOutputPath, index)))
+			index++;
+
+		FString outputPath = FString::Printf(TEXT("%s%d.jpg"), *partialOutputPath, index);
+		UE_LOG(LogTemp, Log, TEXT("Writing visualization to file: \"%s\"."), *outputPath);
+		cv::imwrite(cv::String((char*)outputPath.GetCharArray().GetData()), image);
 	}
 
 	exited = true;

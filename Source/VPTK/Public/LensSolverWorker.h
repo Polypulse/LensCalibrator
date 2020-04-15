@@ -45,6 +45,8 @@ public:
 	DECLARE_DELEGATE_RetVal(bool, IsClosingDel)
 
 private:
+	FString calibrationVisualizationOutputPath;
+
 	OnSolvePointsDel onSolvePointsDel;
 	// FCriticalSection threadLock;
 
