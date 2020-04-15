@@ -24,6 +24,26 @@ struct FWorkerInterfaceContainer
 	FLensSolverWorker::IsClosingDel isClosingDel;
 };
 
+UENUM(BlueprintType)
+enum UJobType
+{
+	OneTime,
+	Continuous
+};
+
+USTRUCT(BlueprintType)
+struct FJobInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UJobType jobType;
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	FString jobID;
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	int jobSize;
+};
+
 UCLASS( Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class VPTK_API ULensSolver : public UActorComponent
 {
@@ -121,6 +141,10 @@ protected:
 	void DequeueSolvedPoints (FSolvedPoints solvedPoints);
 	virtual void DequeueSolvedPoints_Implementation (FSolvedPoints solvedPoints) {}
 
+	UFUNCTION(BlueprintNativeEvent, Category="VPTK")
+	void Finished (FSolvedPoints solvedPoints);
+	virtual void Finished_Implementation (FSolvedPoints solvedPoints) {}
+
 public:
 
 	FLensSolverWorker::OnSolvePointsDel onSolvePointsDel;
@@ -145,7 +169,7 @@ public:
 	void ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	void ProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);
+	void OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void ProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);

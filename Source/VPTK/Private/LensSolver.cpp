@@ -368,7 +368,7 @@ void ULensSolver::ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoo
 	BeginDetectPoints(inputTexture, normalizedZoomValue, cornerCount, squareSize, queuedSolvedPointsPtr);
 }
 
-void ULensSolver::ProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
+void ULensSolver::OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
@@ -446,17 +446,6 @@ void ULensSolver::DequeueSolvedPoints_Implemenation (FSolvedPoints& solvedPoints
 
 void ULensSolver::PollSolvedPoints()
 {
-	/*
-	threadLock.Lock();
-
-	for (int i = 0; i < workers.Num(); i++)
-	{
-	workers[i].
-	}
-
-	threadLock.Unlock();
-	*/
-
 	if (this == nullptr)
 		return;
 
