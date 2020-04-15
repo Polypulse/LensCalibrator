@@ -20,7 +20,13 @@ struct FSolvedPoints
 	int height;
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	FTransform cameraTransform;
+	float fovX;
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	float fovY;
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	float focalLength;
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	FMatrix perspectiveMatrix;
