@@ -524,8 +524,10 @@ void ULensSolver::DequeueSolvedPoints_Implemenation (FSolvedPoints& solvedPoints
 
 void ULensSolver::PollSolvedPoints()
 {
+	/*
 	if (this == nullptr)
 		return;
+	*/
 
 	bool isQueued = queuedSolvedPoints.IsEmpty() == false;
 	bool outputIsQueued = isQueued;
@@ -550,6 +552,14 @@ void ULensSolver::PollSolvedPoints()
 			return;
 		}
 
+		/*
+		if (this == nullptr)
+			return;
+		*/
+
+		this->DequeueSolvedPoints(lastSolvedPoints);
+		isQueued = queuedSolvedPoints.IsEmpty() == false;
+
 		FJob *job = jobs.Find(lastSolvedPoints.jobInfo.jobID);
 		job->completedWorkUnits++;
 
@@ -560,11 +570,6 @@ void ULensSolver::PollSolvedPoints()
 			jobs.Remove(lastSolvedPoints.jobInfo.jobID);
 		}
 		
-		if (this == nullptr)
-			return;
-
-		this->DequeueSolvedPoints(lastSolvedPoints);
-		isQueued = queuedSolvedPoints.IsEmpty() == false;
 	}
 
 	if (dequeued)
