@@ -44,6 +44,88 @@ void FLensSolverWorker::QueueWorkUnit(FLensSolverWorkUnit workUnit)
 	// threadLock.Unlock();
 }
 
+void FLensSolverWorker::TransformVectorFromCVToUE4(FVector& v)
+{
+	float x, y, z;
+
+	x = v.X;
+	y = v.Y;
+	z = v.Z;
+
+	v.X = z;
+	v.Y = x;
+	v.Z = -y;
+}
+
+FMatrix FLensSolverWorker::GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength)
+{
+	FMatrix perspectiveMatrix;
+
+	float min = 0.1f;
+	float max = 10000.0f;
+
+	float left = min * (-principlePoint.x) / focalLength;
+	float right = min * (imageSize.width - principlePoint.x) / focalLength;
+	float bottom = min * (principlePoint.y - imageSize.height) / focalLength;
+	float top = min * (principlePoint.y) / focalLength;
+
+	float a = -(right + left) / (right - left);
+	float b = -(top + bottom) / (top - bottom);
+
+	float c = min / (min - max);
+	float d = -max * min / (min - max);
+
+	float nrl = (2 * min) / (right - left);
+	float ntb = (2 * min) / (top - bottom);
+
+	perspectiveMatrix = FMatrix(
+		FPlane(nrl,		0.0f,	0.0f,	0.0f),
+		FPlane(0.0f,	ntb,	0.0f,	0.0f),
+		FPlane(a,		b,		c,		1.0f),
+		FPlane(0.0f,	0.0f,	d,		0.0f)
+	);
+
+	return perspectiveMatrix;
+}
+
+FTransform FLensSolverWorker::GenerateTransformFromRAndTVecs(std::vector<cv::Mat>& rvecs, std::vector<cv::Mat>& tvecs)
+{
+	FTransform outputTransform;
+	FMatrix transformMatrix;
+
+	cv::Mat rot;
+	FVector forward, right, up, origin;
+	FVector zero(0, 0, 0);
+
+	cv::Rodrigues(rvecs[0], rot);
+
+	forward		= FVector(rot.at<double>(0, 2), rot.at<double>(1, 2), rot.at<double>(2, 2));
+	right		= FVector(rot.at<double>(0, 0), rot.at<double>(1, 0), rot.at<double>(2, 0));
+	up			= FVector(rot.at<double>(0, 1), rot.at<double>(1, 1), rot.at<double>(2, 1));
+	origin		= FVector(tvecs[0].at<double>(0, 0), tvecs[0].at<double>(1, 0), tvecs[0].at<double>(2, 0));
+
+	TransformVectorFromCVToUE4(forward);
+	TransformVectorFromCVToUE4(right);
+	TransformVectorFromCVToUE4(up);
+	TransformVectorFromCVToUE4(origin);
+
+	up = -up;
+
+	transformMatrix.SetAxes(
+		&forward,
+		&right,
+		&up,
+		&zero
+	);
+
+	transformMatrix = transformMatrix.GetTransposed();
+	origin = transformMatrix.TransformPosition(origin);
+	outputTransform.SetFromMatrix(transformMatrix);
+	outputTransform.SetLocation(-origin);
+
+	return outputTransform;
+}
+
 void FLensSolverWorker::DoWork()
 {
 	static cv::Mat image;
@@ -66,6 +148,35 @@ void FLensSolverWorker::DoWork()
 		// FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture->GetSizeY(), Bitmap.GetData());
 		// UE_LOG(LogTemp, Log, TEXT("Wrote test bitmap with: %d pixels to file."), Bitmap.Num());
 
+		int 
+			flags  = cv::CALIB_USE_INTRINSIC_GUESS;
+			flags |= cv::CALIB_FIX_ASPECT_RATIO;
+			flags |= cv::CALIB_FIX_PRINCIPAL_POINT;
+			flags |= cv::CALIB_ZERO_TANGENT_DIST;
+			// flags |= cv::CALIB_FIX_K1;
+			// flags |= cv::CALIB_FIX_K2;
+			// flags |= cv::CALIB_FIX_K3;
+			flags |= cv::CALIB_FIX_K4;
+			flags |= cv::CALIB_FIX_K5;
+
+		cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
+		cv::Size imageSize(workUnit.width, workUnit.height);
+
+		std::vector<cv::Point2f> corners;
+		cv::Size patternSize(workUnit.cornerCount.X, workUnit.cornerCount.Y);
+
+		std::vector<cv::Mat> rvecs, tvecs;
+		std::vector<std::vector<cv::Point3f>> objectPoints(1);
+
+		cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<float>::type);
+		cv::Mat distortionCoefficients = cv::Mat::zeros(8, 1, cv::DataType<float>::type);
+
+		cv::Point2d principalPoint;
+		double fovX, fovY, focalLength, aspectRatio;
+
+		FTransform cameraTransform;
+		FMatrix perspectiveMatrix;
+
 		if (image.rows != workUnit.height || image.cols != workUnit.width)
 		{
 			UE_LOG(LogTemp, Log, TEXT("Reallocating OpenCV mat from size: (%d, %d) to: (%d, %d)."), image.cols, image.rows, workUnit.width, workUnit.height);
@@ -82,8 +193,6 @@ void FLensSolverWorker::DoWork()
 		cv::cvtColor(image, gray, CV_BGR2GRAY);
 		*/
 
-		std::vector<cv::Point2f> corners;
-		cv::Size patternSize(workUnit.cornerCount.X, workUnit.cornerCount.Y);
 		bool patternFound = false;
 
 		try
@@ -115,16 +224,27 @@ void FLensSolverWorker::DoWork()
 		// cv::drawChessboardCorners(image, patternSize, corners, patternFound);
 
 		// UE_LOG(LogTemp, Log, TEXT("Chessboard detected."));
-		TArray<FVector2D> pointsCache;
-		if (pointsCache.Num() != corners.size())
-			pointsCache.SetNum(corners.size());
+		objectPoints.resize(corners.size(), objectPoints[0]);
 
-		// FString msg = FString::Printf(TEXT("Found %d points:"), pointsCache.Num());
-		for (int i = 0; i < pointsCache.Num(); i++)
-		{
-			// msg = FString::Printf(TEXT("%s\n(%f, %f),\n"), *msg, corners[i].x, corners[i].y);
-			pointsCache[i] = FVector2D(corners[i].x, corners[i].y);
-		}
+		for (int y = 0; y < workUnit.cornerCount.Y; y++)
+			for (int x = 0; x < workUnit.cornerCount.X; x++)
+				objectPoints[0].push_back(cv::Point3f(x * workUnit.squareSize, y * workUnit.squareSize, 0.0f));
+
+		double error = cv::calibrateCamera(
+			objectPoints, 
+			corners, 
+			imageSize, 
+			cameraMatrix,
+			distortionCoefficients, 
+			rvecs, 
+			tvecs, 
+			flags, 
+			termCriteria);
+
+		cv::calibrationMatrixValues(cameraMatrix, imageSize, (double)imageSize.width, (double)imageSize.height, fovX, fovY, focalLength, principalPoint, aspectRatio);
+
+		cameraTransform = GenerateTransformFromRAndTVecs(rvecs, tvecs);
+		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(imageSize, principalPoint, focalLength);
 
 		/*
 		TArray<uint8> visualizationData;
@@ -142,18 +262,29 @@ void FLensSolverWorker::DoWork()
 		}
 		*/
 
+		TArray<FVector2D> pointsCache;
+		if (pointsCache.Num() != corners.size())
+			pointsCache.SetNum(corners.size());
+
+		// FString msg = FString::Printf(TEXT("Found %d points:"), pointsCache.Num());
+		for (int i = 0; i < pointsCache.Num(); i++)
+		{
+			// msg = FString::Printf(TEXT("%s\n(%f, %f),\n"), *msg, corners[i].x, corners[i].y);
+			pointsCache[i] = FVector2D(corners[i].x, corners[i].y);
+		}
+
 		FSolvedPoints solvedPoints;
-		solvedPoints.points = pointsCache;
+
 		solvedPoints.zoomLevel = workUnit.zoomLevel;
 		solvedPoints.success = true;
-
 		solvedPoints.width = workUnit.width;
 		solvedPoints.height = workUnit.height;
-		solvedPoints.visualizationData = workUnit.pixels;
 
-		/*
-		solvedPoints.visualizationData = visualizationData;
-		*/
+		solvedPoints.cameraTransform = cameraTransform;
+		solvedPoints.perspectiveMatrix = perspectiveMatrix;
+
+		solvedPoints.points = pointsCache;
+		solvedPoints.visualizationData = workUnit.pixels;
 
 		UE_LOG(LogTemp, Log, TEXT("Worker (%d) finished with work unit."), workerID);
 		QueueSolvedPoints(solvedPoints);

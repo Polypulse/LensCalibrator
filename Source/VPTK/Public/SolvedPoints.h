@@ -8,22 +8,26 @@ struct FSolvedPoints
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	TArray<FVector2D> points;
+	bool success;
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	float zoomLevel;
 
+	// UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	int width;
+
+	// UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	int height;
+
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	bool success;
+	FTransform cameraTransform;
 
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	FMatrix perspectiveMatrix;
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	TArray<FVector2D> points;
+
+	// UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	TArray<FColor> visualizationData;
-	int width;
-	int height;
-
-	/*
-	TArray<uint8> visualizationData;
-	int width;
-	int height;
-	*/
-	// UTexture2D * visualizationTexture;
 };

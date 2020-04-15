@@ -26,6 +26,7 @@ struct FLensSolverWorkUnit
 	int height;
 	FIntPoint cornerCount;
 	float zoomLevel;
+	float squareSize;
 
 	TArray<FColor> pixels;
 };
@@ -52,6 +53,9 @@ private:
 
 	// static UTexture2D * CreateTexture2D(TArray<uint8> * rawData, int width, int height);
 
+	void TransformVectorFromCVToUE4(FVector& v);
+	FMatrix GeneratePerspectiveMatrixFromFocalLength (cv::Size & imageSize, cv::Point2d principlePoint, float focalLength);
+	FTransform GenerateTransformFromRAndTVecs (std::vector<cv::Mat> & rvecs, std::vector<cv::Mat> & tvecs);
 	void QueueSolvedPointsError(float zoomLevel);
 	void QueueSolvedPoints(FSolvedPoints solvedPoints);
 	bool IsClosing ();

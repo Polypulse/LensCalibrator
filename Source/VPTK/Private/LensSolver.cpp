@@ -74,57 +74,96 @@ void ULensSolver::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	FireWorkers();
 }
 
-void ULensSolver::BeginDetectPoints(UTexture2D* inputTexture, float inputZoomLevel, FIntPoint cornerCount, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+bool ULensSolver::ValidateCommonVariables(FIntPoint cornerCount, float inputZoomLevel, float inputSquareSize)
+{
+	if (cornerCount.X <= 0 || cornerCount.Y <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("X or Y corner count is less than or equal to 0: (%d, %d)."), cornerCount.X, cornerCount.Y);
+		return false;
+	}
+
+	if (inputZoomLevel < 0 || inputZoomLevel > 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("The input zoom level: %f is not normalized between 0 and 1."), inputZoomLevel);
+		return false;
+	}
+
+	if (inputSquareSize <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("The input square size: %f is less than or equal to zero"), inputSquareSize);
+		return false;
+	}
+
+	return true;
+}
+
+void ULensSolver::BeginDetectPoints(UTexture2D* inputTexture, float inputZoomLevel, FIntPoint cornerCount, float inputSquareSize, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputTexture == nullptr ||
 		inputTexture->GetSizeX() <= 2 ||
 		inputTexture->GetSizeY() <= 2)
 		return;
 
+	if (!ValidateCommonVariables(cornerCount, inputZoomLevel, inputSquareSize))
+		return;
+
 	UTexture2D* cachedTextureReference = inputTexture;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
+
 	float zoomLevel = inputZoomLevel;
+	float squareSize = inputSquareSize;
+
 	int width = inputTexture->GetSizeX();
 	int height = inputTexture->GetSizeY();
 
 	ULensSolver * lensSolver = this;
 	ENQUEUE_RENDER_COMMAND(ProcessMediaTexture)
 	(
-		[lensSolver, inputTexture, width, height, zoomLevel, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
+		[lensSolver, inputTexture, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
 		{
-			lensSolver->DetectPointsRenderThread(RHICmdList, inputTexture, width, height, zoomLevel, cornerCount, queuedSolvedPoints);
+			lensSolver->DetectPointsRenderThread(RHICmdList, inputTexture, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints);
 		}
 	);
-
-	// GEngine->GameViewport->Viewport->Draw();
 }
 
-void ULensSolver::BeginDetectPoints(UMediaTexture* inputMediaTexture, float inputZoomLevel, FIntPoint cornerCount, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+void ULensSolver::BeginDetectPoints(UMediaTexture* inputMediaTexture, float inputZoomLevel, FIntPoint cornerCount, float inputSquareSize, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputMediaTexture == nullptr ||
 		inputMediaTexture->GetWidth() <= 2 ||
 		inputMediaTexture->GetWidth() <= 2)
 		return;
 
+	if (!ValidateCommonVariables(cornerCount, inputZoomLevel, inputSquareSize))
+		return;
+
 	UMediaTexture* cachedMediaTextureReference = inputMediaTexture;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
+
 	float zoomLevel = inputZoomLevel;
+	float squareSize = inputSquareSize;
+
 	int width = inputMediaTexture->GetWidth();
 	int height = inputMediaTexture->GetHeight();
 
 	ULensSolver * lensSolver = this;
 	ENQUEUE_RENDER_COMMAND(ProcessMediaTexture)
 	(
-		[lensSolver, cachedMediaTextureReference, width, height, zoomLevel, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
+		[lensSolver, cachedMediaTextureReference, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
 		{
-			lensSolver->DetectPointsRenderThread(RHICmdList, cachedMediaTextureReference, width, height, zoomLevel, cornerCount, queuedSolvedPoints);
+			lensSolver->DetectPointsRenderThread(
+				RHICmdList, 
+				cachedMediaTextureReference, 
+				width,
+				height,
+				zoomLevel, 
+				squareSize, 
+				cornerCount, 
+				queuedSolvedPoints);
 		}
 	);
-
-	// GEngine->GameViewport->Viewport->Draw();
 }
 
-void ULensSolver::BeginDetectPoints(TArray<UTexture2D*> inputTextures, TArray<float> inputZoomLevels, FIntPoint cornerCount, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+void ULensSolver::BeginDetectPoints(TArray<UTexture2D*> inputTextures, TArray<float> inputZoomLevels, FIntPoint cornerCount, float inputSquaresize, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputTextures.Num() == 0 || inputZoomLevels.Num() == 0)
 		return;
@@ -137,34 +176,26 @@ void ULensSolver::BeginDetectPoints(TArray<UTexture2D*> inputTextures, TArray<fl
 
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 	for (int i = 0; i < inputTextures.Num(); i++)
-	{
-		if (inputTextures[i] == nullptr ||
-			inputTextures[i]->GetSizeX() <= 2 ||
-			inputTextures[i]->GetSizeY() <= 2)
-		{
-			UE_LOG(LogTemp, Error, TEXT("The input texture at index: %d is null!"), i);
-			return;
-		}
-
-		UTexture2D* cachedTextureReference = inputTextures[i];
-		float zoomLevel = inputZoomLevels[i];
-		int width = inputTextures[i]->GetSizeX();
-		int height = inputTextures[i]->GetSizeY();
-
-		ULensSolver * lensSolver = this;
-		ENQUEUE_RENDER_COMMAND(ProcessMediaTexture)
-		(
-			[lensSolver, cachedTextureReference, width, height, zoomLevel, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
-			{
-				lensSolver->DetectPointsRenderThread(RHICmdList, cachedTextureReference, width, height, zoomLevel, cornerCount, queuedSolvedPoints);
-			}
-		);
-	}
-
-	// GEngine->GameViewport->Viewport->Draw();
+		BeginDetectPoints(inputTextures[i], inputZoomLevels[i], cornerCount, inputSquaresize, inputQueuedSolvedPoints);
 }
 
-void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UTexture* texture, int width, int height, float zoomLevel, FIntPoint cornerCount,TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints)
+void ULensSolver::BeginDetectPoints(TArray<UMediaTexture*> inputTextures, TArray<float> inputZoomLevels, FIntPoint cornerCount, float inputSquaresize, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+{
+	if (inputTextures.Num() == 0 || inputZoomLevels.Num() == 0)
+		return;
+
+	if (inputTextures.Num() != inputZoomLevels.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("The texture and zoom level count does not match!"));
+		return;
+	}
+
+	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
+	for (int i = 0; i < inputTextures.Num(); i++)
+		BeginDetectPoints(inputTextures[i], inputZoomLevels[i], cornerCount, inputSquaresize, inputQueuedSolvedPoints);
+}
+
+void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UTexture* texture, int width, int height, float zoomLevel, float squareSize, FIntPoint cornerCount, TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints)
 {
 	if (!allocated)
 	{
@@ -243,6 +274,7 @@ void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList,
 	workerUnit.height = height;
 	workerUnit.cornerCount = cornerCount;
 	workerUnit.zoomLevel = zoomLevel;
+	workerUnit.squareSize = squareSize;
 	workerUnit.pixels = surfaceData;
 
 	workers[0].queueWorkUnitDel.Execute(workerUnit);
@@ -339,22 +371,32 @@ bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* 
 		!url.IsEmpty();
 }
 
-void ULensSolver::ProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount)
+void ULensSolver::ProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
-	BeginDetectPoints(inputMediaTexture, normalizedZoomValue, cornerCount, queuedSolvedPointsPtr);
+	BeginDetectPoints(inputMediaTexture, normalizedZoomValue, cornerCount, squareSize, queuedSolvedPointsPtr);
 }
 
-void ULensSolver::ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount)
+void ULensSolver::ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
-	BeginDetectPoints(inputTexture, normalizedZoomValue, cornerCount, queuedSolvedPointsPtr);
+	BeginDetectPoints(inputTexture, normalizedZoomValue, cornerCount, squareSize, queuedSolvedPointsPtr);
 }
 
-void ULensSolver::ProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount)
+void ULensSolver::ProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
 {
+	if (!queuedSolvedPointsPtr.IsValid())
+		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
+	BeginDetectPoints(inputTextures, normalizedZoomValues, cornerCount, squareSize, queuedSolvedPointsPtr);
+}
+
+void ULensSolver::ProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
+{
+	if (!queuedSolvedPointsPtr.IsValid())
+		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
+	BeginDetectPoints(inputTextures, normalizedZoomValues, cornerCount, squareSize, queuedSolvedPointsPtr);
 }
 
 /*
