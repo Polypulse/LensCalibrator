@@ -25,7 +25,7 @@ FLensSolverWorker::FLensSolverWorker(
 	workerID = inputWorkerID;
 	exited = false;
 
-	calibrationVisualizationOutputPath = FPaths::ConvertRelativePathToFull(FString(FPaths::GameDevelopersDir() + "CalibrationVisualizations/"));
+	calibrationVisualizationOutputPath = FPaths::ConvertRelativePathToFull(FPaths::GameDevelopersDir() + FString::Printf(TEXT("CalibrationVisualizations/Worker-%d/"), workerID));
 }
 
 int FLensSolverWorker::GetWorkLoad () 
@@ -157,16 +157,10 @@ void FLensSolverWorker::DoWork()
 
 		FLensSolverWorkUnit workUnit;
 		workQueue.Dequeue(workUnit);
-
-		UE_LOG(LogTemp, Log, TEXT("Worker (%d) with current workload: %d dequeued work unit."), workerID, workUnitCount);
-
-		// threadLock.Lock();
 		workUnitCount--;
-		// threadLock.Unlock();
 
-		// FString outputPath("D:\\Test.bmp");
-		// FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture->GetSizeY(), Bitmap.GetData());
-		// UE_LOG(LogTemp, Log, TEXT("Wrote test bitmap with: %d pixels to file."), Bitmap.Num());
+		FString workerMessage = FString::Printf(TEXT("Worker: (Job: \"%s\", worker ID: %d, zoom level: %f): "), *workUnit.jobInfo.jobID, workerID, workUnit.zoomLevel);
+		UE_LOG(LogTemp, Log, TEXT("%sDequeued work unit with queued workload: %d"), *workerMessage, workUnitCount);
 
 		cv::Size imageSize(workUnit.width, workUnit.height);
 
@@ -182,12 +176,12 @@ void FLensSolverWorker::DoWork()
 
 		if (image.rows != workUnit.height || image.cols != workUnit.width)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Reallocating OpenCV mat from size: (%d, %d) to: (%d, %d)."), image.cols, image.rows, workUnit.width, workUnit.height);
+			UE_LOG(LogTemp, Log, TEXT("%sReallocating OpenCV mat from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, workUnit.width, workUnit.height);
 			image = cv::Mat(workUnit.height, workUnit.width, cv::DataType<uint8>::type);
 		}
 
 		for (int i = 0; i < workUnit.width * workUnit.height; i++)
-			image.at<uint8>(i / workUnit.width, i % workUnit.width) = workUnit.pixels[i].R;
+			image.at<uint8>(workUnit.height - i / workUnit.width, i % workUnit.width) = workUnit.pixels[i].R;
 
 
 
@@ -198,21 +192,11 @@ void FLensSolverWorker::DoWork()
 
 		bool patternFound = false;
 
-		try
-		{
-			patternFound = cv::findChessboardCorners(image, patternSize, corners[0]);
-		}
-
-		catch (std::exception e)
-		{
-			UE_LOG(LogTemp, Log, TEXT("OpenCV exception occurred: %s"), e.what());
-			QueueSolvedPointsError(workUnit.jobInfo, workUnit.zoomLevel);
-			continue;
-		}
+		patternFound = cv::findChessboardCorners(image, patternSize, corners[0]);
 
 		if (!patternFound)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("No pattern in view."));
+			UE_LOG(LogTemp, Warning, TEXT("%sNo pattern in view."), *workerMessage);
 			QueueSolvedPointsError(workUnit.jobInfo, workUnit.zoomLevel);
 			continue;
 		}
@@ -248,7 +232,8 @@ void FLensSolverWorker::DoWork()
 		cv::calibrationMatrixValues(cameraMatrix, imageSize, (double)imageSize.width, (double)imageSize.height, fovX, fovY, focalLength, principalPoint, aspectRatio);
 		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(imageSize, principalPoint, focalLength);
 
-		UE_LOG(LogTemp, Log, TEXT("Completed camera calibration with solve error: %f for zoom value: %f with results: (\n\tFov X: %f,\n\tFov Y: %f,\n\tFocal Length: %f,\n\tAspect Ratio: %f\n)"),
+		UE_LOG(LogTemp, Log, TEXT("%sCompleted camera calibration with solve error: %f for zoom value: %f with results: (\n\tFov X: %f,\n\tFov Y: %f,\n\tFocal Length: %f,\n\tAspect Ratio: %f\n)"),
+			*workerMessage,
 			error,
 			workUnit.zoomLevel,
 			fovX,
@@ -295,7 +280,7 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.points = pointsCache;
 		solvedPoints.visualizationData = workUnit.pixels;
 
-		UE_LOG(LogTemp, Log, TEXT("Worker (%d) finished with work unit."), workerID);
+		UE_LOG(LogTemp, Log, TEXT("%sFinished with work unit."), *workerMessage);
 		QueueSolvedPoints(solvedPoints);
 
 		cv::drawChessboardCorners(image, patternSize, corners[0], patternFound);
@@ -310,10 +295,10 @@ void FLensSolverWorker::DoWork()
 		if (!FPaths::DirectoryExists(calibrationVisualizationOutputPath))
 		{
 			FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*calibrationVisualizationOutputPath);
-			UE_LOG(LogTemp, Log, TEXT("Created visualization directory at path: \"%s\"."), *calibrationVisualizationOutputPath);
+			UE_LOG(LogTemp, Log, TEXT("%sCreated visualization directory at path: \"%s\"."), *workerMessage, *calibrationVisualizationOutputPath);
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("Writing visualization to file: \"%s\"."), *outputPath);
+		UE_LOG(LogTemp, Log, TEXT("%sWriting visualization to file: \"%s\"."), *workerMessage, *outputPath);
 		cv::imwrite(TCHAR_TO_UTF8(*outputPath), image);
 	}
 
