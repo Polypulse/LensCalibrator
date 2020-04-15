@@ -14,6 +14,7 @@
 #include "opencv2/imgproc/types_c.h"
 #pragma pop_macro("check")
 
+#include "JobInfo.h"
 #include "LensSolverWorker.generated.h"
 
 

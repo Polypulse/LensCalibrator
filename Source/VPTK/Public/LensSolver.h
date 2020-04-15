@@ -10,6 +10,7 @@
 
 #include "SolvedPoints.h"
 #include "LensSolverWorker.h"
+#include "Job.h"
 #include "LensSolver.generated.h"
 
 USTRUCT()
@@ -22,40 +23,6 @@ struct FWorkerInterfaceContainer
 	FLensSolverWorker::GetWorkLoadDel getWorkLoadDel;
 	FLensSolverWorker::QueueWorkUnitDel queueWorkUnitDel;
 	FLensSolverWorker::IsClosingDel isClosingDel;
-};
-
-UENUM(BlueprintType)
-enum UJobType
-{
-	OneTime UMETA(DisplayName = "One Time"),
-	Continuous UMETA(DisplayName = "Continuous")
-};
-
-USTRUCT(BlueprintType)
-struct FJobInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	UJobType jobType;
-
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	FString jobID;
-
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	int workUnitCount;
-};
-
-USTRUCT(BlueprintType)
-struct FJob
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	FJobInfo jobInfo;
-
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	int completedWorkUnits;
 };
 
 UCLASS( Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
