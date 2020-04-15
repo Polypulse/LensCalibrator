@@ -22,6 +22,8 @@ struct FLensSolverWorkUnit
 {
 	GENERATED_BODY()
 
+	FJobInfo jobInfo;
+
 	int width;
 	int height;
 	FIntPoint cornerCount;

@@ -27,8 +27,8 @@ struct FWorkerInterfaceContainer
 UENUM(BlueprintType)
 enum UJobType
 {
-	OneTime,
-	Continuous
+	OneTime UMETA(DisplayName = "One Time"),
+	Continuous UMETA(DisplayName = "Continuous")
 };
 
 USTRUCT(BlueprintType)
@@ -38,8 +38,10 @@ struct FJobInfo
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	UJobType jobType;
+
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	FString jobID;
+
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	int jobSize;
 };
@@ -79,6 +81,7 @@ private:
 	);
 
 	void BeginDetectPoints(
+		FJobInfo jobInfo,
 		UTexture2D* inputTexture,
 		float inputZoomLevel, 
 		FIntPoint cornerCount, 
@@ -86,6 +89,7 @@ private:
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void BeginDetectPoints(
+		FJobInfo jobInfo,
 		UMediaTexture* inputMediaTexture,
 		float inputZoomLevel,
 		FIntPoint cornerCount,
@@ -93,6 +97,7 @@ private:
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void BeginDetectPoints(
+		FJobInfo jobInfo,
 		TArray<UTexture2D*> inputTextures,
 		TArray<float> inputZoomLevels, 
 		FIntPoint cornerCount,
@@ -100,6 +105,7 @@ private:
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void BeginDetectPoints(
+		FJobInfo jobInfo,
 		TArray<UMediaTexture*> inputTextures, 
 		TArray<float> inputZoomLevels, 
 		FIntPoint cornerCount, 
@@ -108,12 +114,13 @@ private:
 
 	void DetectPointsRenderThread(
 		FRHICommandListImmediate& RHICmdList, 
+		FJobInfo jobInfo,
 		UTexture* texture, 
 		int width, 
 		int height, 
 		float zoomLevel, 
 		float squareSize, 
-		FIntPoint cornerCount,
+		FIntPoint cornerCount, 
 		TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
@@ -163,16 +170,16 @@ public:
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	void ProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize);
+	FJobInfo ProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	void ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize);
+	FJobInfo ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	void OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);
+	FJobInfo OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	void ProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);
+	FJobInfo ProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void StartBackgroundImageProcessors();

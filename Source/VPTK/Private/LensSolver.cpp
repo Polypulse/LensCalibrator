@@ -66,7 +66,13 @@ bool ULensSolver::ValidateCommonVariables(FIntPoint cornerCount, float inputZoom
 	return true;
 }
 
-void ULensSolver::BeginDetectPoints(UTexture2D* inputTexture, float inputZoomLevel, FIntPoint cornerCount, float inputSquareSize, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+void ULensSolver::BeginDetectPoints(
+	FJobInfo inputJobInfo,
+	UTexture2D* inputTexture, 
+	float inputZoomLevel, 
+	FIntPoint cornerCount, 
+	float inputSquareSize, 
+	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputTexture == nullptr ||
 		inputTexture->GetSizeX() <= 2 ||
@@ -82,6 +88,8 @@ void ULensSolver::BeginDetectPoints(UTexture2D* inputTexture, float inputZoomLev
 		return;
 	}
 
+	FJobInfo jobInfo = inputJobInfo;
+
 	UTexture2D* cachedTextureReference = inputTexture;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 
@@ -94,14 +102,29 @@ void ULensSolver::BeginDetectPoints(UTexture2D* inputTexture, float inputZoomLev
 	ULensSolver * lensSolver = this;
 	ENQUEUE_RENDER_COMMAND(ProcessMediaTexture)
 	(
-		[lensSolver, inputTexture, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
+		[lensSolver, jobInfo, inputTexture, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
 		{
-			lensSolver->DetectPointsRenderThread(RHICmdList, inputTexture, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints);
+			lensSolver->DetectPointsRenderThread(
+				RHICmdList, 
+				jobInfo,
+				inputTexture, 
+				width, 
+				height, 
+				zoomLevel, 
+				squareSize, 
+				cornerCount, 
+				queuedSolvedPoints);
 		}
 	);
 }
 
-void ULensSolver::BeginDetectPoints(UMediaTexture* inputMediaTexture, float inputZoomLevel, FIntPoint cornerCount, float inputSquareSize, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+void ULensSolver::BeginDetectPoints(
+	FJobInfo inputJobInfo,
+	UMediaTexture* inputMediaTexture, 
+	float inputZoomLevel, 
+	FIntPoint cornerCount, 
+	float inputSquareSize, 
+	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputMediaTexture == nullptr ||
 		inputMediaTexture->GetWidth() <= 2 ||
@@ -117,6 +140,8 @@ void ULensSolver::BeginDetectPoints(UMediaTexture* inputMediaTexture, float inpu
 		return;
 	}
 
+	FJobInfo jobInfo = inputJobInfo;
+
 	UMediaTexture* cachedMediaTextureReference = inputMediaTexture;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 
@@ -129,10 +154,11 @@ void ULensSolver::BeginDetectPoints(UMediaTexture* inputMediaTexture, float inpu
 	ULensSolver * lensSolver = this;
 	ENQUEUE_RENDER_COMMAND(ProcessMediaTexture)
 	(
-		[lensSolver, cachedMediaTextureReference, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
+		[lensSolver, jobInfo, cachedMediaTextureReference, width, height, zoomLevel, squareSize, cornerCount, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
 		{
 			lensSolver->DetectPointsRenderThread(
 				RHICmdList, 
+				jobInfo,
 				cachedMediaTextureReference, 
 				width,
 				height,
@@ -144,7 +170,13 @@ void ULensSolver::BeginDetectPoints(UMediaTexture* inputMediaTexture, float inpu
 	);
 }
 
-void ULensSolver::BeginDetectPoints(TArray<UTexture2D*> inputTextures, TArray<float> inputZoomLevels, FIntPoint cornerCount, float inputSquaresize, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+void ULensSolver::BeginDetectPoints(
+	FJobInfo jobInfo,
+	TArray<UTexture2D*> inputTextures,
+	TArray<float> inputZoomLevels,
+	FIntPoint cornerCount,
+	float inputSquaresize,
+	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputTextures.Num() == 0 || inputZoomLevels.Num() == 0)
 		return;
@@ -157,10 +189,16 @@ void ULensSolver::BeginDetectPoints(TArray<UTexture2D*> inputTextures, TArray<fl
 
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 	for (int i = 0; i < inputTextures.Num(); i++)
-		BeginDetectPoints(inputTextures[i], inputZoomLevels[i], cornerCount, inputSquaresize, inputQueuedSolvedPoints);
+		BeginDetectPoints(jobInfo, inputTextures[i], inputZoomLevels[i], cornerCount, inputSquaresize, inputQueuedSolvedPoints);
 }
 
-void ULensSolver::BeginDetectPoints(TArray<UMediaTexture*> inputTextures, TArray<float> inputZoomLevels, FIntPoint cornerCount, float inputSquaresize, TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+void ULensSolver::BeginDetectPoints(
+	FJobInfo jobInfo,
+	TArray<UMediaTexture*> inputTextures, 
+	TArray<float> inputZoomLevels, 
+	FIntPoint cornerCount, 
+	float inputSquaresize, 
+	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputTextures.Num() == 0 || inputZoomLevels.Num() == 0)
 		return;
@@ -173,10 +211,19 @@ void ULensSolver::BeginDetectPoints(TArray<UMediaTexture*> inputTextures, TArray
 
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 	for (int i = 0; i < inputTextures.Num(); i++)
-		BeginDetectPoints(inputTextures[i], inputZoomLevels[i], cornerCount, inputSquaresize, inputQueuedSolvedPoints);
+		BeginDetectPoints(jobInfo, inputTextures[i], inputZoomLevels[i], cornerCount, inputSquaresize, inputQueuedSolvedPoints);
 }
 
-void ULensSolver::DetectPointsRenderThread(FRHICommandListImmediate& RHICmdList, UTexture* texture, int width, int height, float zoomLevel, float squareSize, FIntPoint cornerCount, TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints)
+void ULensSolver::DetectPointsRenderThread(
+	FRHICommandListImmediate& RHICmdList, 
+	FJobInfo jobInfo,
+	UTexture* texture, 
+	int width, 
+	int height, 
+	float zoomLevel, 
+	float squareSize, 
+	FIntPoint cornerCount, 
+	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints)
 {
 	if (!allocated)
 	{
@@ -354,32 +401,64 @@ bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* 
 		!url.IsEmpty();
 }
 
-void ULensSolver::ProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::ProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
-	BeginDetectPoints(inputMediaTexture, normalizedZoomValue, cornerCount, squareSize, queuedSolvedPointsPtr);
+
+	FJobInfo jobInfo;
+	jobInfo.jobID = FGuid::NewGuid().ToString();
+	jobInfo.jobSize = 1;
+	jobInfo.jobType = UJobType::OneTime;
+
+	BeginDetectPoints(jobInfo, inputMediaTexture, normalizedZoomValue, cornerCount, squareSize, queuedSolvedPointsPtr);
+
+	return jobInfo;
 }
 
-void ULensSolver::ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::ProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
-	BeginDetectPoints(inputTexture, normalizedZoomValue, cornerCount, squareSize, queuedSolvedPointsPtr);
+
+	FJobInfo jobInfo;
+	jobInfo.jobID = FGuid::NewGuid().ToString();
+	jobInfo.jobSize = 1;
+	jobInfo.jobType = UJobType::OneTime;
+
+	BeginDetectPoints(jobInfo, inputTexture, normalizedZoomValue, cornerCount, squareSize, queuedSolvedPointsPtr);
+
+	return jobInfo;
 }
 
-void ULensSolver::OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
-	BeginDetectPoints(inputTextures, normalizedZoomValues, cornerCount, squareSize, queuedSolvedPointsPtr);
+
+	FJobInfo jobInfo;
+	jobInfo.jobID = FGuid::NewGuid().ToString();
+	jobInfo.jobSize = inputTextures.Num();
+	jobInfo.jobType = UJobType::OneTime;
+
+	BeginDetectPoints(jobInfo, inputTextures, normalizedZoomValues, cornerCount, squareSize, queuedSolvedPointsPtr);
+
+	return jobInfo;
 }
 
-void ULensSolver::ProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::ProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
-	BeginDetectPoints(inputTextures, normalizedZoomValues, cornerCount, squareSize, queuedSolvedPointsPtr);
+
+	FJobInfo jobInfo;
+	jobInfo.jobID = FGuid::NewGuid().ToString();
+	jobInfo.jobSize = inputTextures.Num();
+	jobInfo.jobType = UJobType::OneTime;
+
+	BeginDetectPoints(jobInfo, inputTextures, normalizedZoomValues, cornerCount, squareSize, queuedSolvedPointsPtr);
+
+	return jobInfo;
 }
 
 void ULensSolver::StartBackgroundImageProcessors()
