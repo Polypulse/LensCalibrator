@@ -128,7 +128,26 @@ FTransform FLensSolverWorker::GenerateTransformFromRAndTVecs(std::vector<cv::Mat
 
 void FLensSolverWorker::DoWork()
 {
+	int 
+		flags  = cv::CALIB_USE_INTRINSIC_GUESS;
+		flags |= cv::CALIB_FIX_ASPECT_RATIO;
+		flags |= cv::CALIB_FIX_PRINCIPAL_POINT;
+		flags |= cv::CALIB_ZERO_TANGENT_DIST;
+		// flags |= cv::CALIB_FIX_K1;
+		// flags |= cv::CALIB_FIX_K2;
+		// flags |= cv::CALIB_FIX_K3;
+		flags |= cv::CALIB_FIX_K4;
+		flags |= cv::CALIB_FIX_K5;
+
+	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
+
 	static cv::Mat image;
+
+	cv::Point2d principalPoint(0, 0);
+	double fovX = 0, fovY = 0, focalLength = 0, aspectRatio = 0;
+	FTransform cameraTransform = FTransform::Identity;
+	FMatrix perspectiveMatrix = FMatrix::Identity;
+
 
 	while (!exited)
 	{
@@ -148,34 +167,17 @@ void FLensSolverWorker::DoWork()
 		// FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture->GetSizeY(), Bitmap.GetData());
 		// UE_LOG(LogTemp, Log, TEXT("Wrote test bitmap with: %d pixels to file."), Bitmap.Num());
 
-		int 
-			flags  = cv::CALIB_USE_INTRINSIC_GUESS;
-			flags |= cv::CALIB_FIX_ASPECT_RATIO;
-			flags |= cv::CALIB_FIX_PRINCIPAL_POINT;
-			flags |= cv::CALIB_ZERO_TANGENT_DIST;
-			// flags |= cv::CALIB_FIX_K1;
-			// flags |= cv::CALIB_FIX_K2;
-			// flags |= cv::CALIB_FIX_K3;
-			flags |= cv::CALIB_FIX_K4;
-			flags |= cv::CALIB_FIX_K5;
-
-		cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 		cv::Size imageSize(workUnit.width, workUnit.height);
 
-		std::vector<cv::Point2f> corners;
+		std::vector<std::vector<cv::Point2f>> corners(1);
+		std::vector<std::vector<cv::Point3f>> objectPoints(1);
+
 		cv::Size patternSize(workUnit.cornerCount.X, workUnit.cornerCount.Y);
 
 		std::vector<cv::Mat> rvecs, tvecs;
-		std::vector<std::vector<cv::Point3f>> objectPoints(1);
 
 		cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<float>::type);
 		cv::Mat distortionCoefficients = cv::Mat::zeros(8, 1, cv::DataType<float>::type);
-
-		cv::Point2d principalPoint;
-		double fovX, fovY, focalLength, aspectRatio;
-
-		FTransform cameraTransform;
-		FMatrix perspectiveMatrix;
 
 		if (image.rows != workUnit.height || image.cols != workUnit.width)
 		{
@@ -197,7 +199,7 @@ void FLensSolverWorker::DoWork()
 
 		try
 		{
-			patternFound = cv::findChessboardCorners(image, patternSize, corners);
+			patternFound = cv::findChessboardCorners(image, patternSize, corners[0]);
 		}
 
 		catch (std::exception e)
@@ -220,11 +222,11 @@ void FLensSolverWorker::DoWork()
 			0.0001
 		);
 
-		cv::cornerSubPix(image, corners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
+		cv::cornerSubPix(image, corners[0], cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
 		// cv::drawChessboardCorners(image, patternSize, corners, patternFound);
 
 		// UE_LOG(LogTemp, Log, TEXT("Chessboard detected."));
-		objectPoints.resize(corners.size(), objectPoints[0]);
+		// objectPoints.resize(corners.size(), objectPoints[0]);
 
 		for (int y = 0; y < workUnit.cornerCount.Y; y++)
 			for (int x = 0; x < workUnit.cornerCount.X; x++)
@@ -263,15 +265,11 @@ void FLensSolverWorker::DoWork()
 		*/
 
 		TArray<FVector2D> pointsCache;
-		if (pointsCache.Num() != corners.size())
-			pointsCache.SetNum(corners.size());
+		if (pointsCache.Num() != corners[0].size())
+			pointsCache.SetNum(corners[0].size());
 
-		// FString msg = FString::Printf(TEXT("Found %d points:"), pointsCache.Num());
 		for (int i = 0; i < pointsCache.Num(); i++)
-		{
-			// msg = FString::Printf(TEXT("%s\n(%f, %f),\n"), *msg, corners[i].x, corners[i].y);
-			pointsCache[i] = FVector2D(corners[i].x, corners[i].y);
-		}
+			pointsCache[i] = FVector2D(corners[0][i].x, corners[0][i].y);
 
 		FSolvedPoints solvedPoints;
 
