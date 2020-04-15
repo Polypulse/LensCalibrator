@@ -25,7 +25,7 @@ FLensSolverWorker::FLensSolverWorker(
 	workerID = inputWorkerID;
 	exited = false;
 
-	calibrationVisualizationOutputPath = FString(FPaths::GameDevelopersDir() + "/CalibrationVisualizations/");
+	calibrationVisualizationOutputPath = FPaths::ConvertRelativePathToFull(FString(FPaths::GameDevelopersDir() + "CalibrationVisualizations/"));
 }
 
 int FLensSolverWorker::GetWorkLoad () 
@@ -298,7 +298,7 @@ void FLensSolverWorker::DoWork()
 		UE_LOG(LogTemp, Log, TEXT("Worker (%d) finished with work unit."), workerID);
 		QueueSolvedPoints(solvedPoints);
 
-		cv::drawChessboardCorners(image, patternSize, corners, patternFound);
+		cv::drawChessboardCorners(image, patternSize, corners[0], patternFound);
 		
 		FString partialOutputPath = calibrationVisualizationOutputPath + FString("image-");
 
@@ -307,8 +307,14 @@ void FLensSolverWorker::DoWork()
 			index++;
 
 		FString outputPath = FString::Printf(TEXT("%s%d.jpg"), *partialOutputPath, index);
+		if (!FPaths::DirectoryExists(calibrationVisualizationOutputPath))
+		{
+			FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*calibrationVisualizationOutputPath);
+			UE_LOG(LogTemp, Log, TEXT("Created visualization directory at path: \"%s\"."), *calibrationVisualizationOutputPath);
+		}
+
 		UE_LOG(LogTemp, Log, TEXT("Writing visualization to file: \"%s\"."), *outputPath);
-		cv::imwrite(cv::String((char*)outputPath.GetCharArray().GetData()), image);
+		cv::imwrite(TCHAR_TO_UTF8(*outputPath), image);
 	}
 
 	exited = true;
