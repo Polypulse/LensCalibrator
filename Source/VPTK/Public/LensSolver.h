@@ -148,16 +148,32 @@ public:
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	FJobInfo OneTimeProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize);
+	FJobInfo OneTimeProcessMediaTexture(
+		UMediaTexture* inputMediaTexture, 
+		float normalizedZoomValue, 
+		FIntPoint cornerCount, 
+		float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	FJobInfo OneTimeProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize);
+	FJobInfo OneTimeProcessTexture2D(
+		UTexture2D* inputTexture, 
+		float normalizedZoomValue, 
+		FIntPoint cornerCount, 
+		float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	FJobInfo OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);
+	FJobInfo OneTimeProcessTexture2DArray(
+		TArray<UTexture2D*> inputTextures, 
+		TArray<float> normalizedZoomValues, 
+		FIntPoint cornerCount, 
+		float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	FJobInfo OneTimeProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize);
+	FJobInfo OneTimeProcessMediaTextureArray(
+		TArray<UMediaTexture*> inputTextures, 
+		TArray<float> normalizedZoomValues, 
+		FIntPoint cornerCount, 
+		float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void StartBackgroundImageProcessors();

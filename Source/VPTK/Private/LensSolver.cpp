@@ -117,6 +117,8 @@ void ULensSolver::BeginDetectPoints(
 	int width = inputTexture->GetSizeX();
 	int height = inputTexture->GetSizeY();
 
+	UE_LOG(LogTemp, Log, TEXT("Enqueuing calibration image render comand at resolution: (%d, %d)."), width, height);
+
 	ULensSolver * lensSolver = this;
 	ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
 	(
@@ -313,7 +315,7 @@ void ULensSolver::DetectPointsRenderThread(
 		return;
 
 	workers.Sort([](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) {
-		return workerA.getWorkLoadDel.Execute() < workerB.getWorkLoadDel.Execute();
+		return workerA.getWorkLoadDel.Execute() > workerB.getWorkLoadDel.Execute();
 	});
 
 	FLensSolverWorkUnit workerUnit;
@@ -464,7 +466,7 @@ void ULensSolver::StartBackgroundImageProcessors()
 {
 	threadLock.Lock();
 	onSolvePointsDel.BindUObject(this, &ULensSolver::OnSolvedPoints);
-	for (int i = 0; i < 12; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		FWorkerInterfaceContainer workerInterfaceContainer;
 

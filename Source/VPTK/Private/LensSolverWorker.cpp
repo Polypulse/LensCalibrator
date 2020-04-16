@@ -180,19 +180,15 @@ void FLensSolverWorker::DoWork()
 			image = cv::Mat(workUnit.height, workUnit.width, cv::DataType<uint8>::type);
 		}
 
-		for (int i = 0; i < workUnit.width * workUnit.height; i++)
-			image.at<uint8>(workUnit.height - i / workUnit.width, i % workUnit.width) = workUnit.pixels[i].R;
-
-
-
-		/*
-		cv::Mat gray(width, height, CV_8U);
-		cv::cvtColor(image, gray, CV_BGR2GRAY);
-		*/
+		UE_LOG(LogTemp, Log, TEXT("%sCopying pixel data of pixel count: %d to OpenCV Mat of size: (%d, %d)."), *workerMessage, workUnit.pixels.Num(), workUnit.width, workUnit.height);
+		int pixelCount = workUnit.width * workUnit.height;
+		for (int i = 0; i < pixelCount; i++)
+			image.at<uint8>(i / workUnit.width, i % workUnit.width) = workUnit.pixels[(pixelCount - 1) - i].R;
+		UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnit.pixels.Num(), workUnit.width, workUnit.height);
 
 		bool patternFound = false;
 
-		patternFound = cv::findChessboardCorners(image, patternSize, corners[0]);
+		patternFound = cv::findChessboardCorners(image, patternSize, corners[0], cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_NORMALIZE_IMAGE | cv::CALIB_CB_ADAPTIVE_THRESH);
 
 		if (!patternFound)
 		{
@@ -307,7 +303,7 @@ void FLensSolverWorker::DoWork()
 
 void FLensSolverWorker::QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel)
 {
-	static TArray<FVector2D> emptyPoints;
+	TArray<FVector2D> emptyPoints;
 
 	FSolvedPoints solvedPoints;
 	solvedPoints.jobInfo = jobInfo;
