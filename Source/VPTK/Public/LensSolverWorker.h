@@ -66,6 +66,7 @@ private:
 	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
 	void QueueSolvedPoints(FSolvedPoints solvedPoints);
 	bool IsClosing ();
+	void WriteMatToFile(cv::Mat image, FString fileName, const FString & workerMessage);
 
 public:
 	FLensSolverWorker(
@@ -88,7 +89,6 @@ public:
 	}
 
 protected:
-
 	
 	void DoWork();
 	int GetWorkLoad ();

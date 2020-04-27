@@ -44,6 +44,7 @@ class FBlitShaderPS : public FGlobalShader
 private:
 	FShaderResourceParameter InputTextureParameter;
 	FShaderResourceParameter InputTextureSamplerParameter;
+	FShaderParameter flipDirectionParameter;
 
 public:
 	FBlitShaderPS() {}
@@ -52,6 +53,7 @@ public:
 	{
 		InputTextureParameter.Bind(Initializer.ParameterMap, TEXT("InTexture"));
 		InputTextureSamplerParameter.Bind(Initializer.ParameterMap, TEXT("InTextureSampler"));
+		flipDirectionParameter.Bind(Initializer.ParameterMap, TEXT("InFlipDirection"));
 	}
 
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
@@ -61,10 +63,13 @@ public:
 
 	void SetParameters(
 		FRHICommandListImmediate& RHICmdList,
-		FTextureRHIRef InputTexture)
+		FTextureRHIRef InputTexture,
+		FVector2D flipDirection)
 	{
 		SetTextureParameter(RHICmdList, GetPixelShader(), InputTextureParameter, InputTexture);
 		RHICmdList.SetShaderSampler(GetPixelShader(), InputTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
+
+		SetShaderValue(RHICmdList, GetPixelShader(), flipDirectionParameter, flipDirection);
 	}
 
 	virtual bool Serialize(FArchive& Ar) override
@@ -72,7 +77,8 @@ public:
 		bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
 		Ar
 			<< InputTextureParameter
-			<< InputTextureSamplerParameter;
+			<< InputTextureSamplerParameter
+			<< flipDirectionParameter;
 
 		return bShaderHasOutdatedParameters;
 	}

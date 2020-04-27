@@ -2,6 +2,7 @@
 
 Texture2D InTexture;
 SamplerState InTextureSampler;
+float2 InFlipDirection;
 
 struct InputVS
 {
@@ -33,6 +34,7 @@ OutputVS MainVS(InputVS IN)
 OutputPS MainPS(OutputVS IN)
 {
 	OutputPS Out;
-	Out.Color = InTexture.Sample(InTextureSampler, IN.UV);
+	float2 flipDir = float2(InFlipDirection.x < 0.0f ? -1.0f : 1.0f, InFlipDirection.y < 0.0f ? -1.0f : 1.0f);
+	Out.Color = InTexture.Sample(InTextureSampler, IN.UV * flipDir);
     	return Out;
 }

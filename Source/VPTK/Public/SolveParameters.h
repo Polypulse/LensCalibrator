@@ -11,5 +11,8 @@ struct FSolveParameters
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	bool exhaustiveSearch;
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	bool writeCalibrationResultToFile;
 };
 

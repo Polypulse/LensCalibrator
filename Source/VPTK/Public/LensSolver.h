@@ -15,6 +15,22 @@
 #include "LensSolver.generated.h"
 
 USTRUCT()
+struct FFirstPassParameters
+{
+	GENERATED_BODY()
+
+	FSolveParameters solveParameters;
+
+	float zoomLevel;
+	FIntPoint cornerCount;
+	float squareSize;
+	FIntPoint currentResolution;
+	bool resize;
+	FIntPoint resizeResolution;
+	FIntPoint flipDirection;
+};
+
+USTRUCT()
 struct FWorkerInterfaceContainer
 {
 	GENERATED_BODY()
@@ -66,57 +82,56 @@ private:
 	void BeginDetectPoints(
 		FJobInfo inputJobInfo,
 		UTexture2D* inputTexture, 
-		float inputZoomLevel, 
-		FIntPoint cornerCount, 
-		float inputSquareSize, 
-		bool resize,
-		FIntPoint resizeResolution,
+		FFirstPassParameters firstPassParameters,
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void BeginDetectPoints(
 		FJobInfo inputJobInfo,
 		UMediaTexture* inputMediaTexture, 
-		float inputZoomLevel, 
-		FIntPoint cornerCount, 
-		float inputSquareSize, 
-		bool resize,
-		FIntPoint resizeResolution,
+		FFirstPassParameters firstPassParameters,
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void BeginDetectPoints(
 		FJobInfo jobInfo,
+		FSolveParameters solveParameters,
 		TArray<UTexture2D*> inputTextures,
 		TArray<float> inputZoomLevels,
 		FIntPoint cornerCount,
 		float inputSquaresize,
 		bool resize,
 		FIntPoint resizeResolution,
+		bool flipX,
+		bool flipY,
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void BeginDetectPoints(
 		FJobInfo jobInfo,
+		FSolveParameters solveParameters,
 		TArray<UMediaTexture*> inputTextures, 
 		TArray<float> inputZoomLevels, 
 		FIntPoint cornerCount, 
 		float inputSquaresize, 
 		bool resize,
 		FIntPoint resizeResolution,
+		bool flipX,
+		bool flipY,
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void DetectPointsRenderThread(
 		FRHICommandListImmediate& RHICmdList, 
 		FJobInfo jobInfo,
 		UTexture* texture, 
-		float zoomLevel, 
-		FIntPoint cornerCount, 
-		float squareSize, 
-		FIntPoint currentResolution,
-		bool resize,
-		FIntPoint resizeResolution,
+		FFirstPassParameters firstPassParameters,
 		TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
-	void VisualizeCalibration(FRHICommandListImmediate& RHICmdList, FSceneViewport* sceneViewport, UTexture2D * visualizationTexture, FSolvedPoints solvedPoints);
+	void VisualizeCalibration(
+		FRHICommandListImmediate& RHICmdList, 
+		FSceneViewport* sceneViewport, 
+		UTexture2D * visualizationTexture, 
+		FSolvedPoints solvedPoints,
+		bool flipX,
+		bool flipY);
 
 	void FireWorkers();
 
@@ -165,7 +180,9 @@ public:
 		FIntPoint cornerCount,
 		float squareSize,
 		bool resize,
-		FIntPoint resizeResolution);
+		FIntPoint resizeResolution,
+		bool flipX,
+		bool flipY);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessTexture2D(
@@ -175,7 +192,9 @@ public:
 		FIntPoint cornerCount, 
 		float squareSize,
 		bool resize,
-		FIntPoint resizeResolution);
+		FIntPoint resizeResolution,
+		bool flipX,
+		bool flipY);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessTexture2DArray(
@@ -185,7 +204,9 @@ public:
 		FIntPoint cornerCount, 
 		float squareSize,
 		bool resize,
-		FIntPoint resizeResolution);
+		FIntPoint resizeResolution,
+		bool flipX,
+		bool flipY);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessMediaTextureArray(
@@ -195,7 +216,9 @@ public:
 		FIntPoint cornerCount, 
 		float squareSize,
 		bool resize,
-		FIntPoint resizeResolution);
+		FIntPoint resizeResolution,
+		bool flipX,
+		bool flipY);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void StartBackgroundImageProcessors(int workerCount);

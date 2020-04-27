@@ -186,6 +186,8 @@ void FLensSolverWorker::DoWork()
 			image.at<uint8>(i / workUnit.width, i % workUnit.width) = workUnit.pixels[(pixelCount - 1) - i].R;
 		UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnit.pixels.Num(), workUnit.width, workUnit.height);
 
+		WriteMatToFile(image, "test", workerMessage);
+
 		bool patternFound = false;
 
 		int flags = cv::CALIB_CB_NORMALIZE_IMAGE;
@@ -286,22 +288,9 @@ void FLensSolverWorker::DoWork()
 		QueueSolvedPoints(solvedPoints);
 
 		cv::drawChessboardCorners(image, patternSize, corners[0], patternFound);
-		
-		FString partialOutputPath = calibrationVisualizationOutputPath + FString("image-");
 
-		int index = 0;
-		while (FPaths::FileExists(FString::Printf(TEXT("%s%d.jpg"), *partialOutputPath, index)))
-			index++;
-
-		FString outputPath = FString::Printf(TEXT("%s%d.jpg"), *partialOutputPath, index);
-		if (!FPaths::DirectoryExists(calibrationVisualizationOutputPath))
-		{
-			FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*calibrationVisualizationOutputPath);
-			UE_LOG(LogTemp, Log, TEXT("%sCreated visualization directory at path: \"%s\"."), *workerMessage, *calibrationVisualizationOutputPath);
-		}
-
-		UE_LOG(LogTemp, Log, TEXT("%sWriting visualization to file: \"%s\"."), *workerMessage, *outputPath);
-		cv::imwrite(TCHAR_TO_UTF8(*outputPath), image);
+		if (workUnit.solveParameters.writeCalibrationResultToFile)
+			WriteMatToFile(image, "result-", workerMessage);
 	}
 
 	exited = true;
@@ -335,4 +324,23 @@ bool FLensSolverWorker::IsClosing()
 {
 	exited = true;
 	return true;
+}
+
+void FLensSolverWorker::WriteMatToFile(cv::Mat image, FString fileName, const FString & workerMessage)
+{
+	FString partialOutputPath = calibrationVisualizationOutputPath + fileName;
+
+	int index = 0;
+	while (FPaths::FileExists(FString::Printf(TEXT("%s%d.jpg"), *partialOutputPath, index)))
+		index++;
+
+	FString outputPath = FString::Printf(TEXT("%s%d.jpg"), *partialOutputPath, index);
+	if (!FPaths::DirectoryExists(calibrationVisualizationOutputPath))
+	{
+		FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*calibrationVisualizationOutputPath);
+		UE_LOG(LogTemp, Log, TEXT("%sCreated visualization directory at path: \"%s\"."), *workerMessage, *calibrationVisualizationOutputPath);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("%sWriting visualization to file: \"%s\"."), *workerMessage, *outputPath);
+	cv::imwrite(TCHAR_TO_UTF8(*outputPath), image);
 }
