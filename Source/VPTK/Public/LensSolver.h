@@ -64,27 +64,33 @@ private:
 	);
 
 	void BeginDetectPoints(
-		FJobInfo jobInfo,
-		UTexture2D* inputTexture,
+		FJobInfo inputJobInfo,
+		UTexture2D* inputTexture, 
 		float inputZoomLevel, 
 		FIntPoint cornerCount, 
-		float inputSquareSize,
+		float inputSquareSize, 
+		bool resize,
+		FIntPoint resizeResolution,
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void BeginDetectPoints(
-		FJobInfo jobInfo,
-		UMediaTexture* inputMediaTexture,
-		float inputZoomLevel,
-		FIntPoint cornerCount,
-		float inputSquaresize,
+		FJobInfo inputJobInfo,
+		UMediaTexture* inputMediaTexture, 
+		float inputZoomLevel, 
+		FIntPoint cornerCount, 
+		float inputSquareSize, 
+		bool resize,
+		FIntPoint resizeResolution,
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void BeginDetectPoints(
 		FJobInfo jobInfo,
 		TArray<UTexture2D*> inputTextures,
-		TArray<float> inputZoomLevels, 
+		TArray<float> inputZoomLevels,
 		FIntPoint cornerCount,
-		float inputSquareSize,
+		float inputSquaresize,
+		bool resize,
+		FIntPoint resizeResolution,
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void BeginDetectPoints(
@@ -92,18 +98,21 @@ private:
 		TArray<UMediaTexture*> inputTextures, 
 		TArray<float> inputZoomLevels, 
 		FIntPoint cornerCount, 
-		float inputSquareSize, 
+		float inputSquaresize, 
+		bool resize,
+		FIntPoint resizeResolution,
 		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
 
 	void DetectPointsRenderThread(
 		FRHICommandListImmediate& RHICmdList, 
 		FJobInfo jobInfo,
 		UTexture* texture, 
-		int width, 
-		int height, 
 		float zoomLevel, 
-		float squareSize, 
 		FIntPoint cornerCount, 
+		float squareSize, 
+		FIntPoint currentResolution,
+		bool resize,
+		FIntPoint resizeResolution,
 		TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
@@ -148,13 +157,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
 
-	UFUNCTION(BlueprintCallable, Category="VPTK")
+	UFUNCTION(BlueprintCallable, Category = "VPTK")
 	FJobInfo OneTimeProcessMediaTexture(
 		FSolveParameters inputSolveParameters,
-		UMediaTexture* inputMediaTexture, 
-		float normalizedZoomValue, 
-		FIntPoint cornerCount, 
-		float squareSize);
+		UMediaTexture* inputMediaTexture,
+		float normalizedZoomValue,
+		FIntPoint cornerCount,
+		float squareSize,
+		bool resize,
+		FIntPoint resizeResolution);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessTexture2D(
@@ -162,7 +173,9 @@ public:
 		UTexture2D* inputTexture, 
 		float normalizedZoomValue, 
 		FIntPoint cornerCount, 
-		float squareSize);
+		float squareSize,
+		bool resize,
+		FIntPoint resizeResolution);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessTexture2DArray(
@@ -170,7 +183,9 @@ public:
 		TArray<UTexture2D*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
 		FIntPoint cornerCount, 
-		float squareSize);
+		float squareSize,
+		bool resize,
+		FIntPoint resizeResolution);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessMediaTextureArray(
@@ -178,7 +193,9 @@ public:
 		TArray<UMediaTexture*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
 		FIntPoint cornerCount, 
-		float squareSize);
+		float squareSize,
+		bool resize,
+		FIntPoint resizeResolution);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void StartBackgroundImageProcessors(int workerCount);
