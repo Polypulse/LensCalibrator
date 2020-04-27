@@ -15,6 +15,7 @@
 #pragma pop_macro("check")
 
 #include "JobInfo.h"
+#include "SolveParameters.h"
 #include "LensSolverWorker.generated.h"
 
 
@@ -24,6 +25,7 @@ struct FLensSolverWorkUnit
 	GENERATED_BODY()
 
 	FJobInfo jobInfo;
+	FSolveParameters solveParameters;
 
 	int width;
 	int height;

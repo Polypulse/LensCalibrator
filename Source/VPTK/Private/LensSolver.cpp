@@ -422,7 +422,12 @@ bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* 
 		!url.IsEmpty();
 }
 
-FJobInfo ULensSolver::OneTimeProcessMediaTexture(UMediaTexture* inputMediaTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::OneTimeProcessMediaTexture(
+		FSolveParameters inputSolveParameters,
+		UMediaTexture* inputMediaTexture, 
+		float normalizedZoomValue, 
+		FIntPoint cornerCount, 
+		float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
@@ -432,7 +437,12 @@ FJobInfo ULensSolver::OneTimeProcessMediaTexture(UMediaTexture* inputMediaTextur
 	return jobInfo;
 }
 
-FJobInfo ULensSolver::OneTimeProcessTexture2D(UTexture2D* inputTexture, float normalizedZoomValue, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::OneTimeProcessTexture2D(
+		FSolveParameters inputSolveParameters,
+		UTexture2D* inputTexture, 
+		float normalizedZoomValue, 
+		FIntPoint cornerCount, 
+		float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
@@ -442,7 +452,12 @@ FJobInfo ULensSolver::OneTimeProcessTexture2D(UTexture2D* inputTexture, float no
 	return jobInfo;
 }
 
-FJobInfo ULensSolver::OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::OneTimeProcessTexture2DArray(
+		FSolveParameters inputSolveParameters,
+		TArray<UTexture2D*> inputTextures, 
+		TArray<float> normalizedZoomValues, 
+		FIntPoint cornerCount, 
+		float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
@@ -452,7 +467,12 @@ FJobInfo ULensSolver::OneTimeProcessTexture2DArray(TArray<UTexture2D*> inputText
 	return jobInfo;
 }
 
-FJobInfo ULensSolver::OneTimeProcessMediaTextureArray(TArray<UMediaTexture*> inputTextures, TArray<float> normalizedZoomValues, FIntPoint cornerCount, float squareSize)
+FJobInfo ULensSolver::OneTimeProcessMediaTextureArray(
+		FSolveParameters inputSolveParameters,
+		TArray<UMediaTexture*> inputTextures, 
+		TArray<float> normalizedZoomValues, 
+		FIntPoint cornerCount, 
+		float squareSize)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
@@ -462,11 +482,17 @@ FJobInfo ULensSolver::OneTimeProcessMediaTextureArray(TArray<UMediaTexture*> inp
 	return jobInfo;
 }
 
-void ULensSolver::StartBackgroundImageProcessors()
+void ULensSolver::StartBackgroundImageProcessors(int workerCount)
 {
+	if (workerCount <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Start Background Image Processors was called with 0 requested workers."));
+		return;
+	}
+
 	threadLock.Lock();
 	onSolvePointsDel.BindUObject(this, &ULensSolver::OnSolvedPoints);
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < workerCount; i++)
 	{
 		FWorkerInterfaceContainer workerInterfaceContainer;
 

@@ -188,7 +188,13 @@ void FLensSolverWorker::DoWork()
 
 		bool patternFound = false;
 
-		patternFound = cv::findChessboardCorners(image, patternSize, corners[0], cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_NORMALIZE_IMAGE | cv::CALIB_CB_ADAPTIVE_THRESH);
+		int flags = cv::CALIB_CB_NORMALIZE_IMAGE;
+		flags |= cv::CALIB_CB_ADAPTIVE_THRESH;
+
+		if (workUnit.solveParameters.exhaustiveSearch)
+			flags |= cv::CALIB_CB_EXHAUSTIVE;
+
+		patternFound = cv::findChessboardCorners(image, patternSize, corners[0], flags);
 
 		if (!patternFound)
 		{

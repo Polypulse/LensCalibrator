@@ -11,6 +11,7 @@
 #include "SolvedPoints.h"
 #include "LensSolverWorker.h"
 #include "Job.h"
+#include "SolveParameters.h"
 #include "LensSolver.generated.h"
 
 USTRUCT()
@@ -149,6 +150,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessMediaTexture(
+		FSolveParameters inputSolveParameters,
 		UMediaTexture* inputMediaTexture, 
 		float normalizedZoomValue, 
 		FIntPoint cornerCount, 
@@ -156,6 +158,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessTexture2D(
+		FSolveParameters inputSolveParameters,
 		UTexture2D* inputTexture, 
 		float normalizedZoomValue, 
 		FIntPoint cornerCount, 
@@ -163,6 +166,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessTexture2DArray(
+		FSolveParameters inputSolveParameters,
 		TArray<UTexture2D*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
 		FIntPoint cornerCount, 
@@ -170,13 +174,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	FJobInfo OneTimeProcessMediaTextureArray(
+		FSolveParameters inputSolveParameters,
 		TArray<UMediaTexture*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
 		FIntPoint cornerCount, 
 		float squareSize);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	void StartBackgroundImageProcessors();
+	void StartBackgroundImageProcessors(int workerCount);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void StopBackgroundImageprocessors();
