@@ -334,14 +334,14 @@ bool FLensSolverWorker::IsClosing()
 	return true;
 }
 
-FString FLensSolverWorker::GenerateIndexedFilePath(const FString& folder, const FString& fileName)
+FString FLensSolverWorker::GenerateIndexedFilePath(const FString& folder, const FString& fileName, const FString & extension)
 {
 	FString partialOutputPath = folder + fileName;
 
 	int index = 0;
-	while (FPaths::FileExists(FString::Printf(TEXT("%s-%d.jpg"), *partialOutputPath, index)))
+	while (FPaths::FileExists(FString::Printf(TEXT("%s-%d.%s"), *partialOutputPath, index, *extension)))
 		index++;
-	return FString::Printf(TEXT("%s-%d.jpg"), *partialOutputPath, index);
+	return FString::Printf(TEXT("%s-%d.%s"), *partialOutputPath, index, *extension);
 }
 
 bool FLensSolverWorker::ValidateFolder(FString& folder, const FString & workerMessage)
@@ -353,13 +353,13 @@ bool FLensSolverWorker::ValidateFolder(FString& folder, const FString & workerMe
 	{
 		if (!FPaths::ValidatePath(folder))
 		{
-			UE_LOG(LogTemp, Error, TEXT("The path: \"%s\" is not a valid."), *folder);
+			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is not a valid."), *workerMessage, *folder);
 			return false;
 		}
 
 		if (FPaths::FileExists(folder))
 		{
-			UE_LOG(LogTemp, Error, TEXT("The path: \"%s\" is to a file, not a directory."), *folder);
+			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is to a file, not a directory."), *workerMessage, *folder);
 			return false;
 		}
 	}
@@ -378,9 +378,15 @@ void FLensSolverWorker::WriteMatToFile(cv::Mat image, FString folder, FString fi
 	if (!ValidateFolder(folder, workerMessage))
 		return;
 
-	FString outputPath = GenerateIndexedFilePath(folder, fileName);
-	cv::imwrite(TCHAR_TO_UTF8(*outputPath), image);
-	UE_LOG(LogTemp, Log, TEXT("%Debug texture written to file at path: \"%s\"."), *workerMessage, *outputPath);
+	FString outputPath = GenerateIndexedFilePath(folder, fileName, "jpg");
+	
+	if (!cv::imwrite(TCHAR_TO_UTF8(*outputPath), image))
+	{
+		UE_LOG(LogTemp, Error, TEXT("%sUnable to write debug texture result to path: \"%s\", check your permissions."), *workerMessage, *outputPath);
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("%sDebug texture written to file at path: \"%s\"."), *workerMessage, *outputPath);
 }
 
 void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePoints, FString folder, FString fileName, const FString workerMessage)
@@ -388,7 +394,7 @@ void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePo
 	if (!ValidateFolder(folder, workerMessage))
 		return;
 
-	FString outputPath = GenerateIndexedFilePath(folder, fileName);
+	FString outputPath = GenerateIndexedFilePath(folder, fileName, "json");
 
 	TSharedPtr<FJsonObject> obj = MakeShareable(new FJsonObject);
 	TSharedPtr<FJsonObject> result = MakeShareable(new FJsonObject);
@@ -424,9 +430,9 @@ void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePo
 
 	if (!FFileHelper::SaveStringToFile(outputJson, *outputPath))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Unable to write JSON: \"%s\" to path: \"%s\"."), *outputJson, *outputPath);
+		UE_LOG(LogTemp, Error, TEXT("%sUnable to write calibration result to path: \"%s\", check your permissions."), *workerMessage, *outputPath);
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("%Calibration result written to file at path: \"%s\"."), *workerMessage, *outputPath);
+	UE_LOG(LogTemp, Log, TEXT("%sCalibration result written to file at path: \"%s\"."), *workerMessage, *outputPath);
 }

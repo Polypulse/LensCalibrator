@@ -67,7 +67,7 @@ private:
 	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
 	void QueueSolvedPoints(FSolvedPoints solvedPoints);
 	bool IsClosing ();
-	FString GenerateIndexedFilePath(const FString& folder, const FString& fileName);
+	FString GenerateIndexedFilePath(const FString& folder, const FString& fileName, const FString & extension);
 	bool ValidateFolder(FString& folder, const FString & workerMessage);
 	void WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage);
 	void WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePoints, FString folder, FString fileName, const FString workerMessage);
