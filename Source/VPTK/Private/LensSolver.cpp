@@ -61,102 +61,89 @@ int ULensSolver::GetWorkerCount()
 ;
 }
 
-bool ULensSolver::ValidateCommonVariables(FIntPoint cornerCount, float inputZoomLevel, float inputSquareSize)
-{
-	if (cornerCount.X <= 0 || cornerCount.Y <= 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("X or Y corner count is less than or equal to 0: (%d, %d)."), cornerCount.X, cornerCount.Y);
-		return false;
-	}
-
-	if (inputZoomLevel < 0 || inputZoomLevel > 1)
-	{
-		UE_LOG(LogTemp, Error, TEXT("The input zoom level: %f is not normalized between 0 and 1."), inputZoomLevel);
-		return false;
-	}
-
-	if (inputSquareSize <= 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("The input square size: %f is less than or equal to zero"), inputSquareSize);
-		return false;
-	}
-
-	return true;
-}
-
 void ULensSolver::BeginDetectPoints(
-	FJobInfo inputJobInfo,
-	UTexture2D* inputTexture, 
-	float inputZoomLevel,
-	FOneTimeProcessParameters firstPassParameters,
-	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+	const FJobInfo inputJobInfo,
+	const UTexture2D* inputTexture,
+	const float inputZoomLevel,
+	FOneTimeProcessParameters oneTimeProcessParameters)
 {
-	if (inputTexture == nullptr ||
-		inputTexture->GetSizeX() <= 2 ||
-		inputTexture->GetSizeY() <= 2)
+	if (!ValidateTexture(inputJobInfo, inputTexture))
+	{
+		ReturnErrorSolvedPoints(inputJobInfo);
 		return;
+	}
 
-	if (!ValidateCommonVariables(firstPassParameters.cornerCount, inputZoomLevel, firstPassParameters.squareSize))
+	if (!ValidateOneTimeProcessParameters(oneTimeProcessParameters))
+	{
+		ReturnErrorSolvedPoints(inputJobInfo);
 		return;
+	}
 
 	if (GetWorkerCount() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot process any textures, you need to execute StartBackgroundTextureProcessors in order to process textures."));
+		ReturnErrorSolvedPoints(inputJobInfo);
 		return;
 	}
 
+	oneTimeProcessParameters.currentResolution = FIntPoint(inputTexture->GetSizeX(), inputTexture->GetSizeY());
+
 	FJobInfo jobInfo = inputJobInfo;
 
-	UTexture2D* cachedTextureReference = inputTexture;
+	const UTexture2D* cachedTextureReference = inputTexture;
 	float zoomLevel = inputZoomLevel;
-	FOneTimeProcessParameters tempFirstPassParameters = firstPassParameters;
-	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
+	FOneTimeProcessParameters tempFirstPassParameters = oneTimeProcessParameters;
 
-	UE_LOG(LogTemp, Log, TEXT("Enqueuing calibration image render comand at resolution: (%d, %d)."), firstPassParameters.currentResolution.X, firstPassParameters.currentResolution.Y);
+	UE_LOG(LogTemp, Log, TEXT("Enqueuing calibration image render comand at resolution: (%d, %d)."), oneTimeProcessParameters.currentResolution.X, oneTimeProcessParameters.currentResolution.Y);
 
 	ULensSolver * lensSolver = this;
 	ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
 	(
-		[lensSolver, jobInfo, inputTexture, zoomLevel, tempFirstPassParameters, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
+		[lensSolver, jobInfo, inputTexture, zoomLevel, tempFirstPassParameters](FRHICommandListImmediate& RHICmdList)
 		{
 			lensSolver->DetectPointsRenderThread(
-				RHICmdList, 
+				RHICmdList,
 				jobInfo,
-				inputTexture, 
+				inputTexture,
 				zoomLevel,
-				tempFirstPassParameters,
-				queuedSolvedPoints);
+				tempFirstPassParameters);
+				
 		}
 	);
 }
 
 void ULensSolver::BeginDetectPoints(
-	FJobInfo inputJobInfo,
-	UMediaTexture* inputMediaTexture, 
-	float inputZoomLevel,
-	FOneTimeProcessParameters firstPassParameters,
-	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+	const FJobInfo inputJobInfo,
+	const UMediaTexture* inputMediaTexture,
+	const float inputZoomLevel,
+	FOneTimeProcessParameters oneTimeProcessParameters)
 {
-	if (inputMediaTexture == nullptr ||
-		inputMediaTexture->GetWidth() <= 2 ||
-		inputMediaTexture->GetWidth() <= 2)
+	if (!ValidateMediaTexture(inputJobInfo, inputMediaTexture))
+	{
+		ReturnErrorSolvedPoints(inputJobInfo);
 		return;
+	}
 
-	if (!ValidateCommonVariables(firstPassParameters.cornerCount, inputZoomLevel, firstPassParameters.squareSize))
+	if (!ValidateOneTimeProcessParameters(oneTimeProcessParameters))
+	{
+		ReturnErrorSolvedPoints(inputJobInfo);
 		return;
+	}
 
 	if (GetWorkerCount() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot process any textures, you need to execute StartBackgroundTextureProcessors in order to process textures."));
+		ReturnErrorSolvedPoints(inputJobInfo);
 		return;
 	}
 
+	oneTimeProcessParameters.currentResolution = FIntPoint(inputMediaTexture->GetWidth(), inputMediaTexture->GetHeight());
+
 	FJobInfo jobInfo = inputJobInfo;
 
-	UMediaTexture* cachedMediaTextureReference = inputMediaTexture;
+	const UMediaTexture* cachedMediaTextureReference = inputMediaTexture;
 	float zoomLevel = inputZoomLevel;
-	FOneTimeProcessParameters tempFirstPassParameters = firstPassParameters;
-	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
+	FOneTimeProcessParameters tempFirstPassParameters = oneTimeProcessParameters;
 
 	ULensSolver * lensSolver = this;
 	ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
@@ -165,76 +152,72 @@ void ULensSolver::BeginDetectPoints(
 		jobInfo, 
 		cachedMediaTextureReference, 
 		zoomLevel,
-		tempFirstPassParameters,
-		queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
+		tempFirstPassParameters] (FRHICommandListImmediate& RHICmdList)
 		{
 			lensSolver->DetectPointsRenderThread(
-				RHICmdList, 
+				RHICmdList,
 				jobInfo,
-				cachedMediaTextureReference, 
+				cachedMediaTextureReference,
 				zoomLevel,
-				tempFirstPassParameters,
-				queuedSolvedPoints);
+				tempFirstPassParameters);
 		}
 	);
 }
 
 void ULensSolver::BeginDetectPoints(
-		FJobInfo jobInfo,
-		TArray<UTexture2D*> inputTextures,
-		TArray<float> inputZoomLevels,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+	const FJobInfo jobInfo,
+	TArray<UTexture2D*> inputTextures,
+	TArray<float> inputZoomLevels,
+	FOneTimeProcessParameters oneTimeProcessParameters)
 {
 	if (inputTextures.Num() == 0 || inputZoomLevels.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No textures to process."))
+		ReturnErrorSolvedPoints(jobInfo);
 		return;
+	}
 
 	if (inputTextures.Num() != inputZoomLevels.Num())
 	{
 		UE_LOG(LogTemp, Error, TEXT("The texture and zoom level count does not match!"));
+		ReturnErrorSolvedPoints(jobInfo);
 		return;
 	}
 
-	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 	for (int i = 0; i < inputTextures.Num(); i++)
-	{
-		oneTimeProcessParameters.currentResolution = FIntPoint(inputTextures[i]->GetSizeX(), inputTextures[i]->GetSizeY());
-		BeginDetectPoints(jobInfo, inputTextures[i], inputZoomLevels[i], oneTimeProcessParameters, inputQueuedSolvedPoints);
-	}
+		BeginDetectPoints(jobInfo, inputTextures[i], inputZoomLevels[i], oneTimeProcessParameters);
 }
 
 void ULensSolver::BeginDetectPoints(
-	FJobInfo jobInfo,
+	const FJobInfo jobInfo,
 	TArray<UMediaTexture*> inputTextures, 
 	TArray<float> inputZoomLevels, 
-	FOneTimeProcessParameters oneTimeProcessParameters,
-	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+	FOneTimeProcessParameters oneTimeProcessParameters)
 {
 	if (inputTextures.Num() == 0 || inputZoomLevels.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No textures to process."))
+		ReturnErrorSolvedPoints(jobInfo);
 		return;
+	}
 
 	if (inputTextures.Num() != inputZoomLevels.Num())
 	{
 		UE_LOG(LogTemp, Error, TEXT("The texture and zoom level count does not match!"));
+		ReturnErrorSolvedPoints(jobInfo);
 		return;
 	}
 
-	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
-
 	for (int i = 0; i < inputTextures.Num(); i++)
-	{
-		oneTimeProcessParameters.currentResolution = FIntPoint(inputTextures[i]->GetWidth(), inputTextures[i]->GetHeight());
-		BeginDetectPoints(jobInfo, inputTextures[i], inputZoomLevels[i], oneTimeProcessParameters, inputQueuedSolvedPoints);
-	}
+		BeginDetectPoints(jobInfo, inputTextures[i], inputZoomLevels[i], oneTimeProcessParameters);
 }
 
 void ULensSolver::DetectPointsRenderThread(
-		FRHICommandListImmediate& RHICmdList, 
-		FJobInfo jobInfo,
-		UTexture* texture, 
-		float normalizedZoomLevel,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints)
+	FRHICommandListImmediate& RHICmdList, 
+	const FJobInfo jobInfo,
+	const UTexture* texture, 
+	const float normalizedZoomLevel,
+	FOneTimeProcessParameters oneTimeProcessParameters)
 
 {
 	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.resizeResolution.X : oneTimeProcessParameters.currentResolution.X;
@@ -419,6 +402,87 @@ void ULensSolver::VisualizeCalibration(
 	// visualizationTexture->ConditionalBeginDestroy();
 }
 
+bool ULensSolver::ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture)
+{
+	if (inputTexture == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot process null texture."));
+		ReturnErrorSolvedPoints(jobInfo);
+		return false;
+	}
+
+	if (inputTexture->GetSizeX() <= 3 ||
+		inputTexture->GetSizeY() <= 3)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot process texture, it's to small."));
+		ReturnErrorSolvedPoints(jobInfo);
+		return false;
+	}
+
+	return true;
+}
+
+bool ULensSolver::ValidateMediaTexture(const FJobInfo& jobInfo, const UMediaTexture* inputTexture)
+{
+	if (inputTexture == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot process null texture."));
+		ReturnErrorSolvedPoints(jobInfo);
+		return false;
+	}
+
+	if (inputTexture->GetWidth() <= 3 ||
+		inputTexture->GetHeight() <= 3)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot process texture, it's to small."));
+		ReturnErrorSolvedPoints(jobInfo);
+		return false;
+	}
+
+	return true;
+}
+
+bool ULensSolver::ValidateOneTimeProcessParameters(const FOneTimeProcessParameters& oneTimeProcessParameters)
+{
+	static FString validationHeader("Incorrect OneTimeProcessParameter member values:");
+	FString outputMessage;
+
+	bool valid = true;
+	if (oneTimeProcessParameters.cornerCount.X <= 0 || oneTimeProcessParameters.cornerCount.Y)
+	{
+		outputMessage = FString::Printf(TEXT("%s\n\tCorner Count - Must be positive X & Y integer that represents the number of inside corners across width an height of a checkerboard."), *validationHeader);
+		valid = false;
+	}
+
+	if (oneTimeProcessParameters.squareSize <= 0.0f)
+	{
+		outputMessage = FString::Printf(TEXT("%s\n\tSquare size - Must be positive decimal value that represents the size of the a single checkerboard square in millimeters."), *validationHeader);
+		valid = false;
+	}
+
+	if (!valid)
+		UE_LOG(LogTemp, Error, TEXT("%s"), *outputMessage);
+
+	return valid;
+}
+
+void ULensSolver::ReturnErrorSolvedPoints(FJobInfo jobInfo)
+{
+	FSolvedPoints solvedPoints;
+	solvedPoints.jobInfo = jobInfo;
+	solvedPoints.success = false;
+	solvedPoints.focalLength = 0;
+	solvedPoints.fovX = 0;
+	solvedPoints.fovY = 0;
+	solvedPoints.aspectRatio = 0;
+	solvedPoints.perspectiveMatrix = FMatrix::Identity;
+	solvedPoints.height = 0;
+	solvedPoints.width = 0;
+	solvedPoints.zoomLevel = 0;
+
+	this->DequeueSolvedPoints(solvedPoints);
+}
+
 bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* mediaTexture, FString url)
 {
 	return
@@ -427,68 +491,66 @@ bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* 
 		!url.IsEmpty();
 }
 
-FJobInfo ULensSolver::OneTimeProcessMediaTexture(
+void ULensSolver::OneTimeProcessMediaTexture(
 		UMediaTexture* inputMediaTexture,
 		float normalizedZoomValue,
-		FOneTimeProcessParameters oneTimeProcessParameters)
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 
-	FJobInfo jobInfo = RegisterJob(1, UJobType::OneTime);
+	ouptutJobInfo = RegisterJob(1, UJobType::OneTime);
 	oneTimeProcessParameters.currentResolution = FIntPoint(inputMediaTexture->GetWidth(), inputMediaTexture->GetHeight());
-	BeginDetectPoints(jobInfo, inputMediaTexture, normalizedZoomValue, oneTimeProcessParameters, queuedSolvedPointsPtr);
-	return jobInfo;
+	BeginDetectPoints(ouptutJobInfo, inputMediaTexture, normalizedZoomValue, oneTimeProcessParameters);
 }
 
-FJobInfo ULensSolver::OneTimeProcessTexture2D(
+void ULensSolver::OneTimeProcessTexture2D(
 		UTexture2D* inputTexture, 
 		float normalizedZoomValue, 
-		FOneTimeProcessParameters oneTimeProcessParameters)
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 
-	FJobInfo jobInfo = RegisterJob(1, UJobType::OneTime);
+	ouptutJobInfo = RegisterJob(1, UJobType::OneTime);
 	oneTimeProcessParameters.currentResolution = FIntPoint(inputTexture->GetSizeX(), inputTexture->GetSizeY());
-	BeginDetectPoints(jobInfo, inputTexture, normalizedZoomValue, oneTimeProcessParameters, queuedSolvedPointsPtr);
-	return jobInfo;
+	BeginDetectPoints(ouptutJobInfo, inputTexture, normalizedZoomValue, oneTimeProcessParameters);
 }
 
-FJobInfo ULensSolver::OneTimeProcessTexture2DArray(
+void ULensSolver::OneTimeProcessTexture2DArray(
 		TArray<UTexture2D*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
-		FOneTimeProcessParameters oneTimeProcessParameters)
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 
-	FJobInfo jobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
+	ouptutJobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
 	BeginDetectPoints(
-		jobInfo, 
-		inputTextures, 
-		normalizedZoomValues, 
-		oneTimeProcessParameters,
-		queuedSolvedPointsPtr);
-	return jobInfo;
-}
-
-FJobInfo ULensSolver::OneTimeProcessMediaTextureArray(
-		TArray<UMediaTexture*> inputTextures, 
-		TArray<float> normalizedZoomValues, 
-		FOneTimeProcessParameters oneTimeProcessParameters)
-{
-	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
-
-	FJobInfo jobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
-	BeginDetectPoints(
-		jobInfo,
+		ouptutJobInfo,
 		inputTextures,
 		normalizedZoomValues,
-		oneTimeProcessParameters,
-		queuedSolvedPointsPtr);
-	return jobInfo;
+		oneTimeProcessParameters);
+}
+
+void ULensSolver::OneTimeProcessMediaTextureArray(
+		TArray<UMediaTexture*> inputTextures, 
+		TArray<float> normalizedZoomValues, 
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo)
+{
+	if (!queuedSolvedPointsPtr.IsValid())
+		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
+
+	ouptutJobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
+	BeginDetectPoints(
+		ouptutJobInfo,
+		inputTextures,
+		normalizedZoomValues,
+		oneTimeProcessParameters);
 }
 
 void ULensSolver::StartBackgroundImageProcessors(int workerCount)

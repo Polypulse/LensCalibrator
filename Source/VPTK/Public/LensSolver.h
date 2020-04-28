@@ -58,47 +58,36 @@ private:
 
 	int GetWorkerCount ();
 
-	bool ValidateCommonVariables(
-		FIntPoint cornerCount,
-		float inputZoomLevel,
-		float inputSquareSize
-	);
+	void BeginDetectPoints(
+		const FJobInfo inputJobInfo,
+		const UTexture2D* inputTexture,
+		const float inputZoomLevel,
+		FOneTimeProcessParameters oneTimeProcessParameters);
 
 	void BeginDetectPoints(
-		FJobInfo inputJobInfo,
-		UTexture2D* inputTexture, 
-		float inputZoomLevel,
-		FOneTimeProcessParameters firstPassParameters,
-		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
+		const FJobInfo inputJobInfo,
+		const UMediaTexture* inputMediaTexture,
+		const float inputZoomLevel,
+		FOneTimeProcessParameters oneTimeProcessParameters);
 
 	void BeginDetectPoints(
-		FJobInfo inputJobInfo,
-		UMediaTexture* inputMediaTexture, 
-		float inputZoomLevel,
-		FOneTimeProcessParameters firstPassParameters,
-		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
-
-	void BeginDetectPoints(
-		FJobInfo jobInfo,
+		const FJobInfo jobInfo,
 		TArray<UTexture2D*> inputTextures,
 		TArray<float> inputZoomLevels,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
+		FOneTimeProcessParameters oneTimeProcessParameters);
 
 	void BeginDetectPoints(
-		FJobInfo jobInfo,
-		TArray<UMediaTexture*> inputTextures, 
-		TArray<float> inputZoomLevels, 
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints);
+		const FJobInfo jobInfo,
+		TArray<UMediaTexture*> inputTextures,
+		TArray<float> inputZoomLevels,
+		FOneTimeProcessParameters oneTimeProcessParameters);
 
 	void DetectPointsRenderThread(
-		FRHICommandListImmediate& RHICmdList, 
-		FJobInfo jobInfo,
-		UTexture* texture, 
-		float normalizedZoomLevel,
-		FOneTimeProcessParameters firstPassParameters,
-		TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints);
+		FRHICommandListImmediate& RHICmdList,
+		const FJobInfo jobInfo,
+		const UTexture* texture,
+		const float normalizedZoomLevel,
+		FOneTimeProcessParameters oneTimeProcessParameters);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
 	void VisualizeCalibration(
@@ -108,6 +97,11 @@ private:
 		FSolvedPoints solvedPoints,
 		bool flipX,
 		bool flipY);
+
+	bool ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture);
+	bool ValidateMediaTexture(const FJobInfo & jobInfo, const UMediaTexture* inputTexture);
+	bool ValidateOneTimeProcessParameters(const FOneTimeProcessParameters& oneTimeProcessParameters);
+	void ReturnErrorSolvedPoints(FJobInfo jobInfo);
 
 	void FireWorkers();
 
@@ -148,29 +142,34 @@ public:
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
 
+
 	UFUNCTION(BlueprintCallable, Category = "VPTK")
-	FJobInfo OneTimeProcessMediaTexture(
+	void OneTimeProcessMediaTexture(
 		UMediaTexture* inputMediaTexture,
 		float normalizedZoomValue,
-		FOneTimeProcessParameters oneTimeProcessParameters);
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	FJobInfo OneTimeProcessTexture2D(
+	void OneTimeProcessTexture2D(
 		UTexture2D* inputTexture, 
 		float normalizedZoomValue, 
-		FOneTimeProcessParameters oneTimeProcessParameters);
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	FJobInfo OneTimeProcessTexture2DArray(
+	void OneTimeProcessTexture2DArray(
 		TArray<UTexture2D*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
-		FOneTimeProcessParameters oneTimeProcessParameters);
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
-	FJobInfo OneTimeProcessMediaTextureArray(
+	void OneTimeProcessMediaTextureArray(
 		TArray<UMediaTexture*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
-		FOneTimeProcessParameters oneTimeProcessParameters);
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void StartBackgroundImageProcessors(int workerCount);
