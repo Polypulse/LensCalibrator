@@ -2,10 +2,10 @@
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 
-#include "SolveParameters.generated.h"
+#include "WorkerParameters.generated.h"
 
 USTRUCT(BlueprintType)
-struct FSolveParameters
+struct FWorkerParameters
 {
 	GENERATED_BODY()
 

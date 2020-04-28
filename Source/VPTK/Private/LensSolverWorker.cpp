@@ -190,7 +190,7 @@ void FLensSolverWorker::DoWork()
 		int findFlags = cv::CALIB_CB_NORMALIZE_IMAGE;
 		findFlags |= cv::CALIB_CB_ADAPTIVE_THRESH;
 
-		if (workUnit.solveParameters.exhaustiveSearch)
+		if (workUnit.workerParameters.exhaustiveSearch)
 			findFlags |= cv::CALIB_CB_EXHAUSTIVE;
 
 		patternFound = cv::findChessboardCorners(image, patternSize, corners[0], findFlags);
@@ -285,7 +285,7 @@ void FLensSolverWorker::DoWork()
 
 		cv::drawChessboardCorners(image, patternSize, corners[0], patternFound);
 
-		if (workUnit.solveParameters.writeCalibrationResultToFile)
+		if (workUnit.workerParameters.writeCalibrationResultToFile)
 			WriteMatToFile(image, "result-", workerMessage);
 
 		image.release();

@@ -87,7 +87,8 @@ bool ULensSolver::ValidateCommonVariables(FIntPoint cornerCount, float inputZoom
 void ULensSolver::BeginDetectPoints(
 	FJobInfo inputJobInfo,
 	UTexture2D* inputTexture, 
-	FFirstPassParameters firstPassParameters,
+	float inputZoomLevel,
+	FOneTimeProcessParameters firstPassParameters,
 	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputTexture == nullptr ||
@@ -95,7 +96,7 @@ void ULensSolver::BeginDetectPoints(
 		inputTexture->GetSizeY() <= 2)
 		return;
 
-	if (!ValidateCommonVariables(firstPassParameters.cornerCount, firstPassParameters.zoomLevel, firstPassParameters.squareSize))
+	if (!ValidateCommonVariables(firstPassParameters.cornerCount, inputZoomLevel, firstPassParameters.squareSize))
 		return;
 
 	if (GetWorkerCount() == 0)
@@ -107,21 +108,22 @@ void ULensSolver::BeginDetectPoints(
 	FJobInfo jobInfo = inputJobInfo;
 
 	UTexture2D* cachedTextureReference = inputTexture;
+	float zoomLevel = inputZoomLevel;
+	FOneTimeProcessParameters tempFirstPassParameters = firstPassParameters;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
-
-	FFirstPassParameters tempFirstPassParameters = firstPassParameters;
 
 	UE_LOG(LogTemp, Log, TEXT("Enqueuing calibration image render comand at resolution: (%d, %d)."), firstPassParameters.currentResolution.X, firstPassParameters.currentResolution.Y);
 
 	ULensSolver * lensSolver = this;
 	ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
 	(
-		[lensSolver, jobInfo, inputTexture, tempFirstPassParameters, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
+		[lensSolver, jobInfo, inputTexture, zoomLevel, tempFirstPassParameters, queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
 		{
 			lensSolver->DetectPointsRenderThread(
 				RHICmdList, 
 				jobInfo,
 				inputTexture, 
+				zoomLevel,
 				tempFirstPassParameters,
 				queuedSolvedPoints);
 		}
@@ -131,7 +133,8 @@ void ULensSolver::BeginDetectPoints(
 void ULensSolver::BeginDetectPoints(
 	FJobInfo inputJobInfo,
 	UMediaTexture* inputMediaTexture, 
-	FFirstPassParameters firstPassParameters,
+	float inputZoomLevel,
+	FOneTimeProcessParameters firstPassParameters,
 	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputMediaTexture == nullptr ||
@@ -139,7 +142,7 @@ void ULensSolver::BeginDetectPoints(
 		inputMediaTexture->GetWidth() <= 2)
 		return;
 
-	if (!ValidateCommonVariables(firstPassParameters.cornerCount, firstPassParameters.zoomLevel, firstPassParameters.squareSize))
+	if (!ValidateCommonVariables(firstPassParameters.cornerCount, inputZoomLevel, firstPassParameters.squareSize))
 		return;
 
 	if (GetWorkerCount() == 0)
@@ -151,18 +154,8 @@ void ULensSolver::BeginDetectPoints(
 	FJobInfo jobInfo = inputJobInfo;
 
 	UMediaTexture* cachedMediaTextureReference = inputMediaTexture;
-
-	/*
 	float zoomLevel = inputZoomLevel;
-	float squareSize = inputSquareSize;
-
-	FIntPoint currentResolution = FIntPoint(inputMediaTexture->GetWidth(), inputMediaTexture->GetHeight());
-	bool resize = inputResize;
-	FIntPoint resizeResolution = inputResizeResolution;
-	*/
-
-	FFirstPassParameters tempFirstPassParameters = firstPassParameters;
-
+	FOneTimeProcessParameters tempFirstPassParameters = firstPassParameters;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 
 	ULensSolver * lensSolver = this;
@@ -171,6 +164,7 @@ void ULensSolver::BeginDetectPoints(
 		[lensSolver, 
 		jobInfo, 
 		cachedMediaTextureReference, 
+		zoomLevel,
 		tempFirstPassParameters,
 		queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
 		{
@@ -178,6 +172,7 @@ void ULensSolver::BeginDetectPoints(
 				RHICmdList, 
 				jobInfo,
 				cachedMediaTextureReference, 
+				zoomLevel,
 				tempFirstPassParameters,
 				queuedSolvedPoints);
 		}
@@ -185,17 +180,11 @@ void ULensSolver::BeginDetectPoints(
 }
 
 void ULensSolver::BeginDetectPoints(
-	FJobInfo jobInfo,
-	FSolveParameters solveParameters,
-	TArray<UTexture2D*> inputTextures,
-	TArray<float> inputZoomLevels,
-	FIntPoint cornerCount,
-	float inputSquaresize,
-	bool resize,
-	FIntPoint resizeResolution,
-	bool flipX,
-	bool flipY,
-	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
+		FJobInfo jobInfo,
+		TArray<UTexture2D*> inputTextures,
+		TArray<float> inputZoomLevels,
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputTextures.Num() == 0 || inputZoomLevels.Num() == 0)
 		return;
@@ -209,30 +198,16 @@ void ULensSolver::BeginDetectPoints(
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 	for (int i = 0; i < inputTextures.Num(); i++)
 	{
-		FFirstPassParameters firstPassParameters;
-		firstPassParameters.solveParameters = solveParameters;
-		firstPassParameters.zoomLevel = inputZoomLevels[i];
-		firstPassParameters.cornerCount = cornerCount;
-		firstPassParameters.squareSize = inputSquaresize;
-		firstPassParameters.currentResolution = FIntPoint(inputTextures[i]->GetSizeX(), inputTextures[i]->GetSizeY());
-		firstPassParameters.resize = resize;
-		firstPassParameters.resizeResolution = resizeResolution;
-		firstPassParameters.flipDirection = FIntPoint(flipX ? -1 : 1, flipY ? -1 : 1);
-		BeginDetectPoints(jobInfo, inputTextures[i], firstPassParameters, inputQueuedSolvedPoints);
+		oneTimeProcessParameters.currentResolution = FIntPoint(inputTextures[i]->GetSizeX(), inputTextures[i]->GetSizeY());
+		BeginDetectPoints(jobInfo, inputTextures[i], inputZoomLevels[i], oneTimeProcessParameters, inputQueuedSolvedPoints);
 	}
 }
 
 void ULensSolver::BeginDetectPoints(
 	FJobInfo jobInfo,
-	FSolveParameters solveParameters,
 	TArray<UMediaTexture*> inputTextures, 
 	TArray<float> inputZoomLevels, 
-	FIntPoint cornerCount, 
-	float inputSquaresize, 
-	bool resize,
-	FIntPoint resizeResolution,
-	bool flipX,
-	bool flipY,
+	FOneTimeProcessParameters oneTimeProcessParameters,
 	TSharedPtr<TQueue<FSolvedPoints>> inputQueuedSolvedPoints)
 {
 	if (inputTextures.Num() == 0 || inputZoomLevels.Num() == 0)
@@ -248,29 +223,22 @@ void ULensSolver::BeginDetectPoints(
 
 	for (int i = 0; i < inputTextures.Num(); i++)
 	{
-		FFirstPassParameters firstPassParameters;
-		firstPassParameters.solveParameters = solveParameters;
-		firstPassParameters.zoomLevel = inputZoomLevels[i];
-		firstPassParameters.cornerCount = cornerCount;
-		firstPassParameters.squareSize = inputSquaresize;
-		firstPassParameters.currentResolution = FIntPoint(inputTextures[i]->GetWidth(), inputTextures[i]->GetHeight());
-		firstPassParameters.resize = resize;
-		firstPassParameters.resizeResolution = resizeResolution;
-		firstPassParameters.flipDirection = FIntPoint(flipX ? -1 : 1, flipY ? -1 : 1);
-		BeginDetectPoints(jobInfo, inputTextures[i], firstPassParameters, inputQueuedSolvedPoints);
+		oneTimeProcessParameters.currentResolution = FIntPoint(inputTextures[i]->GetWidth(), inputTextures[i]->GetHeight());
+		BeginDetectPoints(jobInfo, inputTextures[i], inputZoomLevels[i], oneTimeProcessParameters, inputQueuedSolvedPoints);
 	}
 }
 
 void ULensSolver::DetectPointsRenderThread(
-	FRHICommandListImmediate& RHICmdList, 
-	FJobInfo jobInfo,
-	UTexture* texture, 
-	FFirstPassParameters firstPassParameters,
-	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints)
+		FRHICommandListImmediate& RHICmdList, 
+		FJobInfo jobInfo,
+		UTexture* texture, 
+		float normalizedZoomLevel,
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints)
 
 {
-	int width = firstPassParameters.resize ? firstPassParameters.resizeResolution.X : firstPassParameters.currentResolution.X;
-	int height = firstPassParameters.resize ? firstPassParameters.resizeResolution.Y : firstPassParameters.currentResolution.Y;
+	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.resizeResolution.X : oneTimeProcessParameters.currentResolution.X;
+	int height = oneTimeProcessParameters.resize ? oneTimeProcessParameters.resizeResolution.Y : oneTimeProcessParameters.currentResolution.Y;
 	if (!allocated)
 	{
 		FRHIResourceCreateInfo createInfo;
@@ -312,7 +280,7 @@ void ULensSolver::DetectPointsRenderThread(
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-		PixelShader->SetParameters(RHICmdList, texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(firstPassParameters.flipDirection.X, firstPassParameters.flipDirection.Y));
+		PixelShader->SetParameters(RHICmdList, texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(oneTimeProcessParameters.flipX ? -1.0f : 1.0f, oneTimeProcessParameters.flipY ? -1.0f : 1.0f));
 
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}
@@ -346,12 +314,12 @@ void ULensSolver::DetectPointsRenderThread(
 
 	FLensSolverWorkUnit workerUnit;
 	workerUnit.jobInfo = jobInfo;
-	workerUnit.solveParameters = firstPassParameters.solveParameters;
+	workerUnit.workerParameters = oneTimeProcessParameters.workerParameters;
 	workerUnit.width = width;
 	workerUnit.height = height;
-	workerUnit.cornerCount = firstPassParameters.cornerCount;
-	workerUnit.zoomLevel = firstPassParameters.zoomLevel;
-	workerUnit.squareSize = firstPassParameters.squareSize;
+	workerUnit.cornerCount = oneTimeProcessParameters.cornerCount;
+	workerUnit.zoomLevel = normalizedZoomLevel;
+	workerUnit.squareSize = oneTimeProcessParameters.squareSize;
 	workerUnit.pixels = surfaceData;
 
 	workers[0].queueWorkUnitDel.Execute(workerUnit);
@@ -456,71 +424,37 @@ bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* 
 }
 
 FJobInfo ULensSolver::OneTimeProcessMediaTexture(
-		FSolveParameters inputSolveParameters,
 		UMediaTexture* inputMediaTexture,
 		float normalizedZoomValue,
-		FIntPoint cornerCount,
-		float squareSize,
-		bool resize,
-		FIntPoint resizeResolution,
-		bool flipX,
-		bool flipY)
+		FOneTimeProcessParameters oneTimeProcessParameters)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 
 	FJobInfo jobInfo = RegisterJob(1, UJobType::OneTime);
-	FFirstPassParameters firstPassParameters;
-	firstPassParameters.solveParameters = inputSolveParameters;
-	firstPassParameters.zoomLevel = normalizedZoomValue;
-	firstPassParameters.cornerCount = cornerCount;
-	firstPassParameters.squareSize = squareSize;
-	firstPassParameters.currentResolution = FIntPoint(inputMediaTexture->GetWidth(), inputMediaTexture->GetHeight());
-	firstPassParameters.resize = resize;
-	firstPassParameters.resizeResolution = resizeResolution;
-	firstPassParameters.flipDirection = FIntPoint(flipX ? -1 : 1, flipY ? -1 : 1);
-	BeginDetectPoints(jobInfo, inputMediaTexture, firstPassParameters, queuedSolvedPointsPtr);
+	oneTimeProcessParameters.currentResolution = FIntPoint(inputMediaTexture->GetWidth(), inputMediaTexture->GetHeight());
+	BeginDetectPoints(jobInfo, inputMediaTexture, normalizedZoomValue, oneTimeProcessParameters, queuedSolvedPointsPtr);
 	return jobInfo;
 }
 
 FJobInfo ULensSolver::OneTimeProcessTexture2D(
-		FSolveParameters inputSolveParameters,
 		UTexture2D* inputTexture, 
 		float normalizedZoomValue, 
-		FIntPoint cornerCount, 
-		float squareSize,
-		bool resize,
-		FIntPoint resizeResolution,
-		bool flipX,
-		bool flipY)
+		FOneTimeProcessParameters oneTimeProcessParameters)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
 
 	FJobInfo jobInfo = RegisterJob(1, UJobType::OneTime);
-	FFirstPassParameters firstPassParameters;
-	firstPassParameters.solveParameters = inputSolveParameters;
-	firstPassParameters.zoomLevel = normalizedZoomValue;
-	firstPassParameters.cornerCount = cornerCount;
-	firstPassParameters.squareSize = squareSize;
-	firstPassParameters.currentResolution = FIntPoint(inputTexture->GetSizeX(), inputTexture->GetSizeY());
-	firstPassParameters.resize = resize;
-	firstPassParameters.resizeResolution = resizeResolution;
-	firstPassParameters.flipDirection = FIntPoint(flipX ? -1 : 1, flipY ? -1 : 1);
-	BeginDetectPoints(jobInfo, inputTexture, firstPassParameters, queuedSolvedPointsPtr);
+	oneTimeProcessParameters.currentResolution = FIntPoint(inputTexture->GetSizeX(), inputTexture->GetSizeY());
+	BeginDetectPoints(jobInfo, inputTexture, normalizedZoomValue, oneTimeProcessParameters, queuedSolvedPointsPtr);
 	return jobInfo;
 }
 
 FJobInfo ULensSolver::OneTimeProcessTexture2DArray(
-		FSolveParameters inputSolveParameters,
 		TArray<UTexture2D*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
-		FIntPoint cornerCount, 
-		float squareSize,
-		bool resize,
-		FIntPoint resizeResolution,
-		bool flipX,
-		bool flipY)
+		FOneTimeProcessParameters oneTimeProcessParameters)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
@@ -528,29 +462,17 @@ FJobInfo ULensSolver::OneTimeProcessTexture2DArray(
 	FJobInfo jobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
 	BeginDetectPoints(
 		jobInfo, 
-		inputSolveParameters,
 		inputTextures, 
 		normalizedZoomValues, 
-		cornerCount, 
-		squareSize, 
-		resize,
-		resizeResolution, 
-		flipX,
-		flipY,
+		oneTimeProcessParameters,
 		queuedSolvedPointsPtr);
 	return jobInfo;
 }
 
 FJobInfo ULensSolver::OneTimeProcessMediaTextureArray(
-		FSolveParameters inputSolveParameters,
 		TArray<UMediaTexture*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
-		FIntPoint cornerCount, 
-		float squareSize,
-		bool resize,
-		FIntPoint resizeResolution,
-		bool flipX,
-		bool flipY)
+		FOneTimeProcessParameters oneTimeProcessParameters)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
@@ -558,15 +480,9 @@ FJobInfo ULensSolver::OneTimeProcessMediaTextureArray(
 	FJobInfo jobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
 	BeginDetectPoints(
 		jobInfo,
-		inputSolveParameters,
 		inputTextures,
 		normalizedZoomValues,
-		cornerCount,
-		squareSize,
-		resize,
-		resizeResolution,
-		flipX,
-		flipY,
+		oneTimeProcessParameters,
 		queuedSolvedPointsPtr);
 	return jobInfo;
 }
