@@ -379,8 +379,8 @@ void FLensSolverWorker::WriteMatToFile(cv::Mat image, FString folder, FString fi
 		return;
 
 	FString outputPath = GenerateIndexedFilePath(folder, fileName);
-	UE_LOG(LogTemp, Log, TEXT("%sWriting visualization to file: \"%s\"."), *workerMessage, *outputPath);
 	cv::imwrite(TCHAR_TO_UTF8(*outputPath), image);
+	UE_LOG(LogTemp, Log, TEXT("%Debug texture written to file at path: \"%s\"."), *workerMessage, *outputPath);
 }
 
 void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePoints, FString folder, FString fileName, const FString workerMessage)
@@ -427,4 +427,6 @@ void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePo
 		UE_LOG(LogTemp, Error, TEXT("Unable to write JSON: \"%s\" to path: \"%s\"."), *outputJson, *outputPath);
 		return;
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("%Calibration result written to file at path: \"%s\"."), *workerMessage, *outputPath);
 }
