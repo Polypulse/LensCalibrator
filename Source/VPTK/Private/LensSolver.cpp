@@ -478,7 +478,15 @@ bool ULensSolver::ValidateOneTimeProcessParameters(const FOneTimeProcessParamete
 
 	if (oneTimeProcessParameters.squareSize <= 0.0f)
 	{
-		outputMessage = FString::Printf(TEXT("%s\n\tSquare size - Must be positive decimal value that represents the size of the a single checkerboard square in millimeters."), *validationHeader);
+		outputMessage = FString::Printf(TEXT("%s\n\tSquare Size - Must be positive decimal value that represents the size of the a single checkerboard square in millimeters."), *validationHeader);
+		valid = false;
+	}
+
+	if (oneTimeProcessParameters.resize &&
+		(oneTimeProcessParameters.resizeResolution.X <= 0 ||
+			oneTimeProcessParameters.resizeResolution.Y <= 0))
+	{
+		outputMessage = FString::Printf(TEXT("%s\n\tResize Resolution - Must be positive integer width & height values to resize the image to."), *validationHeader);
 		valid = false;
 	}
 
