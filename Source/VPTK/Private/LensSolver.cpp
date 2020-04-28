@@ -18,10 +18,6 @@
 
 #include "BlitShader.h"
 
-void ULensSolver::FireWorkers()
-{
-}
-
 void ULensSolver::BeginPlay()
 {
 	Super::BeginPlay();
@@ -29,8 +25,8 @@ void ULensSolver::BeginPlay()
 
 void ULensSolver::EndPlay(const EEndPlayReason::Type EndPlayReason) 
 {
+	StopBackgroundImageprocessors();
 	Super::EndPlay(EndPlayReason);
-	FireWorkers();
 }
 
 FJobInfo ULensSolver::RegisterJob(int workUnitCount, UJobType jobType)

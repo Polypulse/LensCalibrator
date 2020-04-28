@@ -104,8 +104,6 @@ private:
 	bool ValidateOneTimeProcessParameters(const FOneTimeProcessParameters& oneTimeProcessParameters);
 	void ReturnErrorSolvedPoints(FJobInfo jobInfo);
 
-	void FireWorkers();
-
 protected:
 
 	/*
