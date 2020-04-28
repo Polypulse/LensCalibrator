@@ -312,7 +312,11 @@ void ULensSolver::DetectPointsRenderThread(
 		return workerA.getWorkLoadDel.Execute() > workerB.getWorkLoadDel.Execute();
 	});
 
+	FString textureName;
+	texture->GetName(textureName);
+
 	FLensSolverWorkUnit workerUnit;
+	workerUnit.unitName = textureName;
 	workerUnit.jobInfo = jobInfo;
 	workerUnit.workerParameters = oneTimeProcessParameters.workerParameters;
 	workerUnit.width = width;

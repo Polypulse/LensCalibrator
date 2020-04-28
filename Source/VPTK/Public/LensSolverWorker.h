@@ -27,6 +27,7 @@ struct FLensSolverWorkUnit
 	FJobInfo jobInfo;
 	FWorkerParameters workerParameters;
 
+	FString unitName;
 	int width;
 	int height;
 	FIntPoint cornerCount;
@@ -66,7 +67,10 @@ private:
 	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
 	void QueueSolvedPoints(FSolvedPoints solvedPoints);
 	bool IsClosing ();
-	void WriteMatToFile(cv::Mat image, FString fileName, const FString & workerMessage);
+	FString GenerateIndexedFilePath(const FString& folder, const FString& fileName);
+	bool ValidateFolder(FString& folder, const FString & workerMessage);
+	void WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage);
+	void WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePoints, FString folder, FString fileName, const FString workerMessage);
 
 public:
 	FLensSolverWorker(

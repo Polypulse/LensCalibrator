@@ -5,6 +5,7 @@
 #include "IImageWrapper.h"
 #include "RenderUtils.h"
 #include "Engine/Texture2D.h"
+#include "JsonUtilities.h"
 
 #include "Queue.h"
 
@@ -183,8 +184,6 @@ void FLensSolverWorker::DoWork()
 			image.at<uint8>(i / workUnit.width, i % workUnit.width) = workUnit.pixels[(pixelCount - 1) - i].R;
 		UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnit.pixels.Num(), workUnit.width, workUnit.height);
 
-		WriteMatToFile(image, "test", workerMessage);
-
 		bool patternFound = false;
 
 		int findFlags = cv::CALIB_CB_NORMALIZE_IMAGE;
@@ -277,16 +276,18 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.focalLength = focalLength;
 		solvedPoints.aspectRatio = workUnit.width / (float)workUnit.height;
 		solvedPoints.perspectiveMatrix = perspectiveMatrix;
-
 		solvedPoints.points = pointsCache;
+
+		if (workUnit.workerParameters.writeCalibrationResultsToFile)
+			WriteSolvedPointsToJSONFile(solvedPoints, workUnit.workerParameters.calibrationResultsFolderPath, workUnit.unitName + "-result", workerMessage);
 
 		UE_LOG(LogTemp, Log, TEXT("%sFinished with work unit."), *workerMessage);
 		QueueSolvedPoints(solvedPoints);
 
 		cv::drawChessboardCorners(image, patternSize, corners[0], patternFound);
 
-		if (workUnit.workerParameters.writeCalibrationResultToFile)
-			WriteMatToFile(image, "result-", workerMessage);
+		if (workUnit.workerParameters.writeDebugTextureToFile)
+			WriteMatToFile(image, workUnit.workerParameters.debugTextureFolderPath, workUnit.unitName + "-debug", workerMessage);
 
 		image.release();
 		cameraMatrix.release();
@@ -333,21 +334,97 @@ bool FLensSolverWorker::IsClosing()
 	return true;
 }
 
-void FLensSolverWorker::WriteMatToFile(cv::Mat image, FString fileName, const FString & workerMessage)
+FString FLensSolverWorker::GenerateIndexedFilePath(const FString& folder, const FString& fileName)
 {
-	FString partialOutputPath = calibrationVisualizationOutputPath + fileName;
+	FString partialOutputPath = folder + fileName;
 
 	int index = 0;
-	while (FPaths::FileExists(FString::Printf(TEXT("%s%d.jpg"), *partialOutputPath, index)))
+	while (FPaths::FileExists(FString::Printf(TEXT("%s-%d.jpg"), *partialOutputPath, index)))
 		index++;
+	return FString::Printf(TEXT("%s-%d.jpg"), *partialOutputPath, index);
+}
 
-	FString outputPath = FString::Printf(TEXT("%s%d.jpg"), *partialOutputPath, index);
-	if (!FPaths::DirectoryExists(calibrationVisualizationOutputPath))
+bool FLensSolverWorker::ValidateFolder(FString& folder, const FString & workerMessage)
+{
+	if (folder.IsEmpty())
+		folder = calibrationVisualizationOutputPath;
+
+	else
 	{
-		FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*calibrationVisualizationOutputPath);
-		UE_LOG(LogTemp, Log, TEXT("%sCreated visualization directory at path: \"%s\"."), *workerMessage, *calibrationVisualizationOutputPath);
+		if (!FPaths::ValidatePath(folder))
+		{
+			UE_LOG(LogTemp, Error, TEXT("The path: \"%s\" is not a valid."), *folder);
+			return false;
+		}
+
+		if (FPaths::FileExists(folder))
+		{
+			UE_LOG(LogTemp, Error, TEXT("The path: \"%s\" is to a file, not a directory."), *folder);
+			return false;
+		}
 	}
 
+	if (!FPaths::DirectoryExists(folder))
+	{
+		FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*folder);
+		UE_LOG(LogTemp, Log, TEXT("%sCreated directory at path: \"%s\"."), *workerMessage, *folder);
+	}
+
+	return true;
+}
+
+void FLensSolverWorker::WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage)
+{
+	if (!ValidateFolder(folder, workerMessage))
+		return;
+
+	FString outputPath = GenerateIndexedFilePath(folder, fileName);
 	UE_LOG(LogTemp, Log, TEXT("%sWriting visualization to file: \"%s\"."), *workerMessage, *outputPath);
 	cv::imwrite(TCHAR_TO_UTF8(*outputPath), image);
+}
+
+void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePoints, FString folder, FString fileName, const FString workerMessage)
+{
+	if (!ValidateFolder(folder, workerMessage))
+		return;
+
+	FString outputPath = GenerateIndexedFilePath(folder, fileName);
+
+	TSharedPtr<FJsonObject> obj = MakeShareable(new FJsonObject);
+	TSharedPtr<FJsonObject> result = MakeShareable(new FJsonObject);
+	result->SetStringField("jobid", solvePoints.jobInfo.jobID);
+	result->SetNumberField("zoomlevel", solvePoints.zoomLevel);
+	result->SetNumberField("width", solvePoints.width);
+	result->SetNumberField("height", solvePoints.height);
+	result->SetNumberField("fovx", solvePoints.fovX);
+	result->SetNumberField("fovy", solvePoints.fovY);
+	result->SetNumberField("focallength", solvePoints.focalLength);
+	result->SetNumberField("aspectratio", solvePoints.aspectRatio);
+
+	TArray<TSharedPtr<FJsonValue>> matVals;
+
+	for (int i = 0; i < 16; i++)
+			matVals.Add(MakeShareable(new FJsonValueNumber(solvePoints.perspectiveMatrix.M[i / 4][i % 4])));
+
+	result->SetArrayField("perspectivematrix", matVals);
+
+	TArray<TSharedPtr<FJsonValue>> points;
+	for (int i = 0; i < solvePoints.points.Num(); i++)
+	{
+		points.Add(MakeShareable(new FJsonValueNumber(solvePoints.points[i].X)));
+		points.Add(MakeShareable(new FJsonValueNumber(solvePoints.points[i].Y)));
+	}
+
+	result->SetArrayField("points", points);
+	obj->SetObjectField("result", result);
+
+	FString outputJson(TEXT("{}"));
+	TSharedRef<TJsonWriter<>> writer = TJsonWriterFactory<>::Create(&outputJson);
+	FJsonSerializer::Serialize(obj.ToSharedRef(), writer);
+
+	if (!FFileHelper::SaveStringToFile(outputJson, *outputPath))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Unable to write JSON: \"%s\" to path: \"%s\"."), *outputJson, *outputPath);
+		return;
+	}
 }

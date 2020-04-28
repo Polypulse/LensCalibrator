@@ -13,6 +13,15 @@ struct FWorkerParameters
 	bool exhaustiveSearch;
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	bool writeCalibrationResultToFile;
+	bool writeDebugTextureToFile;
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	FString debugTextureFolderPath;
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	bool writeCalibrationResultsToFile;
+
+	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	FString calibrationResultsFolderPath;
 };
 

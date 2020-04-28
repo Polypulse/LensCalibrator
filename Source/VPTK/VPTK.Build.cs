@@ -46,6 +46,8 @@ public class VPTK : ModuleRules
 				"RenderCore",
 				"ImageWrapper",
 				"RHI",
+				"Json",
+				"JsonUtilities"
 			}
 			);
 		
