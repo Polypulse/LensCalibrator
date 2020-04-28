@@ -28,7 +28,7 @@ struct FWorkerInterfaceContainer
 };
 
 UCLASS( Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class VPTK_API ULensSolver : public UActorComponent
+class LENSCALIBRATOR_API ULensSolver : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -38,7 +38,7 @@ public:
 
 	/*
 	DECLARE_DELEGATE_OneParam(FSolvedPointsQueuedDel, bool)
-	DECLARE_DELEGATE_OneParam(FDequeueSolvedPointsDel, FSolvedPoints)
+	DECLARE_DELEGATE_OneParam(FDequeueSolvedPointsDel, FCalibrationResult)
 	*/
 
 private:
@@ -47,7 +47,7 @@ private:
 	UTexture2D * visualizationTexture;
 	bool allocated;
 
-	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPointsPtr;
+	TSharedPtr<TQueue<FCalibrationResult>> queuedSolvedPointsPtr;
 
 	mutable FCriticalSection threadLock;
 	TArray<FWorkerInterfaceContainer> workers;
@@ -93,7 +93,7 @@ private:
 		FRHICommandListImmediate& RHICmdList, 
 		FSceneViewport* sceneViewport, 
 		UTexture2D * visualizationTexture, 
-		FSolvedPoints solvedPoints,
+		FCalibrationResult solvedPoints,
 		bool flipX,
 		bool flipY);
 
@@ -116,8 +116,8 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION(BlueprintNativeEvent, Category="VPTK")
-	void DequeueSolvedPoints (FSolvedPoints solvedPoints);
-	virtual void DequeueSolvedPoints_Implementation (FSolvedPoints solvedPoints) {}
+	void DequeueSolvedPoints (FCalibrationResult solvedPoints);
+	virtual void DequeueSolvedPoints_Implementation (FCalibrationResult solvedPoints) {}
 
 	UFUNCTION(BlueprintNativeEvent, Category="VPTK")
 	void FinishedJob (FJobInfo jobInfo);
@@ -178,5 +178,5 @@ public:
 	UFUNCTION(BlueprintCallable, Category="VPTK")
 	void PollSolvedPoints ();
 
-	void OnSolvedPoints(FSolvedPoints solvedPoints);
+	void OnSolvedPoints(FCalibrationResult solvedPoints);
 };

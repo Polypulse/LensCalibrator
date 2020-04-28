@@ -1,19 +1,19 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
-#include "VPTK.h"
+#include "LensCalibrator.h"
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 #include "Engine.h"
 
-#define LOCTEXT_NAMESPACE "FVPTKModule"
+#define LOCTEXT_NAMESPACE "FLensCalibratorModule"
 
-void FVPTKModule::StartupModule()
+void FLensCalibratorModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-    AddShaderSourceDirectoryMapping("/VPTKShaders", FPaths::Combine(FPaths::ProjectDir(), TEXT("Plugins/VPTK/Shaders")));
+    AddShaderSourceDirectoryMapping("/LensCalibratorShaders", FPaths::Combine(FPaths::ProjectDir(), TEXT("Plugins/LensCalibrator/Shaders")));
 }
 
-void FVPTKModule::ShutdownModule()
+void FLensCalibratorModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -21,4 +21,4 @@ void FVPTKModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FVPTKModule, VPTK)
+IMPLEMENT_MODULE(FLensCalibratorModule, LensCalibrator)

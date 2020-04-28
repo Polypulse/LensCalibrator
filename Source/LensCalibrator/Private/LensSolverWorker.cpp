@@ -264,7 +264,7 @@ void FLensSolverWorker::DoWork()
 		for (int i = 0; i < pointsCache.Num(); i++)
 			pointsCache[i] = FVector2D(corners[0][i].x, corners[0][i].y);
 
-		FSolvedPoints solvedPoints;
+		FCalibrationResult solvedPoints;
 
 		solvedPoints.jobInfo = workUnit.jobInfo;
 		solvedPoints.zoomLevel = workUnit.zoomLevel;
@@ -308,7 +308,7 @@ void FLensSolverWorker::QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel
 {
 	TArray<FVector2D> emptyPoints;
 
-	FSolvedPoints solvedPoints;
+	FCalibrationResult solvedPoints;
 	solvedPoints.jobInfo = jobInfo;
 	solvedPoints.points = emptyPoints;
 	solvedPoints.zoomLevel = zoomLevel;
@@ -320,7 +320,7 @@ void FLensSolverWorker::QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel
 	onSolvePointsDel.Execute(solvedPoints);
 }
 
-void FLensSolverWorker::QueueSolvedPoints(FSolvedPoints solvedPoints)
+void FLensSolverWorker::QueueSolvedPoints(FCalibrationResult solvedPoints)
 {
 	if (!onSolvePointsDel.IsBound())
 		return;
@@ -389,7 +389,7 @@ void FLensSolverWorker::WriteMatToFile(cv::Mat image, FString folder, FString fi
 	UE_LOG(LogTemp, Log, TEXT("%sDebug texture written to file at path: \"%s\"."), *workerMessage, *outputPath);
 }
 
-void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePoints, FString folder, FString fileName, const FString workerMessage)
+void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, FString fileName, const FString workerMessage)
 {
 	if (!ValidateFolder(folder, workerMessage))
 		return;

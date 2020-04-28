@@ -5,9 +5,9 @@ using System.IO;
 using System;
 using System.Linq;
 
-public class VPTK : ModuleRules
+public class LensCalibrator : ModuleRules
 {
-	public VPTK(ReadOnlyTargetRules Target) : base(Target)
+	public LensCalibrator(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		bool isDebug = Target.Configuration == UnrealTargetConfiguration.Debug;

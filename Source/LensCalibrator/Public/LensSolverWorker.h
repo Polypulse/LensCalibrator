@@ -42,7 +42,7 @@ class FLensSolverWorker : public FNonAbandonableTask
 	friend class FAutoDeleteAsyncTask<FLensSolverWorker>;
 
 public:
-	DECLARE_DELEGATE_OneParam(OnSolvePointsDel, FSolvedPoints)
+	DECLARE_DELEGATE_OneParam(OnSolvePointsDel, FCalibrationResult)
 	DECLARE_DELEGATE_RetVal(int, GetWorkLoadDel)
 	DECLARE_DELEGATE_OneParam(QueueWorkUnitDel, FLensSolverWorkUnit)
 	DECLARE_DELEGATE_RetVal(bool, IsClosingDel)
@@ -65,12 +65,12 @@ private:
 	FMatrix GeneratePerspectiveMatrixFromFocalLength (cv::Size & imageSize, cv::Point2d principlePoint, float focalLength);
 	FTransform GenerateTransformFromRAndTVecs (std::vector<cv::Mat> & rvecs, std::vector<cv::Mat> & tvecs);
 	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
-	void QueueSolvedPoints(FSolvedPoints solvedPoints);
+	void QueueSolvedPoints(FCalibrationResult solvedPoints);
 	bool IsClosing ();
 	FString GenerateIndexedFilePath(const FString& folder, const FString& fileName, const FString & extension);
 	bool ValidateFolder(FString& folder, const FString & workerMessage);
 	void WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage);
-	void WriteSolvedPointsToJSONFile(const FSolvedPoints& solvePoints, FString folder, FString fileName, const FString workerMessage);
+	void WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, FString fileName, const FString workerMessage);
 
 public:
 	FLensSolverWorker(

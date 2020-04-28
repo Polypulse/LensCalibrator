@@ -4,7 +4,7 @@
 #include "SolvedPoints.generated.h"
 
 USTRUCT(BlueprintType)
-struct FSolvedPoints
+struct FCalibrationResult
 {
 	GENERATED_BODY()
 

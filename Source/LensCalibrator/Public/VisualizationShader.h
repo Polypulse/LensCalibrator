@@ -78,5 +78,5 @@ public:
 	}
 };
 
-IMPLEMENT_GLOBAL_SHADER(FBlitShaderVS, "/VPTKShaders/Private/Blit.usf", "MainVS", SF_Vertex);
-IMPLEMENT_GLOBAL_SHADER(FBlitShaderPS, "/VPTKShaders/Private/Blit.usf", "MainPS", SF_Pixel);
+IMPLEMENT_GLOBAL_SHADER(FBlitShaderVS, "/LensCalibratorShaders/Private/Blit.usf", "MainVS", SF_Vertex);
+IMPLEMENT_GLOBAL_SHADER(FBlitShaderPS, "/LensCalibratorShaders/Private/Blit.usf", "MainPS", SF_Pixel);

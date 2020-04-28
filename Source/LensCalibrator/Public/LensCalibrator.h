@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FVPTKModule : public IModuleInterface
+class FLensCalibratorModule : public IModuleInterface
 {
 public:
 

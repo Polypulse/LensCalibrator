@@ -362,7 +362,7 @@ void ULensSolver::VisualizeCalibration(
 	FRHICommandListImmediate& RHICmdList, 
 	FSceneViewport* sceneViewport, 
 	UTexture2D * visualizationTexture, 
-	FSolvedPoints solvedPoints,
+	FCalibrationResult solvedPoints,
 	bool flipX,
 	bool flipY)
 {
@@ -494,7 +494,7 @@ bool ULensSolver::ValidateOneTimeProcessParameters(const FOneTimeProcessParamete
 
 void ULensSolver::ReturnErrorSolvedPoints(FJobInfo jobInfo)
 {
-	FSolvedPoints solvedPoints;
+	FCalibrationResult solvedPoints;
 	solvedPoints.jobInfo = jobInfo;
 	solvedPoints.success = false;
 	solvedPoints.focalLength = 0;
@@ -524,7 +524,7 @@ void ULensSolver::OneTimeProcessMediaTexture(
 		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = MakeShareable(new TQueue<FSolvedPoints>);
+		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
 
 	ouptutJobInfo = RegisterJob(1, UJobType::OneTime);
 	oneTimeProcessParameters.currentResolution = FIntPoint(inputMediaTexture->GetWidth(), inputMediaTexture->GetHeight());
@@ -538,7 +538,7 @@ void ULensSolver::OneTimeProcessTexture2D(
 		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = MakeShareable(new TQueue<FSolvedPoints>);
+		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
 
 	ouptutJobInfo = RegisterJob(1, UJobType::OneTime);
 	oneTimeProcessParameters.currentResolution = FIntPoint(inputTexture->GetSizeX(), inputTexture->GetSizeY());
@@ -552,7 +552,7 @@ void ULensSolver::OneTimeProcessTexture2DArray(
 		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = MakeShareable(new TQueue<FSolvedPoints>);
+		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
 
 	ouptutJobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
 	BeginDetectPoints(
@@ -569,7 +569,7 @@ void ULensSolver::OneTimeProcessMediaTextureArray(
 		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = MakeShareable(new TQueue<FSolvedPoints>);
+		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
 
 	ouptutJobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
 	BeginDetectPoints(
@@ -643,7 +643,7 @@ void ULensSolver::SolvedPointsQueued_Implemenation (bool& isQueued)
 {
 }
 
-void ULensSolver::DequeueSolvedPoints_Implemenation (FSolvedPoints& solvedPoints)
+void ULensSolver::DequeueSolvedPoints_Implemenation (FCalibrationResult& solvedPoints)
 {
 }
 */
@@ -661,7 +661,7 @@ void ULensSolver::PollSolvedPoints()
 	bool isQueued = queuedSolvedPointsPtr->IsEmpty() == false;
 	bool outputIsQueued = isQueued;
 
-	FSolvedPoints lastSolvedPoints;
+	FCalibrationResult lastSolvedPoints;
 	bool dequeued = false;
 
 	while (isQueued)
@@ -732,7 +732,7 @@ void ULensSolver::PollSolvedPoints()
 	}
 }
 
-void ULensSolver::OnSolvedPoints(FSolvedPoints solvedPoints)
+void ULensSolver::OnSolvedPoints(FCalibrationResult solvedPoints)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		return;
