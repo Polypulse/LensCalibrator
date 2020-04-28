@@ -161,6 +161,8 @@ void ULensSolver::BeginDetectPoints(
 	FIntPoint resizeResolution = inputResizeResolution;
 	*/
 
+	FFirstPassParameters tempFirstPassParameters = firstPassParameters;
+
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPoints = inputQueuedSolvedPoints;
 
 	ULensSolver * lensSolver = this;
@@ -169,14 +171,14 @@ void ULensSolver::BeginDetectPoints(
 		[lensSolver, 
 		jobInfo, 
 		cachedMediaTextureReference, 
-		firstPassParameters,
+		tempFirstPassParameters,
 		queuedSolvedPoints](FRHICommandListImmediate& RHICmdList)
 		{
 			lensSolver->DetectPointsRenderThread(
 				RHICmdList, 
 				jobInfo,
 				cachedMediaTextureReference, 
-				firstPassParameters,
+				tempFirstPassParameters,
 				queuedSolvedPoints);
 		}
 	);

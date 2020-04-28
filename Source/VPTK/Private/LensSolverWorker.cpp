@@ -130,26 +130,6 @@ FTransform FLensSolverWorker::GenerateTransformFromRAndTVecs(std::vector<cv::Mat
 
 void FLensSolverWorker::DoWork()
 {
-	int 
-		flags = cv::CALIB_FIX_ASPECT_RATIO;
-		// flags |= cv::CALIB_USE_INTRINSIC_GUESS;
-		flags |= cv::CALIB_FIX_PRINCIPAL_POINT;
-		flags |= cv::CALIB_ZERO_TANGENT_DIST;
-		// flags |= cv::CALIB_FIX_K1;
-		// flags |= cv::CALIB_FIX_K2;
-		// flags |= cv::CALIB_FIX_K3;
-		flags |= cv::CALIB_FIX_K4;
-		flags |= cv::CALIB_FIX_K5;
-
-	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
-
-	cv::Mat image;
-
-	cv::Point2d principalPoint(0, 0);
-	double fovX = 0, fovY = 0, focalLength = 0, aspectRatio = 0;
-	FMatrix perspectiveMatrix = FMatrix::Identity;
-
-
 	while (!exited)
 	{
 		if (workQueue.IsEmpty())
@@ -161,6 +141,23 @@ void FLensSolverWorker::DoWork()
 
 		FString workerMessage = FString::Printf(TEXT("Worker: (Job: \"%s\", worker ID: %d, zoom level: %f): "), *workUnit.jobInfo.jobID, workerID, workUnit.zoomLevel);
 		UE_LOG(LogTemp, Log, TEXT("%sDequeued work unit with queued workload: %d"), *workerMessage, workUnitCount);
+
+		int 
+			flags = cv::CALIB_FIX_ASPECT_RATIO;
+			// flags |= cv::CALIB_USE_INTRINSIC_GUESS;
+			flags |= cv::CALIB_FIX_PRINCIPAL_POINT;
+			flags |= cv::CALIB_ZERO_TANGENT_DIST;
+			// flags |= cv::CALIB_FIX_K1;
+			// flags |= cv::CALIB_FIX_K2;
+			// flags |= cv::CALIB_FIX_K3;
+			flags |= cv::CALIB_FIX_K4;
+			flags |= cv::CALIB_FIX_K5;
+
+		cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
+		cv::Mat image;
+		cv::Point2d principalPoint(0, 0);
+		double fovX = 0, fovY = 0, focalLength = 0, aspectRatio = 0;
+		FMatrix perspectiveMatrix = FMatrix::Identity;
 
 		cv::Size imageSize(workUnit.width, workUnit.height);
 
@@ -190,13 +187,13 @@ void FLensSolverWorker::DoWork()
 
 		bool patternFound = false;
 
-		int flags = cv::CALIB_CB_NORMALIZE_IMAGE;
-		flags |= cv::CALIB_CB_ADAPTIVE_THRESH;
+		int findFlags = cv::CALIB_CB_NORMALIZE_IMAGE;
+		findFlags |= cv::CALIB_CB_ADAPTIVE_THRESH;
 
 		if (workUnit.solveParameters.exhaustiveSearch)
-			flags |= cv::CALIB_CB_EXHAUSTIVE;
+			findFlags |= cv::CALIB_CB_EXHAUSTIVE;
 
-		patternFound = cv::findChessboardCorners(image, patternSize, corners[0], flags);
+		patternFound = cv::findChessboardCorners(image, patternSize, corners[0], findFlags);
 
 		if (!patternFound)
 		{
@@ -282,7 +279,6 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.perspectiveMatrix = perspectiveMatrix;
 
 		solvedPoints.points = pointsCache;
-		solvedPoints.visualizationData = workUnit.pixels;
 
 		UE_LOG(LogTemp, Log, TEXT("%sFinished with work unit."), *workerMessage);
 		QueueSolvedPoints(solvedPoints);
@@ -291,8 +287,19 @@ void FLensSolverWorker::DoWork()
 
 		if (workUnit.solveParameters.writeCalibrationResultToFile)
 			WriteMatToFile(image, "result-", workerMessage);
+
+		image.release();
+		cameraMatrix.release();
+		distortionCoefficients.release();
+		workUnit.pixels.Empty();
+		bool emptied = corners.empty();
+		emptied = objectPoints.empty();
+		emptied = rvecs.empty();
+		emptied = tvecs.empty();
 	}
 
+	onSolvePointsDel.Unbind();
+	workQueue.Empty();
 	exited = true;
 }
 

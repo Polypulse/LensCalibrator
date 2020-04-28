@@ -80,7 +80,7 @@ public:
 	{
 		// workQueue.Empty();
 		// onSolvePointsDel.Unbind();
-		exited = true;
+		// exited = true;
 	}
 
 	FORCEINLINE TStatId GetStatId() const

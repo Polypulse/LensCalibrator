@@ -34,7 +34,8 @@ OutputVS MainVS(InputVS IN)
 OutputPS MainPS(OutputVS IN)
 {
 	OutputPS Out;
-	float2 flipDir = float2(InFlipDirection.x < 0.0f ? -1.0f : 1.0f, InFlipDirection.y < 0.0f ? -1.0f : 1.0f);
-	Out.Color = InTexture.Sample(InTextureSampler, IN.UV * flipDir);
+	float4 pixel = InTexture.Sample(InTextureSampler, float2(InFlipDirection.x < 0.0f ? 1.0f - IN.UV.x : IN.UV.x, InFlipDirection.y < 0.0f ? 1.0f - IN.UV.y : IN.UV.y));
+	float grayScale = pixel.r * 0.21f + pixel.g * 0.72f + pixel.b * 0.07f;
+	Out.Color = float4(grayScale, grayScale, grayScale, 1.0);
     	return Out;
 }

@@ -40,7 +40,4 @@ struct FSolvedPoints
 
 	UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	TArray<FVector2D> points;
-
-	// UPROPERTY(BlueprintReadWrite, Category="VPTK")
-	TArray<FColor> visualizationData;
 };
