@@ -47,7 +47,6 @@ private:
 	UTexture2D * visualizationTexture;
 	bool allocated;
 
-	TQueue<FSolvedPoints> queuedSolvedPoints;
 	TSharedPtr<TQueue<FSolvedPoints>> queuedSolvedPointsPtr;
 
 	mutable FCriticalSection threadLock;

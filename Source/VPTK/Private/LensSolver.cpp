@@ -524,7 +524,7 @@ void ULensSolver::OneTimeProcessMediaTexture(
 		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
+		queuedSolvedPointsPtr = MakeShareable(new TQueue<FSolvedPoints>);
 
 	ouptutJobInfo = RegisterJob(1, UJobType::OneTime);
 	oneTimeProcessParameters.currentResolution = FIntPoint(inputMediaTexture->GetWidth(), inputMediaTexture->GetHeight());
@@ -538,7 +538,7 @@ void ULensSolver::OneTimeProcessTexture2D(
 		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
+		queuedSolvedPointsPtr = MakeShareable(new TQueue<FSolvedPoints>);
 
 	ouptutJobInfo = RegisterJob(1, UJobType::OneTime);
 	oneTimeProcessParameters.currentResolution = FIntPoint(inputTexture->GetSizeX(), inputTexture->GetSizeY());
@@ -552,7 +552,7 @@ void ULensSolver::OneTimeProcessTexture2DArray(
 		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
+		queuedSolvedPointsPtr = MakeShareable(new TQueue<FSolvedPoints>);
 
 	ouptutJobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
 	BeginDetectPoints(
@@ -569,7 +569,7 @@ void ULensSolver::OneTimeProcessMediaTextureArray(
 		FJobInfo & ouptutJobInfo)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = TSharedPtr<TQueue<FSolvedPoints>>(&queuedSolvedPoints);
+		queuedSolvedPointsPtr = MakeShareable(new TQueue<FSolvedPoints>);
 
 	ouptutJobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
 	BeginDetectPoints(
@@ -633,7 +633,8 @@ void ULensSolver::StopBackgroundImageprocessors()
 		workers.Empty();
 	}
 
-	queuedSolvedPoints.Empty();
+	if (queuedSolvedPointsPtr.IsValid())
+		queuedSolvedPointsPtr->Empty();
 	threadLock.Unlock();
 }
 
@@ -654,7 +655,10 @@ void ULensSolver::PollSolvedPoints()
 		return;
 	*/
 
-	bool isQueued = queuedSolvedPoints.IsEmpty() == false;
+	if (!queuedSolvedPointsPtr.IsValid())
+		return;
+
+	bool isQueued = queuedSolvedPointsPtr->IsEmpty() == false;
 	bool outputIsQueued = isQueued;
 
 	FSolvedPoints lastSolvedPoints;
@@ -662,7 +666,10 @@ void ULensSolver::PollSolvedPoints()
 
 	while (isQueued)
 	{
-		if (!queuedSolvedPoints.Dequeue(lastSolvedPoints))
+		if (!queuedSolvedPointsPtr.IsValid())
+			return;
+
+		if (!queuedSolvedPointsPtr->Dequeue(lastSolvedPoints))
 		{
 			UE_LOG(LogTemp, Error, TEXT("Failed to dequeue solved points."));
 			return;
@@ -683,7 +690,7 @@ void ULensSolver::PollSolvedPoints()
 		*/
 
 		this->DequeueSolvedPoints(lastSolvedPoints);
-		isQueued = queuedSolvedPoints.IsEmpty() == false;
+		isQueued = queuedSolvedPointsPtr->IsEmpty() == false;
 
 		FJob *job = jobs.Find(lastSolvedPoints.jobInfo.jobID);
 		job->completedWorkUnits++;
@@ -727,5 +734,8 @@ void ULensSolver::PollSolvedPoints()
 
 void ULensSolver::OnSolvedPoints(FSolvedPoints solvedPoints)
 {
-	queuedSolvedPoints.Enqueue(solvedPoints);
+	if (!queuedSolvedPointsPtr.IsValid())
+		return;
+
+	queuedSolvedPointsPtr->Enqueue(solvedPoints);
 }
