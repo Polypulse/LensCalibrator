@@ -1,3 +1,6 @@
+/* Copyright (C) Polypulse LLC - All Rights Reserved
+ * Written by Sean Connor <sean@polypulse.io>, April 2020 */
+
 #pragma once
 
 #include "CoreTypes.h"
@@ -89,6 +92,7 @@ private:
 		FOneTimeProcessParameters oneTimeProcessParameters);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
+	/*
 	void VisualizeCalibration(
 		FRHICommandListImmediate& RHICmdList, 
 		FSceneViewport* sceneViewport, 
@@ -96,6 +100,7 @@ private:
 		FCalibrationResult solvedPoints,
 		bool flipX,
 		bool flipY);
+	*/
 
 	bool ValidateZoom(const FJobInfo& jobInfo, const float zoomValue);
 	bool ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture);

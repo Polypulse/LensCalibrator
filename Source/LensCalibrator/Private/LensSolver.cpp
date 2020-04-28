@@ -1,6 +1,7 @@
-#include "LensSolver.h"
+/* Copyright (C) Polypulse LLC - All Rights Reserved
+ * Written by Sean Connor <sean@polypulse.io>, April 2020 */
 
-#include <vector.h>
+#include "LensSolver.h"
 
 #include <Runtime\Engine\Classes\Engine\Texture.h>
 #include <Runtime\Engine\Classes\Engine\Texture2D.h>
@@ -11,10 +12,6 @@
 #include "RHIStaticStates.h"
 #include "Engine/RendererSettings.h"
 #include "PixelShaderUtils.h"
-// #include "GameViewportClient.h"
-#include "SceneViewport.h"
-#include "FileHelper.h"
-// #include "SceneRenderTargets.h"
 
 #include "BlitShader.h"
 
@@ -357,7 +354,7 @@ UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, i
 	return visualizationTexture;
 }
 
-
+/*
 void ULensSolver::VisualizeCalibration(
 	FRHICommandListImmediate& RHICmdList, 
 	FSceneViewport* sceneViewport, 
@@ -409,6 +406,7 @@ void ULensSolver::VisualizeCalibration(
 	// solvedPoints.visualizationTexture->ReleaseResource();
 	// visualizationTexture->ConditionalBeginDestroy();
 }
+*/
 
 bool ULensSolver::ValidateZoom(const FJobInfo& jobInfo, const float zoomValue)
 {

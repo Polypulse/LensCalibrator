@@ -1,3 +1,6 @@
+/* Copyright (C) Polypulse LLC - All Rights Reserved
+ * Written by Sean Connor <sean@polypulse.io>, April 2020 */
+
 #include "LensSolverWorker.h"
 
 #include "Engine.h"
@@ -6,8 +9,6 @@
 #include "RenderUtils.h"
 #include "Engine/Texture2D.h"
 #include "JsonUtilities.h"
-
-#include "Queue.h"
 
 FLensSolverWorker::FLensSolverWorker(
 	IsClosingDel * inputIsClosingDel,
