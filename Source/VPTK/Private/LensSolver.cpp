@@ -73,6 +73,12 @@ void ULensSolver::BeginDetectPoints(
 		return;
 	}
 
+	if (!ValidateZoom(inputJobInfo, inputZoomLevel))
+	{
+		ReturnErrorSolvedPoints(inputJobInfo);
+		return;
+	}
+
 	if (!ValidateOneTimeProcessParameters(oneTimeProcessParameters))
 	{
 		ReturnErrorSolvedPoints(inputJobInfo);
@@ -119,6 +125,12 @@ void ULensSolver::BeginDetectPoints(
 	FOneTimeProcessParameters oneTimeProcessParameters)
 {
 	if (!ValidateMediaTexture(inputJobInfo, inputMediaTexture))
+	{
+		ReturnErrorSolvedPoints(inputJobInfo);
+		return;
+	}
+
+	if (!ValidateZoom(inputJobInfo, inputZoomLevel))
 	{
 		ReturnErrorSolvedPoints(inputJobInfo);
 		return;
@@ -402,6 +414,16 @@ void ULensSolver::VisualizeCalibration(
 	// visualizationTexture->ConditionalBeginDestroy();
 }
 
+bool ULensSolver::ValidateZoom(const FJobInfo& jobInfo, const float zoomValue)
+{
+	if (zoomValue < 0.0f || zoomValue > 1.0f)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Input zoom value: %d is outside of expected normalized range between 0 and 1."), zoomValue);
+		return false;
+	}
+	return true;
+}
+
 bool ULensSolver::ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture)
 {
 	if (inputTexture == nullptr)
@@ -448,7 +470,7 @@ bool ULensSolver::ValidateOneTimeProcessParameters(const FOneTimeProcessParamete
 	FString outputMessage;
 
 	bool valid = true;
-	if (oneTimeProcessParameters.cornerCount.X <= 0 || oneTimeProcessParameters.cornerCount.Y)
+	if (oneTimeProcessParameters.cornerCount.X <= 0 || oneTimeProcessParameters.cornerCount.Y <= 0)
 	{
 		outputMessage = FString::Printf(TEXT("%s\n\tCorner Count - Must be positive X & Y integer that represents the number of inside corners across width an height of a checkerboard."), *validationHeader);
 		valid = false;
