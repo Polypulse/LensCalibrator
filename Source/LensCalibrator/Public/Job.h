@@ -14,9 +14,9 @@ struct FJob
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	FJobInfo jobInfo;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	int completedWorkUnits;
 };

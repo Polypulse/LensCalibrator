@@ -110,21 +110,14 @@ private:
 
 protected:
 
-	/*
-	UPROPERTY(BlueprintAssignable, Category="VPTK")
-	FSolvedPointsQueuedDel cachedSolvePointsQueuedDel;
-
-	UPROPERTY(BlueprintAssignable, Category="VPTK")
-	FDequeueSolvedPointsDel cachedDequeueSolvedPointsDel;
-	*/
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	UFUNCTION(BlueprintNativeEvent, Category="VPTK")
+	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
 	void DequeueSolvedPoints (FCalibrationResult solvedPoints);
 	virtual void DequeueSolvedPoints_Implementation (FCalibrationResult solvedPoints) {}
 
-	UFUNCTION(BlueprintNativeEvent, Category="VPTK")
+	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
 	void FinishedJob (FJobInfo jobInfo);
 	virtual void FinishedJob_Implementation (FJobInfo jobInfo) {}
 
@@ -142,45 +135,45 @@ public:
 
 	// virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override {}
 
-	UFUNCTION(BlueprintCallable, Category="VPTK")
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
 
 
-	UFUNCTION(BlueprintCallable, Category = "VPTK")
+	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void OneTimeProcessMediaTexture(
 		UMediaTexture* inputMediaTexture,
 		float normalizedZoomValue,
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
-	UFUNCTION(BlueprintCallable, Category="VPTK")
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void OneTimeProcessTexture2D(
 		UTexture2D* inputTexture, 
 		float normalizedZoomValue, 
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
-	UFUNCTION(BlueprintCallable, Category="VPTK")
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void OneTimeProcessTexture2DArray(
 		TArray<UTexture2D*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
-	UFUNCTION(BlueprintCallable, Category="VPTK")
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void OneTimeProcessMediaTextureArray(
 		TArray<UMediaTexture*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
-	UFUNCTION(BlueprintCallable, Category="VPTK")
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StartBackgroundImageProcessors(int workerCount);
 
-	UFUNCTION(BlueprintCallable, Category="VPTK")
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StopBackgroundImageprocessors();
 
-	UFUNCTION(BlueprintCallable, Category="VPTK")
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void PollSolvedPoints ();
 
 	void OnSolvedPoints(FCalibrationResult solvedPoints);

@@ -14,12 +14,12 @@ struct FJobInfo
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	TEnumAsByte<UJobType> jobType;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	FString jobID;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	int workUnitCount;
 };

@@ -11,36 +11,33 @@ struct FCalibrationResult
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	FJobInfo jobInfo;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	bool success;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	float zoomLevel;
 
-	// UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	int width;
-
-	// UPROPERTY(BlueprintReadWrite, Category="VPTK")
 	int height;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	float fovX;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	float fovY;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	float focalLength;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	float aspectRatio;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	FMatrix perspectiveMatrix;
 
-	UPROPERTY(BlueprintReadWrite, Category="VPTK")
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	TArray<FVector2D> points;
 };

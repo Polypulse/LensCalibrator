@@ -45,7 +45,7 @@ UCameraPlayer * UCameraPlayer::GetLocalPlayerInstance(UObject * worldContextObje
 	UCameraPlayer* cameraPlayer = dynamic_cast<UCameraPlayer*>(player);
 	if (!cameraPlayer)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Instance of ULocalPlayer is not a UAPATPlayer!"))
+		UE_LOG(LogTemp, Error, TEXT("Instance of ULocalPlayer is not a UCameraPlayer!"))
 		return nullptr;
 	}
 

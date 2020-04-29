@@ -9,7 +9,7 @@
 
 #include "UCameraPlayer.generated.h"
 
-UCLASS(BlueprintType, Category = "APAT", meta = (Keywords = ""))
+UCLASS(BlueprintType, Category = "Lens Calibrator", meta = (Keywords = ""))
 class UCameraPlayer : public ULocalPlayer
 {
 	GENERATED_BODY()
@@ -26,9 +26,9 @@ private:
 	FMatrix projectionMatrix;
 
 public:
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Set Camera Projection Matrix"), Category = "APAT", meta = (Keywords = ""))
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Set Camera Projection Matrix"), Category = "Lens Calibrator", meta = (Keywords = ""))
 	void QueueCameraProjectionMatrix(FMatrix projectionMatrix);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Local Player"), Category = "APAT", meta = (Keywords = ""))
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Local Player"), Category = "Lens Calibrator", meta = (Keywords = ""))
 	static UCameraPlayer * GetLocalPlayerInstance(UObject * worldContext, bool & valid);
 };
