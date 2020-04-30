@@ -62,7 +62,7 @@ private:
 	int workerID;
 
 	mutable bool latched;
-	mutable bool exited;
+	mutable bool flagToExit;
 
 	mutable FLatchData latchData;
 

@@ -84,10 +84,9 @@ private:
 		FOneTimeProcessParameters oneTimeProcessParameters);
 
 	void BeginDetectPoints(
-		const FJobInfo jobInfo,
+		const FJobInfo inputJobInfo,
 		const FTextureArrayZoomPair& inputTextures,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		const bool latch);
+		FOneTimeProcessParameters inputOneTimeProcessParameters);
 
 	void BeginDetectPoints(
 		const FJobInfo jobInfo,
@@ -107,7 +106,7 @@ private:
 		const FJobInfo jobInfo,
 		const FTextureZoomPair textureZoomPair,
 		FOneTimeProcessParameters oneTimeProcessParameters,
-		bool latch);
+		const bool latch);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
 	/*

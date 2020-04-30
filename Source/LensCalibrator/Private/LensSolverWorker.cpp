@@ -31,7 +31,7 @@ FLensSolverWorker::FLensSolverWorker(
 	workerID = inputWorkerID;
 
 	latched = false;
-	exited = false;
+	flagToExit = false;
 
 	calibrationVisualizationOutputPath = FPaths::ConvertRelativePathToFull(FPaths::GameDevelopersDir() + FString::Printf(TEXT("CalibrationVisualizations/Worker-%d/"), workerID));
 }
@@ -145,10 +145,18 @@ FTransform FLensSolverWorker::GenerateTransformFromRAndTVecs(std::vector<cv::Mat
 
 void FLensSolverWorker::DoWork()
 {
-	while (!exited)
+	while (!flagToExit)
 	{
-		while (!latched) 
+		while (!latched && !flagToExit)
+		{
+			if (flagToExit)
+				break;
+
 			continue;
+		}
+
+		if (flagToExit)
+			break;
 
 		latched = false;
 
@@ -166,6 +174,7 @@ void FLensSolverWorker::DoWork()
 
 		workUnitCount -= latchedWorkUnitCount;
 		FString workerMessage = FString::Printf(TEXT("Worker: (ID: %d): "), workerID);
+		UE_LOG(LogTemp, Log, TEXT("%sLatched and with data dequeued!"));
 
 		std::vector<std::vector<cv::Point2f>> corners(latchedWorkUnitCount);
 		std::vector<std::vector<cv::Point3f>> objectPoints(latchedWorkUnitCount);
@@ -336,7 +345,7 @@ void FLensSolverWorker::DoWork()
 
 	onSolvePointsDel.Unbind();
 	workQueue.Empty();
-	exited = true;
+	flagToExit = true;
 }
 
 void FLensSolverWorker::QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel)
@@ -365,7 +374,7 @@ void FLensSolverWorker::QueueSolvedPoints(FCalibrationResult solvedPoints)
 
 bool FLensSolverWorker::IsClosing()
 {
-	exited = true;
+	flagToExit = true;
 	return true;
 }
 

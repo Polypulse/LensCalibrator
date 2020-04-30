@@ -187,14 +187,13 @@ void ULensSolver::BeginDetectPoints(
 			jobInfo,
 			textureZoomPairs[i],
 			oneTimeProcessParameters,
-			true);
+			i == textureZoomPairs.Num() - 1);
 }
 
 void ULensSolver::BeginDetectPoints(
-	const FJobInfo inputJobInfo, 
+	const FJobInfo inputJobInfo,
 	const FTextureArrayZoomPair& inputTextures,
-	FOneTimeProcessParameters inputOneTimeProcessParameters,
-	const bool inputLatch)
+	FOneTimeProcessParameters inputOneTimeProcessParameters)
 {
 
 	if (!ValidateZoom(inputJobInfo, inputTextures.zoomLevel))
@@ -237,7 +236,7 @@ void ULensSolver::BeginDetectPoints(
 		};
 
 		FOneTimeProcessParameters tempFirstPassParameters = inputOneTimeProcessParameters;
-		bool latch = inputLatch;
+		const bool latch = i == inputTextures.textures.Num() - 1;
 
 		UE_LOG(LogTemp, Log, TEXT("Enqueuing calibration image render comand at resolution: (%d, %d)."), inputOneTimeProcessParameters.currentResolution.X, inputOneTimeProcessParameters.currentResolution.Y);
 
@@ -252,7 +251,6 @@ void ULensSolver::BeginDetectPoints(
 					textureZoomPair,
 					tempFirstPassParameters,
 					latch);
-					
 			}
 		);
 	}
@@ -274,8 +272,7 @@ void ULensSolver::BeginDetectPoints(
 		BeginDetectPoints(
 			jobInfo,
 			inputTextures[i],
-			oneTimeProcessParameters,
-			i == inputTextures.Num() - 1);
+			oneTimeProcessParameters);
 }
 
 /*
@@ -309,7 +306,7 @@ void ULensSolver::DetectPointsRenderThread(
 	const FJobInfo jobInfo,
 	const FTextureZoomPair textureZoomPair,
 	FOneTimeProcessParameters oneTimeProcessParameters,
-	bool latch)
+	const bool latch)
 
 {
 	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.resizeResolution.X : oneTimeProcessParameters.currentResolution.X;
@@ -381,11 +378,10 @@ void ULensSolver::DetectPointsRenderThread(
 
 	threadLock.Lock();
 	if (workers.Num() == 0)
+	{
+		threadLock.Unlock();
 		return;
-
-	workers.Sort([](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) {
-		return workerA.getWorkLoadDel.Execute() > workerB.getWorkLoadDel.Execute();
-	});
+	}
 
 	FString textureName;
 	textureZoomPair.texture->GetName(textureName);
@@ -408,7 +404,12 @@ void ULensSolver::DetectPointsRenderThread(
 			FIntPoint(width, height)
 		};
 
+		UE_LOG(LogTemp, Log, TEXT("Latching worker."))
 		workers[0].signalLatch.Execute(latchData);
+
+		workers.Sort([](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) {
+			return workerA.getWorkLoadDel.Execute() > workerB.getWorkLoadDel.Execute();
+		});
 	}
 
 	threadLock.Unlock();
@@ -671,8 +672,7 @@ void ULensSolver::OneTimeProcessTextureArrayZoomPair(
 	BeginDetectPoints(
 		ouptutJobInfo,
 		inputTextures,
-		oneTimeProcessParameters,
-		true
+		oneTimeProcessParameters
 	);
 }
 
