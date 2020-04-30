@@ -14,8 +14,11 @@
 #include "SolvedPoints.h"
 #include "LensSolverWorker.h"
 #include "Job.h"
+#include "LatchData.h"
 #include "WorkerParameters.h"
 #include "OneTimeProcessParameters.h"
+#include "TextureArrayZoomPair.h"
+#include "TextureZoomPair.h"
 #include "LensSolver.generated.h"
 
 USTRUCT()
@@ -28,6 +31,7 @@ struct FWorkerInterfaceContainer
 	FLensSolverWorker::GetWorkLoadDel getWorkLoadDel;
 	FLensSolverWorker::QueueWorkUnitDel queueWorkUnitDel;
 	FLensSolverWorker::IsClosingDel isClosingDel;
+	FLensSolverWorker::SignalLatchDel signalLatch;
 };
 
 UCLASS( Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -56,40 +60,54 @@ private:
 	TArray<FWorkerInterfaceContainer> workers;
 	TMap<FString, FJob> jobs;
 
-	FJobInfo RegisterJob (int workUnitCount, UJobType jobType);
+	FJobInfo RegisterJob (int latchedWorkUnitCount, UJobType jobType);
 
 	int GetWorkerCount ();
 
 	void BeginDetectPoints(
 		const FJobInfo inputJobInfo,
-		const UTexture2D* inputTexture,
-		const float inputZoomLevel,
-		FOneTimeProcessParameters oneTimeProcessParameters);
+		const FTextureZoomPair& inputTextureZoomPair,
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		const bool inputLatch);
 
+	/*
 	void BeginDetectPoints(
 		const FJobInfo inputJobInfo,
 		const UMediaTexture* inputMediaTexture,
 		const float inputZoomLevel,
 		FOneTimeProcessParameters oneTimeProcessParameters);
+	*/
 
 	void BeginDetectPoints(
 		const FJobInfo jobInfo,
-		TArray<UTexture2D*> inputTextures,
-		TArray<float> inputZoomLevels,
+		const TArray<FTextureZoomPair> & inputTextures,
 		FOneTimeProcessParameters oneTimeProcessParameters);
 
+	void BeginDetectPoints(
+		const FJobInfo jobInfo,
+		const FTextureArrayZoomPair& inputTextures,
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		const bool latch);
+
+	void BeginDetectPoints(
+		const FJobInfo jobInfo,
+		const TArray<FTextureArrayZoomPair> & inputTextures,
+		FOneTimeProcessParameters oneTimeProcessParameters);
+
+	/*
 	void BeginDetectPoints(
 		const FJobInfo jobInfo,
 		TArray<UMediaTexture*> inputTextures,
 		TArray<float> inputZoomLevels,
 		FOneTimeProcessParameters oneTimeProcessParameters);
+	*/
 
 	void DetectPointsRenderThread(
 		FRHICommandListImmediate& RHICmdList,
 		const FJobInfo jobInfo,
-		const UTexture* texture,
-		const float normalizedZoomLevel,
-		FOneTimeProcessParameters oneTimeProcessParameters);
+		const FTextureZoomPair textureZoomPair,
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		bool latch);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
 	/*
@@ -139,31 +157,45 @@ public:
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
 
 
+	/*
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void OneTimeProcessMediaTexture(
 		UMediaTexture* inputMediaTexture,
 		float normalizedZoomValue,
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
+	*/
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	void OneTimeProcessTexture2D(
-		UTexture2D* inputTexture, 
-		float normalizedZoomValue, 
+	void OneTimeProcessTextureZoomPair(
+		FTextureZoomPair textureZoomPair,
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	void OneTimeProcessTexture2DArray(
-		TArray<UTexture2D*> inputTextures, 
-		TArray<float> normalizedZoomValues, 
+	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
+		void OneTimeProcessArrayOfTextureZoomPairs(
+		TArray<FTextureZoomPair> textureZoomPairArray,
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
+	/*
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void OneTimeProcessMediaTextureArray(
 		TArray<UMediaTexture*> inputTextures, 
 		TArray<float> normalizedZoomValues, 
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo);
+	*/
+
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
+	void OneTimeProcessTextureArrayZoomPair(
+		FTextureArrayZoomPair inputTextures, 
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo);
+
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
+	void OneTimeProcessTextureArrayOfTextureArrayZoomPairs(
+		TArray<FTextureArrayZoomPair> inputTextures, 
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 

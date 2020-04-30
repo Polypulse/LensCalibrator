@@ -18,6 +18,7 @@
 #pragma pop_macro("check")
 
 #include "JobInfo.h"
+#include "LatchData.h"
 #include "WorkerParameters.h"
 #include "LensSolverWorker.generated.h"
 
@@ -27,14 +28,11 @@ struct FLensSolverWorkUnit
 {
 	GENERATED_BODY()
 
-	FJobInfo jobInfo;
-	FWorkerParameters workerParameters;
-
 	FString unitName;
-	int width;
-	int height;
+
 	FIntPoint cornerCount;
 	float zoomLevel;
+	int index;
 	float squareSize;
 
 	TArray<FColor> pixels;
@@ -48,6 +46,7 @@ public:
 	DECLARE_DELEGATE_OneParam(OnSolvePointsDel, FCalibrationResult)
 	DECLARE_DELEGATE_RetVal(int, GetWorkLoadDel)
 	DECLARE_DELEGATE_OneParam(QueueWorkUnitDel, FLensSolverWorkUnit)
+	DECLARE_DELEGATE_OneParam(SignalLatchDel, const FLatchData)
 	DECLARE_DELEGATE_RetVal(bool, IsClosingDel)
 
 private:
@@ -58,9 +57,14 @@ private:
 
 	TQueue<FLensSolverWorkUnit> workQueue;
 
+	mutable int latchedWorkUnitCount;
 	mutable int workUnitCount;
 	int workerID;
+
+	mutable bool latched;
 	mutable bool exited;
+
+	mutable FLatchData latchData;
 
 	// static UTexture2D * CreateTexture2D(TArray<uint8> * rawData, int width, int height);
 
@@ -80,6 +84,7 @@ public:
 		IsClosingDel * inputIsClosingDel,
 		GetWorkLoadDel * inputGetWorkLoadDel,
 		QueueWorkUnitDel * inputQueueWorkUnitDel,
+		SignalLatchDel * inputSignalLatch,
 		OnSolvePointsDel inputOnSolvePointsDel,
 		int inputWorkerID);
 
@@ -100,4 +105,5 @@ protected:
 	void DoWork();
 	int GetWorkLoad ();
 	void QueueWorkUnit(FLensSolverWorkUnit workUnit);
+	void Latch(const FLatchData inputLatchData);
 };

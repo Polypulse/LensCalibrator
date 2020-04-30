@@ -6,10 +6,12 @@
 #include "JobInfo.h"
 #include "SolvedPoints.generated.h"
 
-USTRUCT(BlueprintType)
+USTRUCT(Blueprintable)
 struct FCalibrationResult
 {
 	GENERATED_BODY()
+
+	FIntPoint resolution;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	FJobInfo jobInfo;
@@ -20,8 +22,8 @@ struct FCalibrationResult
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	float zoomLevel;
 
-	int width;
-	int height;
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	int textureIndex;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	float fovX;
@@ -40,4 +42,7 @@ struct FCalibrationResult
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	TArray<FVector2D> points;
+
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	TArray<float> distortionCoefficients;
 };
