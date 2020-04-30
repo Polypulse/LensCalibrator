@@ -39,9 +39,9 @@ FLensSolverWorker::FLensSolverWorker(
 int FLensSolverWorker::GetWorkLoad () 
 { 
 	int count = 0;
-	// threadLock.Lock();
+	threadLock.Lock();
 	count = workUnitCount;
-	// threadLock.Unlock();
+	threadLock.Unlock();
 
 	return count; 
 }
@@ -49,16 +49,18 @@ int FLensSolverWorker::GetWorkLoad ()
 void FLensSolverWorker::QueueWorkUnit(FLensSolverWorkUnit workUnit)
 {
 	workQueue.Enqueue(workUnit);
-	// threadLock.Lock();
+	threadLock.Lock();
 	workUnitCount++;
-	// threadLock.Unlock();
+	threadLock.Unlock();
 }
 
 void FLensSolverWorker::Latch(const FLatchData inputLatchData)
 {
+	threadLock.Lock();
 	latchedWorkUnitCount = workUnitCount;
 	latchData = inputLatchData;
 	latched = true;
+	threadLock.Unlock();
 }
 
 void FLensSolverWorker::TransformVectorFromCVToUE4(FVector& v)
@@ -145,39 +147,59 @@ FTransform FLensSolverWorker::GenerateTransformFromRAndTVecs(std::vector<cv::Mat
 
 void FLensSolverWorker::DoWork()
 {
-	while (!flagToExit)
+	while (true)
 	{
-		while (!latched && !flagToExit)
+		bool isLatched = false, exit = false;
+		threadLock.Lock();
+		isLatched = latched;
+		exit = flagToExit;
+		threadLock.Unlock();
+
+		while (!isLatched && !exit)
 		{
-			if (flagToExit)
+			if (exit)
 				break;
+
+			threadLock.Lock();
+			isLatched = latched;
+			exit = flagToExit;
+			threadLock.Unlock();
 
 			continue;
 		}
 
-		if (flagToExit)
+		if (exit)
 			break;
 
-		latched = false;
+		FString workerMessage = FString::Printf(TEXT("Worker: (ID: %d): "), workerID);
+		UE_LOG(LogTemp, Log, TEXT("%sLatched!"), *workerMessage);
 
-		if (latchedWorkUnitCount == 0)
+		int imageCount = 0;
+		threadLock.Lock();
+		latched = false;
+		imageCount = latchedWorkUnitCount;
+		workUnitCount -= latchedWorkUnitCount;
+		threadLock.Unlock();
+
+		if (imageCount == 0)
+		{
+			UE_LOG(LogTemp, Error, TEXT("%sNo work units in latched queue, idling..."), *workerMessage)
 			continue;
+		}
 
 		TArray<FLensSolverWorkUnit> workUnits;
-		workUnits.SetNum(latchedWorkUnitCount);
-		for (int i = 0; i < latchedWorkUnitCount; i++)
+		workUnits.SetNum(imageCount);
+		for (int i = 0; i < imageCount; i++)
 		{
 			FLensSolverWorkUnit workUnit;
 			workQueue.Dequeue(workUnit);
 			workUnits[i] = workUnit;
 		}
 
-		workUnitCount -= latchedWorkUnitCount;
-		FString workerMessage = FString::Printf(TEXT("Worker: (ID: %d): "), workerID);
-		UE_LOG(LogTemp, Log, TEXT("%sLatched and with data dequeued!"));
+		UE_LOG(LogTemp, Log, TEXT("%sDequeued %d work units in latched queue."), *workerMessage, latchedWorkUnitCount)
 
-		std::vector<std::vector<cv::Point2f>> corners(latchedWorkUnitCount);
-		std::vector<std::vector<cv::Point3f>> objectPoints(latchedWorkUnitCount);
+		std::vector<std::vector<cv::Point2f>> corners(imageCount);
+		std::vector<std::vector<cv::Point3f>> objectPoints(imageCount);
 
 		std::vector<cv::Mat> images;
 		cv::Size imageSize(latchData.resolution.X, latchData.resolution.Y);
@@ -206,11 +228,11 @@ void FLensSolverWorker::DoWork()
 
 		cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
-		for (int i = 0; i < latchedWorkUnitCount; i++)
+		for (int i = 0; i < imageCount; i++)
 		{
 			FLensSolverWorkUnit workUnit = workUnits[i];
 
-			UE_LOG(LogTemp, Log, TEXT("%sDequeued work unit with queued workload: %d"), *workerMessage, latchedWorkUnitCount);
+			UE_LOG(LogTemp, Log, TEXT("%sDequeued work unit with queued workload: %d"), *workerMessage, imageCount);
 
 			cv::Size patternSize(workUnit.cornerCount.X, workUnit.cornerCount.Y);
 			cv::Mat image;
@@ -374,7 +396,9 @@ void FLensSolverWorker::QueueSolvedPoints(FCalibrationResult solvedPoints)
 
 bool FLensSolverWorker::IsClosing()
 {
+	threadLock.Lock();
 	flagToExit = true;
+	threadLock.Unlock();
 	return true;
 }
 

@@ -53,18 +53,18 @@ private:
 	FString calibrationVisualizationOutputPath;
 
 	OnSolvePointsDel onSolvePointsDel;
-	// FCriticalSection threadLock;
 
 	TQueue<FLensSolverWorkUnit> workQueue;
 
-	mutable int latchedWorkUnitCount;
-	mutable int workUnitCount;
+	int latchedWorkUnitCount;
+	int workUnitCount;
 	int workerID;
 
-	mutable bool latched;
-	mutable bool flagToExit;
+	bool latched;
+	bool flagToExit;
 
-	mutable FLatchData latchData;
+	FLatchData latchData;
+	FCriticalSection threadLock;
 
 	// static UTexture2D * CreateTexture2D(TArray<uint8> * rawData, int width, int height);
 

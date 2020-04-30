@@ -187,7 +187,7 @@ void ULensSolver::BeginDetectPoints(
 			jobInfo,
 			textureZoomPairs[i],
 			oneTimeProcessParameters,
-			i == textureZoomPairs.Num() - 1);
+			true);
 }
 
 void ULensSolver::BeginDetectPoints(
