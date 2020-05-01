@@ -14,9 +14,11 @@ struct FLatchData
 
 	FJobInfo jobInfo;
 	FWorkerParameters workerParameters;
+	int imageCount;
 	float zoomLevel;
 	FIntPoint resolution;
 
+	/*
 	FLatchData(){}
 
 	FLatchData(
@@ -29,4 +31,5 @@ struct FLatchData
 		zoomLevel(inputZoomLevel),
 		resolution(inputResolution)
 	{}
+	*/
 };

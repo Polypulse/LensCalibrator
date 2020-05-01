@@ -106,6 +106,7 @@ private:
 		const FJobInfo jobInfo,
 		const FTextureZoomPair textureZoomPair,
 		FOneTimeProcessParameters oneTimeProcessParameters,
+		const int latchImageCount,
 		const bool latch);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);

@@ -22,15 +22,13 @@ FLensSolverWorker::FLensSolverWorker(
 {
 	inputQueueWorkUnitDel->BindRaw(this, &FLensSolverWorker::QueueWorkUnit);
 	inputGetWorkLoadDel->BindRaw(this, &FLensSolverWorker::GetWorkLoad);
-	inputIsClosingDel->BindRaw(this, &FLensSolverWorker::IsClosing);
+	inputIsClosingDel->BindRaw(this, &FLensSolverWorker::Exit);
 	inputSignalLatch->BindRaw(this, &FLensSolverWorker::Latch);
-
-	latchedWorkUnitCount = 0;
-	workUnitCount = 0;
 
 	workerID = inputWorkerID;
 
-	latched = false;
+	latchedWorkUnitCount = 0;
+	workUnitCount = 0;
 	flagToExit = false;
 
 	calibrationVisualizationOutputPath = FPaths::ConvertRelativePathToFull(FPaths::GameDevelopersDir() + FString::Printf(TEXT("CalibrationVisualizations/Worker-%d/"), workerID));
@@ -58,8 +56,7 @@ void FLensSolverWorker::Latch(const FLatchData inputLatchData)
 {
 	threadLock.Lock();
 	latchedWorkUnitCount = workUnitCount;
-	latchData = inputLatchData;
-	latched = true;
+	latchQueue.Enqueue(inputLatchData);
 	threadLock.Unlock();
 }
 
@@ -149,57 +146,46 @@ void FLensSolverWorker::DoWork()
 {
 	while (true)
 	{
-		bool isLatched = false, exit = false;
-		threadLock.Lock();
-		isLatched = latched;
-		exit = flagToExit;
-		threadLock.Unlock();
-
-		while (!isLatched && !exit)
-		{
-			if (exit)
-				break;
-
-			threadLock.Lock();
-			isLatched = latched;
-			exit = flagToExit;
-			threadLock.Unlock();
-
+		while (workQueue.IsEmpty() && !ShouldExit())
 			continue;
-		}
 
-		if (exit)
+		while (latchQueue.IsEmpty() && !ShouldExit())
+			continue;
+
+		if (ShouldExit())
 			break;
 
 		FString workerMessage = FString::Printf(TEXT("Worker: (ID: %d): "), workerID);
 		UE_LOG(LogTemp, Log, TEXT("%sLatched!"), *workerMessage);
 
-		int imageCount = 0;
-		threadLock.Lock();
-		latched = false;
-		imageCount = latchedWorkUnitCount;
-		workUnitCount -= latchedWorkUnitCount;
-		threadLock.Unlock();
-
-		if (imageCount == 0)
-		{
-			UE_LOG(LogTemp, Error, TEXT("%sNo work units in latched queue, idling..."), *workerMessage)
-			continue;
-		}
-
 		TArray<FLensSolverWorkUnit> workUnits;
-		workUnits.SetNum(imageCount);
-		for (int i = 0; i < imageCount; i++)
+		FLatchData latchData;
+
 		{
-			FLensSolverWorkUnit workUnit;
-			workQueue.Dequeue(workUnit);
-			workUnits[i] = workUnit;
+			threadLock.Lock();
+			latchQueue.Dequeue(latchData);
+
+			if (latchData.imageCount == 0)
+			{
+				threadLock.Unlock();
+				UE_LOG(LogTemp, Error, TEXT("%sNo work units in latched queue, idling..."), *workerMessage)
+				continue;
+			}
+
+			workUnitCount -= latchData.imageCount;
+
+			workUnits.SetNum(latchData.imageCount);
+			for (int i = 0; i < latchData.imageCount; i++)
+				workQueue.Dequeue(workUnits[i]);
+
+			threadLock.Unlock();
 		}
+
 
 		UE_LOG(LogTemp, Log, TEXT("%sDequeued %d work units in latched queue."), *workerMessage, latchedWorkUnitCount)
 
-		std::vector<std::vector<cv::Point2f>> corners(imageCount);
-		std::vector<std::vector<cv::Point3f>> objectPoints(imageCount);
+		std::vector<std::vector<cv::Point2f>> corners(latchData.imageCount);
+		std::vector<std::vector<cv::Point3f>> objectPoints(latchData.imageCount);
 
 		std::vector<cv::Mat> images;
 		cv::Size imageSize(latchData.resolution.X, latchData.resolution.Y);
@@ -228,13 +214,11 @@ void FLensSolverWorker::DoWork()
 
 		cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
-		for (int i = 0; i < imageCount; i++)
+		for (int i = 0; i < latchData.imageCount; i++)
 		{
-			FLensSolverWorkUnit workUnit = workUnits[i];
+			UE_LOG(LogTemp, Log, TEXT("%sDequeued work unit with queued workload: %d"), *workerMessage, latchData.imageCount);
 
-			UE_LOG(LogTemp, Log, TEXT("%sDequeued work unit with queued workload: %d"), *workerMessage, imageCount);
-
-			cv::Size patternSize(workUnit.cornerCount.X, workUnit.cornerCount.Y);
+			cv::Size patternSize(workUnits[i].cornerCount.X, workUnits[i].cornerCount.Y);
 			cv::Mat image;
 
 			if (image.rows != width || image.cols != height)
@@ -243,11 +227,11 @@ void FLensSolverWorker::DoWork()
 				image = cv::Mat(width, width, cv::DataType<uint8>::type);
 			}
 
-			UE_LOG(LogTemp, Log, TEXT("%sCopying pixel data of pixel count: %d to OpenCV Mat of size: (%d, %d)."), *workerMessage, workUnit.pixels.Num(), width, height);
+			UE_LOG(LogTemp, Log, TEXT("%sCopying pixel data of pixel count: %d to OpenCV Mat of size: (%d, %d)."), *workerMessage, workUnits[i].pixels.Num(), width, height);
 			int pixelCount = width * height;
 			for (int pi = 0; pi < pixelCount; pi++)
-				image.at<uint8>(pi / width, pi % width) = workUnit.pixels[(pixelCount - 1) - pi].R;
-			UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnit.pixels.Num(), width, height);
+				image.at<uint8>(pi / width, pi % width) = workUnits[i].pixels[(pixelCount - 1) - pi].R;
+			UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnits[i].pixels.Num(), width, height);
 
 			bool patternFound = false;
 
@@ -262,7 +246,7 @@ void FLensSolverWorker::DoWork()
 			if (!patternFound)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("%sNo pattern in view."), *workerMessage);
-				QueueSolvedPointsError(latchData.jobInfo, workUnit.zoomLevel);
+				QueueSolvedPointsError(latchData.jobInfo, workUnits[i].zoomLevel);
 				continue;
 			}
 
@@ -279,13 +263,13 @@ void FLensSolverWorker::DoWork()
 			// UE_LOG(LogTemp, Log, TEXT("Chessboard detected."));
 			// objectPoints.resize(corners.size(), objectPoints[0]);
 
-			for (int y = 0; y < workUnit.cornerCount.Y; y++)
-				for (int x = 0; x < workUnit.cornerCount.X; x++)
-					objectPoints[i].push_back(cv::Point3f(x * workUnit.squareSize, y * workUnit.squareSize, 0.0f));
+			for (int y = 0; y < workUnits[i].cornerCount.Y; y++)
+				for (int x = 0; x < workUnits[i].cornerCount.X; x++)
+					objectPoints[i].push_back(cv::Point3f(x * workUnits[i].squareSize, y * workUnits[i].squareSize, 0.0f));
 
 			cv::drawChessboardCorners(image, patternSize, corners[0], patternFound);
 			if (latchData.workerParameters.writeDebugTextureToFile)
-				WriteMatToFile(image, latchData.workerParameters.debugTextureFolderPath, workUnit.unitName + "-debug", workerMessage);
+				WriteMatToFile(image, latchData.workerParameters.debugTextureFolderPath, workUnits[i].unitName + "-debug", workerMessage);
 		}
 
 		double error = cv::calibrateCamera(
@@ -302,8 +286,9 @@ void FLensSolverWorker::DoWork()
 		cv::calibrationMatrixValues(cameraMatrix, imageSize, (double)imageSize.width, (double)imageSize.height, fovX, fovY, focalLength, principalPoint, aspectRatio);
 		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(imageSize, principalPoint, focalLength);
 
-		UE_LOG(LogTemp, Log, TEXT("%sCompleted camera calibration with solve error: %f with results: (\n\tFov X: %f,\n\tFov Y: %f,\n\tFocal Length: %f,\n\tAspect Ratio: %f\n)"),
+		UE_LOG(LogTemp, Log, TEXT("%sCompleted camera calibration at zoom level: %f with solve error: %f with results: (\n\tFov X: %f,\n\tFov Y: %f,\n\tFocal Length: %f,\n\tAspect Ratio: %f\n)"),
 			*workerMessage,
+			latchData.zoomLevel,
 			error,
 			fovX,
 			fovY,
@@ -312,7 +297,7 @@ void FLensSolverWorker::DoWork()
 
 		/*
 		TArray<uint8> visualizationData;
-		int count = width * workUnit.height * 4;
+		int count = width * workUnits[i].height * 4;
 		visualizationData.SetNum(count);
 
 		for (int i = 0; i < width * workUnit.height * 4; i += 4)
@@ -394,12 +379,21 @@ void FLensSolverWorker::QueueSolvedPoints(FCalibrationResult solvedPoints)
 	onSolvePointsDel.Execute(solvedPoints);
 }
 
-bool FLensSolverWorker::IsClosing()
+bool FLensSolverWorker::Exit()
 {
 	threadLock.Lock();
 	flagToExit = true;
 	threadLock.Unlock();
 	return true;
+}
+
+bool FLensSolverWorker::ShouldExit()
+{
+	bool shouldExit = false;
+	threadLock.Lock();
+	shouldExit = flagToExit;
+	threadLock.Unlock();
+	return shouldExit;
 }
 
 FString FLensSolverWorker::GenerateIndexedFilePath(const FString& folder, const FString& fileName, const FString & extension)

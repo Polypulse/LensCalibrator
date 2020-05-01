@@ -55,15 +55,14 @@ private:
 	OnSolvePointsDel onSolvePointsDel;
 
 	TQueue<FLensSolverWorkUnit> workQueue;
+	TQueue<FLatchData> latchQueue;
 
 	int latchedWorkUnitCount;
 	int workUnitCount;
 	int workerID;
 
-	bool latched;
 	bool flagToExit;
 
-	FLatchData latchData;
 	FCriticalSection threadLock;
 
 	// static UTexture2D * CreateTexture2D(TArray<uint8> * rawData, int width, int height);
@@ -73,7 +72,8 @@ private:
 	FTransform GenerateTransformFromRAndTVecs (std::vector<cv::Mat> & rvecs, std::vector<cv::Mat> & tvecs);
 	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
 	void QueueSolvedPoints(FCalibrationResult solvedPoints);
-	bool IsClosing ();
+	bool Exit ();
+	bool ShouldExit();
 	FString GenerateIndexedFilePath(const FString& folder, const FString& fileName, const FString & extension);
 	bool ValidateFolder(FString& folder, const FString & workerMessage);
 	void WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage);

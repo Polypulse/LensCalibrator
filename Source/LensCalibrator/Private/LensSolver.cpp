@@ -26,11 +26,11 @@ void ULensSolver::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-FJobInfo ULensSolver::RegisterJob(int latchedWorkUnitCount, UJobType jobType)
+FJobInfo ULensSolver::RegisterJob(int workUnitCount, UJobType jobType)
 {
 	FJobInfo jobInfo;
 	jobInfo.jobID = FGuid::NewGuid().ToString();
-	jobInfo.latchedWorkUnitCount = latchedWorkUnitCount;
+	jobInfo.workUnitCount = workUnitCount;
 	jobInfo.jobType = jobType;
 
 	FJob job;
@@ -104,6 +104,7 @@ void ULensSolver::BeginDetectPoints(
 				jobInfo,
 				textureZoomPair,
 				tempFirstPassParameters,
+				1,
 				latch);
 				
 		}
@@ -236,6 +237,7 @@ void ULensSolver::BeginDetectPoints(
 		};
 
 		FOneTimeProcessParameters tempFirstPassParameters = inputOneTimeProcessParameters;
+		const int latchImageCount = inputTextures.textures.Num();
 		const bool latch = i == inputTextures.textures.Num() - 1;
 
 		UE_LOG(LogTemp, Log, TEXT("Enqueuing calibration image render comand at resolution: (%d, %d)."), inputOneTimeProcessParameters.currentResolution.X, inputOneTimeProcessParameters.currentResolution.Y);
@@ -243,13 +245,14 @@ void ULensSolver::BeginDetectPoints(
 		ULensSolver * lensSolver = this;
 		ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
 		(
-			[lensSolver, jobInfo, textureZoomPair, tempFirstPassParameters, latch](FRHICommandListImmediate& RHICmdList)
+			[lensSolver, jobInfo, textureZoomPair, tempFirstPassParameters, latchImageCount, latch](FRHICommandListImmediate& RHICmdList)
 			{
 				lensSolver->DetectPointsRenderThread(
 					RHICmdList,
 					jobInfo,
 					textureZoomPair,
 					tempFirstPassParameters,
+					latchImageCount,
 					latch);
 			}
 		);
@@ -306,6 +309,7 @@ void ULensSolver::DetectPointsRenderThread(
 	const FJobInfo jobInfo,
 	const FTextureZoomPair textureZoomPair,
 	FOneTimeProcessParameters oneTimeProcessParameters,
+	const int latchImageCount,
 	const bool latch)
 
 {
@@ -400,6 +404,7 @@ void ULensSolver::DetectPointsRenderThread(
 		{
 			jobInfo,
 			oneTimeProcessParameters.workerParameters,
+			latchImageCount,
 			textureZoomPair.zoomLevel,
 			FIntPoint(width, height)
 		};
@@ -828,7 +833,7 @@ void ULensSolver::PollSolvedPoints()
 		FJob *job = jobs.Find(lastSolvedPoints.jobInfo.jobID);
 		job->completedWorkUnits++;
 
-		if (job->completedWorkUnits >= lastSolvedPoints.jobInfo.latchedWorkUnitCount)
+		if (job->completedWorkUnits >= lastSolvedPoints.jobInfo.workUnitCount)
 		{
 			UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *lastSolvedPoints.jobInfo.jobID);
 			this->FinishedJob(lastSolvedPoints.jobInfo);

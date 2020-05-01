@@ -21,5 +21,5 @@ struct FJobInfo
 	FString jobID;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	int latchedWorkUnitCount;
+	int workUnitCount;
 };
