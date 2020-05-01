@@ -109,6 +109,12 @@ private:
 		const int latchImageCount,
 		const bool latch);
 
+	void GenerateDistortionCorrectionDisplacementMapRenderThread(
+		FRHICommandListImmediate& RHICmdList,
+		const FJobInfo jobInfo,
+		const FCalibrationResult calibrationResult,
+		const FIntPoint mapSize);
+
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
 	/*
 	void VisualizeCalibration(
@@ -143,6 +149,7 @@ public:
 
 	FLensSolverWorker::OnSolvePointsDel onSolvePointsDel;
 
+	/*
 	ULensSolver() 
 	{
 	}
@@ -150,6 +157,7 @@ public:
 	~ULensSolver() 
 	{
 	}
+	*/
 
 	// virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override {}
 

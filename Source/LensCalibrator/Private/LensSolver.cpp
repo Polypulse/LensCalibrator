@@ -422,6 +422,14 @@ void ULensSolver::DetectPointsRenderThread(
 	threadLock.Unlock();
 }
 
+void ULensSolver::GenerateDistortionCorrectionDisplacementMapRenderThread(
+	FRHICommandListImmediate& RHICmdList, 
+	const FJobInfo jobInfo, 
+	const FCalibrationResult calibrationResult,
+	const FIntPoint mapSize)
+{
+}
+
 UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height)
 {
 	if (visualizationTexture == nullptr || visualizationTexture->GetSizeX() != width || visualizationTexture->GetSizeY() != height)

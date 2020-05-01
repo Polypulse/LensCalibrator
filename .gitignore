@@ -78,3 +78,5 @@ Plugins/*/Intermediate/*
 DerivedDataCache/*
 
 PluginPackaged/*
+
+Content/TestImages/*
