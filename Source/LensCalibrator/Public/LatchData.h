@@ -17,6 +17,9 @@ struct FLatchData
 	int imageCount;
 	float zoomLevel;
 	FIntPoint resolution;
+	FIntPoint cornerCount;
+	float squareSizeMM;
+	float sensorDiagonalMM;
 
 	/*
 	FLatchData(){}

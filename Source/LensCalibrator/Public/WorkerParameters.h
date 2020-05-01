@@ -12,19 +12,19 @@ struct FWorkerParameters
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool exhaustiveSearch;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool writeDebugTextureToFile;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString debugTextureFolderPath;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool writeCalibrationResultsToFile;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString calibrationResultsFolderPath;
 };
 

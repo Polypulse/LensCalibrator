@@ -392,12 +392,10 @@ void ULensSolver::DetectPointsRenderThread(
 
 	FLensSolverWorkUnit workerUnit;
 	workerUnit.unitName = textureName;
-	workerUnit.cornerCount = oneTimeProcessParameters.cornerCount;
-	workerUnit.zoomLevel = textureZoomPair.zoomLevel;
-	workerUnit.squareSize = oneTimeProcessParameters.squareSize;
 	workerUnit.pixels = surfaceData;
 
 	workers[0].queueWorkUnitDel.Execute(workerUnit);
+
 	if (latch)
 	{
 		FLatchData latchData = 
@@ -406,7 +404,10 @@ void ULensSolver::DetectPointsRenderThread(
 			oneTimeProcessParameters.workerParameters,
 			latchImageCount,
 			textureZoomPair.zoomLevel,
-			FIntPoint(width, height)
+			FIntPoint(width, height),
+			oneTimeProcessParameters.cornerCount,
+			oneTimeProcessParameters.squareSizeMM,
+			oneTimeProcessParameters.sensorDiagonalSizeMM
 		};
 
 		UE_LOG(LogTemp, Log, TEXT("Latching worker."))
@@ -572,7 +573,7 @@ bool ULensSolver::ValidateOneTimeProcessParameters(const FOneTimeProcessParamete
 		valid = false;
 	}
 
-	if (oneTimeProcessParameters.squareSize <= 0.0f)
+	if (oneTimeProcessParameters.squareSizeMM <= 0.0f)
 	{
 		outputMessage = FString::Printf(TEXT("%s\n\tSquare Size - Must be positive decimal value that represents the size of the a single checkerboard square in millimeters."), *validationHeader);
 		valid = false;

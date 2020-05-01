@@ -201,6 +201,11 @@ void FLensSolverWorker::DoWork()
 		int width = latchData.resolution.X;
 		int height = latchData.resolution.Y;
 
+		float sensorHeight = (latchData.sensorDiagonalMM * height) / FMath::Sqrt(width * width + height * height);
+		float sensorWidth = sensorHeight * (width / (float)height);
+
+		UE_LOG(LogTemp, Log, TEXT("%sSensor size: (%f, %f) mm."), *workerMessage, sensorWidth, sensorHeight);
+
 		int
 			flags = cv::CALIB_FIX_ASPECT_RATIO;
 		// flags |= cv::CALIB_USE_INTRINSIC_GUESS;
@@ -218,12 +223,12 @@ void FLensSolverWorker::DoWork()
 		{
 			UE_LOG(LogTemp, Log, TEXT("%sDequeued work unit with queued workload: %d"), *workerMessage, latchData.imageCount);
 
-			cv::Size patternSize(workUnits[i].cornerCount.X, workUnits[i].cornerCount.Y);
+			cv::Size patternSize(latchData.cornerCount.X, latchData.cornerCount.Y);
 			cv::Mat image;
 
 			if (image.rows != width || image.cols != height)
 			{
-				UE_LOG(LogTemp, Log, TEXT("%Allocating image from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, width, height);
+				UE_LOG(LogTemp, Log, TEXT("%sAllocating image from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, width, height);
 				image = cv::Mat(width, width, cv::DataType<uint8>::type);
 			}
 
@@ -246,7 +251,7 @@ void FLensSolverWorker::DoWork()
 			if (!patternFound)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("%sNo pattern in view."), *workerMessage);
-				QueueSolvedPointsError(latchData.jobInfo, workUnits[i].zoomLevel);
+				QueueSolvedPointsError(latchData.jobInfo, latchData.zoomLevel);
 				continue;
 			}
 
@@ -263,9 +268,9 @@ void FLensSolverWorker::DoWork()
 			// UE_LOG(LogTemp, Log, TEXT("Chessboard detected."));
 			// objectPoints.resize(corners.size(), objectPoints[0]);
 
-			for (int y = 0; y < workUnits[i].cornerCount.Y; y++)
-				for (int x = 0; x < workUnits[i].cornerCount.X; x++)
-					objectPoints[i].push_back(cv::Point3f(x * workUnits[i].squareSize, y * workUnits[i].squareSize, 0.0f));
+			for (int y = 0; y < latchData.cornerCount.Y; y++)
+				for (int x = 0; x < latchData.cornerCount.X; x++)
+					objectPoints[i].push_back(cv::Point3f(x * latchData.squareSizeMM, y * latchData.squareSizeMM, 0.0f));
 
 			cv::drawChessboardCorners(image, patternSize, corners[0], patternFound);
 			if (latchData.workerParameters.writeDebugTextureToFile)
@@ -283,7 +288,8 @@ void FLensSolverWorker::DoWork()
 			flags,
 			termCriteria);
 
-		cv::calibrationMatrixValues(cameraMatrix, imageSize, (double)imageSize.width, (double)imageSize.height, fovX, fovY, focalLength, principalPoint, aspectRatio);
+		aspectRatio = imageSize.width / imageSize.height;
+		cv::calibrationMatrixValues(cameraMatrix, imageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
 		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(imageSize, principalPoint, focalLength);
 
 		UE_LOG(LogTemp, Log, TEXT("%sCompleted camera calibration at zoom level: %f with solve error: %f with results: (\n\tFov X: %f,\n\tFov Y: %f,\n\tFocal Length: %f,\n\tAspect Ratio: %f\n)"),

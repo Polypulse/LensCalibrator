@@ -30,11 +30,7 @@ struct FLensSolverWorkUnit
 
 	FString unitName;
 
-	FIntPoint cornerCount;
-	float zoomLevel;
 	int index;
-	float squareSize;
-
 	TArray<FColor> pixels;
 };
 

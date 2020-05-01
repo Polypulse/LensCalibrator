@@ -14,26 +14,29 @@ struct FOneTimeProcessParameters
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FWorkerParameters workerParameters;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FIntPoint cornerCount;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	float squareSize;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float squareSizeMM;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool resize;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FIntPoint resizeResolution;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool flipX;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool flipY;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float sensorDiagonalSizeMM;
 
 	FIntPoint currentResolution;
 };
