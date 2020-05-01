@@ -188,7 +188,6 @@ void FLensSolverWorker::DoWork()
 		std::vector<std::vector<cv::Point3f>> objectPoints(latchData.imageCount);
 
 		std::vector<cv::Mat> images;
-		cv::Size imageSize(latchData.resolution.X, latchData.resolution.Y);
 
 		cv::Point2d principalPoint(0, 0);
 		double fovX = 0, fovY = 0, focalLength = 0, aspectRatio = 0;
@@ -198,24 +197,52 @@ void FLensSolverWorker::DoWork()
 		cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<float>::type);
 		cv::Mat distortionCoefficients = cv::Mat::zeros(8, 1, cv::DataType<float>::type);
 
-		int width = latchData.resolution.X;
-		int height = latchData.resolution.Y;
+		int sourcePixelWidth = latchData.sourceResolution.X;
+		int sourcePixelHeight = latchData.sourceResolution.Y;
+		int pixelWidth = latchData.currentResolution.X;
+		int pixelHeight = latchData.currentResolution.Y;
 
-		float sensorHeight = (latchData.sensorDiagonalMM * height) / FMath::Sqrt(width * width + height * height);
-		float sensorWidth = sensorHeight * (width / (float)height);
+		cv::Size imageSize(sourcePixelWidth, sourcePixelHeight);
 
-		UE_LOG(LogTemp, Log, TEXT("%sSensor size: (%f, %f) mm."), *workerMessage, sensorWidth, sensorHeight);
+		float sensorHeight = (latchData.sensorDiagonalMM * sourcePixelHeight) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
+		float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
 
-		int
-			flags = cv::CALIB_FIX_ASPECT_RATIO;
-		// flags |= cv::CALIB_USE_INTRINSIC_GUESS;
-		flags |= cv::CALIB_FIX_PRINCIPAL_POINT;
-		flags |= cv::CALIB_ZERO_TANGENT_DIST;
-		// flags |= cv::CALIB_FIX_K1;
-		// flags |= cv::CALIB_FIX_K2;
-		// flags |= cv::CALIB_FIX_K3;
-		flags |= cv::CALIB_FIX_K4;
-		flags |= cv::CALIB_FIX_K5;
+		UE_LOG(LogTemp, Log, TEXT("%sSensor size: (%fmm, %fmm), diagonal: (%fmm)."), *workerMessage, sensorWidth, sensorHeight, latchData.sensorDiagonalMM);
+
+		int flags = 0;
+		flags |= latchData.workerParameters.useInitialIntrinsicValues		 ?	cv::CALIB_USE_INTRINSIC_GUESS : 0;
+		flags |= latchData.workerParameters.keepPrincipalPixelPositionFixed	 ?	cv::CALIB_FIX_PRINCIPAL_POINT : 0;
+		flags |= latchData.workerParameters.keepAspectRatioFixed			 ?	cv::CALIB_FIX_ASPECT_RATIO : 0;
+		flags |= latchData.workerParameters.lensHasTangentalDistortion		 ?	cv::CALIB_ZERO_TANGENT_DIST : 0;
+		flags |= latchData.workerParameters.fixRadialDistortionCoefficientK1 ?	cv::CALIB_FIX_K1 : 0;
+		flags |= latchData.workerParameters.fixRadialDistortionCoefficientK2 ?	cv::CALIB_FIX_K2 : 0;
+		flags |= latchData.workerParameters.fixRadialDistortionCoefficientK3 ?	cv::CALIB_FIX_K3 : 0;
+		flags |= latchData.workerParameters.fixRadialDistortionCoefficientK4 ?	cv::CALIB_FIX_K4 : 0;
+		flags |= latchData.workerParameters.fixRadialDistortionCoefficientK5 ?	cv::CALIB_FIX_K5 : 0;
+		flags |= latchData.workerParameters.fixRadialDistortionCoefficientK6 ?	cv::CALIB_FIX_K6 : 0;
+
+		if (flags & cv::CALIB_USE_INTRINSIC_GUESS)
+		{
+			cameraMatrix.at<float>(0, 2) = latchData.initialPrincipalPointPixelPosition.X;
+			cameraMatrix.at<float>(1, 2) = latchData.initialPrincipalPointPixelPosition.Y;
+		}
+
+		if ((flags & cv::CALIB_FIX_ASPECT_RATIO) && !(flags & cv::CALIB_USE_INTRINSIC_GUESS))
+		{
+			cameraMatrix.at<float>(0, 0) = sourcePixelWidth;
+			cameraMatrix.at<float>(1, 1) = sourcePixelHeight;
+		}
+
+		/*
+		if (latchData.initialVerticalFieldOfView == 0.0f)
+		{
+			cameraMatrix.at<float>(0, 0) = (latchData.initalImageCenterPixel.X / pixelWidth) * sensorWidth;
+			cameraMatrix.at<float>(1, 1) = (latchData.initalImageCenterPixel.Y / pixelHeight) * sensorHeight;
+
+			if (!(flags & cv::CALIB_USE_INTRINSIC_GUESS))
+				flags |= cv::CALIB_USE_INTRINSIC_GUESS;
+		}
+		*/
 
 		cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
@@ -226,17 +253,17 @@ void FLensSolverWorker::DoWork()
 			cv::Size patternSize(latchData.cornerCount.X, latchData.cornerCount.Y);
 			cv::Mat image;
 
-			if (image.rows != width || image.cols != height)
+			if (image.rows != pixelWidth || image.cols != pixelHeight)
 			{
-				UE_LOG(LogTemp, Log, TEXT("%sAllocating image from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, width, height);
-				image = cv::Mat(width, width, cv::DataType<uint8>::type);
+				UE_LOG(LogTemp, Log, TEXT("%sAllocating image from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, pixelWidth, pixelHeight);
+				image = cv::Mat(pixelWidth, pixelWidth, cv::DataType<uint8>::type);
 			}
 
-			UE_LOG(LogTemp, Log, TEXT("%sCopying pixel data of pixel count: %d to OpenCV Mat of size: (%d, %d)."), *workerMessage, workUnits[i].pixels.Num(), width, height);
-			int pixelCount = width * height;
+			UE_LOG(LogTemp, Log, TEXT("%sCopying pixel data of pixel count: %d to OpenCV Mat of size: (%d, %d)."), *workerMessage, workUnits[i].pixels.Num(), pixelWidth, pixelHeight);
+			int pixelCount = pixelWidth * pixelHeight;
 			for (int pi = 0; pi < pixelCount; pi++)
-				image.at<uint8>(pi / width, pi % width) = workUnits[i].pixels[(pixelCount - 1) - pi].R;
-			UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnits[i].pixels.Num(), width, height);
+				image.at<uint8>(pi / pixelWidth, pi % pixelWidth) = workUnits[i].pixels[(pixelCount - 1) - pi].R;
+			UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnits[i].pixels.Num(), pixelWidth, pixelHeight);
 
 			bool patternFound = false;
 
@@ -255,6 +282,8 @@ void FLensSolverWorker::DoWork()
 				continue;
 			}
 
+			UE_LOG(LogTemp, Log, TEXT("%sFound pattern in image: %d"), *workerMessage, i);
+
 			cv::TermCriteria cornerSubPixCriteria(
 				cv::TermCriteria::MAX_ITER + cv::TermCriteria::EPS,
 				50,
@@ -272,9 +301,11 @@ void FLensSolverWorker::DoWork()
 				for (int x = 0; x < latchData.cornerCount.X; x++)
 					objectPoints[i].push_back(cv::Point3f(x * latchData.squareSizeMM, y * latchData.squareSizeMM, 0.0f));
 
-			cv::drawChessboardCorners(image, patternSize, corners[0], patternFound);
 			if (latchData.workerParameters.writeDebugTextureToFile)
+			{
+				cv::drawChessboardCorners(image, patternSize, corners[i], patternFound);
 				WriteMatToFile(image, latchData.workerParameters.debugTextureFolderPath, workUnits[i].unitName + "-debug", workerMessage);
+			}
 		}
 
 		double error = cv::calibrateCamera(
@@ -288,7 +319,6 @@ void FLensSolverWorker::DoWork()
 			flags,
 			termCriteria);
 
-		aspectRatio = imageSize.width / imageSize.height;
 		cv::calibrationMatrixValues(cameraMatrix, imageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
 		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(imageSize, principalPoint, focalLength);
 
@@ -329,13 +359,13 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.jobInfo = latchData.jobInfo;
 		solvedPoints.zoomLevel = latchData.zoomLevel;
 		solvedPoints.success = true;
-		solvedPoints.resolution = latchData.resolution;
+		solvedPoints.resolution = latchData.sourceResolution;
 		solvedPoints.fovX = fovX;
 		solvedPoints.fovY = fovY;
-		solvedPoints.focalLength = focalLength;
-		solvedPoints.aspectRatio = latchData.resolution.X / (float)latchData.resolution.Y;
+		solvedPoints.focalLengthMM = focalLength;
+		solvedPoints.sensorSizeMM = FVector2D(sensorWidth, sensorHeight);
+		solvedPoints.aspectRatio = aspectRatio;
 		solvedPoints.perspectiveMatrix = perspectiveMatrix;
-		solvedPoints.points = pointsCache;
 
 		if (latchData.workerParameters.writeCalibrationResultsToFile)
 			WriteSolvedPointsToJSONFile(solvedPoints, latchData.workerParameters.calibrationResultsFolderPath, "result", workerMessage);
@@ -367,7 +397,7 @@ void FLensSolverWorker::QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel
 
 	FCalibrationResult solvedPoints;
 	solvedPoints.jobInfo = jobInfo;
-	solvedPoints.points = emptyPoints;
+	// solvedPoints.points = emptyPoints;
 	solvedPoints.zoomLevel = zoomLevel;
 	solvedPoints.success = false;
 
@@ -472,7 +502,7 @@ void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FCalibrationResult& so
 	result->SetNumberField("height", solvePoints.resolution.Y);
 	result->SetNumberField("fovx", solvePoints.fovX);
 	result->SetNumberField("fovy", solvePoints.fovY);
-	result->SetNumberField("focallength", solvePoints.focalLength);
+	result->SetNumberField("focallength", solvePoints.focalLengthMM);
 	result->SetNumberField("aspectratio", solvePoints.aspectRatio);
 
 	TArray<TSharedPtr<FJsonValue>> matVals;
@@ -482,6 +512,7 @@ void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FCalibrationResult& so
 
 	result->SetArrayField("perspectivematrix", matVals);
 
+	/*
 	TArray<TSharedPtr<FJsonValue>> points;
 	for (int i = 0; i < solvePoints.points.Num(); i++)
 	{
@@ -490,6 +521,7 @@ void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FCalibrationResult& so
 	}
 
 	result->SetArrayField("points", points);
+	*/
 	obj->SetObjectField("result", result);
 
 	FString outputJson(TEXT("{}"));

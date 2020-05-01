@@ -32,16 +32,16 @@ struct FCalibrationResult
 	float fovY;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	float focalLength;
+	float focalLengthMM;
+
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	FVector2D sensorSizeMM;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	float aspectRatio;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	FMatrix perspectiveMatrix;
-
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	TArray<FVector2D> points;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	TArray<float> distortionCoefficients;

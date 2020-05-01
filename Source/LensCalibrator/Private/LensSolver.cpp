@@ -404,7 +404,8 @@ void ULensSolver::DetectPointsRenderThread(
 			oneTimeProcessParameters.workerParameters,
 			latchImageCount,
 			textureZoomPair.zoomLevel,
-			FIntPoint(width, height),
+			oneTimeProcessParameters.resizeResolution,
+			oneTimeProcessParameters.currentResolution,
 			oneTimeProcessParameters.cornerCount,
 			oneTimeProcessParameters.squareSizeMM,
 			oneTimeProcessParameters.sensorDiagonalSizeMM
@@ -598,7 +599,7 @@ void ULensSolver::ReturnErrorSolvedPoints(FJobInfo jobInfo)
 	FCalibrationResult solvedPoints;
 	solvedPoints.jobInfo = jobInfo;
 	solvedPoints.success = false;
-	solvedPoints.focalLength = 0;
+	solvedPoints.focalLengthMM = 0;
 	solvedPoints.fovX = 0;
 	solvedPoints.fovY = 0;
 	solvedPoints.aspectRatio = 0;

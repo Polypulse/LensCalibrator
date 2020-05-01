@@ -38,5 +38,11 @@ struct FOneTimeProcessParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float sensorDiagonalSizeMM;
 
+	// UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	// float initialVerticalFieldOfView;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FIntPoint initialPrincipalPointPixelPosition;
+
 	FIntPoint currentResolution;
 };

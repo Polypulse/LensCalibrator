@@ -16,10 +16,13 @@ struct FLatchData
 	FWorkerParameters workerParameters;
 	int imageCount;
 	float zoomLevel;
-	FIntPoint resolution;
+	FIntPoint currentResolution;
+	FIntPoint sourceResolution;
 	FIntPoint cornerCount;
 	float squareSizeMM;
 	float sensorDiagonalMM;
+	FIntPoint initialPrincipalPointPixelPosition;
+	// float initialVerticalFieldOfView;
 
 	/*
 	FLatchData(){}
