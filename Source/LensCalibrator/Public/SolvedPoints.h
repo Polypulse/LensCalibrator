@@ -23,9 +23,6 @@ struct FCalibrationResult
 	float zoomLevel;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	int textureIndex;
-
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	float fovX;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")

@@ -380,14 +380,28 @@ void FLensSolverWorker::DoWork()
 		principalPoint.y *= inverseResizeRatio;
 		focalLength *= inverseResizeRatio;
 
-		UE_LOG(LogTemp, Log, TEXT("%sCompleted camera calibration at zoom level: %f with solve error: %f with results: (\n\tFov X: %f,\n\tFov Y: %f,\n\tFocal Length: %f,\n\tAspect Ratio: %f\n)"),
+		FString format = FString("%sCompleted camera calibration at zoom level: %f "
+			"with solve error: %f"
+			"with results: ("
+			"\n\tFov X: %f,"
+			"\n\tFov Y: %f,"
+			"\n\tSensor width in MM: %f,"
+			"\n\tSensor height in MM: %f,"
+			"\n\tFocal Length in MM: %f,"
+			"\n\tAspect Ratio: %f\n)");
+
+		FString msg = FString::Printf(*format,
 			*workerMessage,
 			latchData.zoomLevel,
 			error,
 			fovX,
 			fovY,
+			sensorWidth,
+			sensorHeight,
 			focalLength,
 			aspectRatio);
+
+		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);
 
 		/*
 		TArray<uint8> visualizationData;

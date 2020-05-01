@@ -604,8 +604,8 @@ void ULensSolver::ReturnErrorSolvedPoints(FJobInfo jobInfo)
 	solvedPoints.aspectRatio = 0;
 	solvedPoints.perspectiveMatrix = FMatrix::Identity;
 	solvedPoints.resolution = FIntPoint(0, 0);
+	solvedPoints.sensorSizeMM = FVector2D(0.0f, 0.0f);
 	solvedPoints.zoomLevel = 0;
-	solvedPoints.textureIndex = 0;
 
 	this->DequeueSolvedPoints(solvedPoints);
 }
