@@ -189,7 +189,6 @@ void FLensSolverWorker::DoWork()
 
 		std::vector<cv::Mat> images;
 
-		cv::Point2d principalPoint(0, 0);
 		double fovX = 0, fovY = 0, focalLength = 0, aspectRatio = 0;
 		FMatrix perspectiveMatrix = FMatrix::Identity;
 
@@ -199,11 +198,21 @@ void FLensSolverWorker::DoWork()
 
 		int sourcePixelWidth = latchData.sourceResolution.X;
 		int sourcePixelHeight = latchData.sourceResolution.Y;
-		int pixelWidth = latchData.currentResolution.X;
-		int pixelHeight = latchData.currentResolution.Y;
+		int pixelWidth = FMath::FloorToInt(latchData.sourceResolution.X * latchData.resizePercentage);
+		int pixelHeight = FMath::FloorToInt(latchData.sourceResolution.Y * latchData.resizePercentage);
 
+		cv::Point2d principalPoint(sourcePixelWidth, sourcePixelHeight);
 		cv::Size imageSize(sourcePixelWidth, sourcePixelHeight);
-		cv::Point2f resizeRatio(pixelWidth / (float)sourcePixelWidth, pixelHeight / (float)sourcePixelHeight);
+
+		float inverseResizeRatio = 1.0f / latchData.resizePercentage;
+
+		UE_LOG(LogTemp, Log, TEXT("%sPixel size: (%d, %d), source size: (%d, %d), resize ratio: %f."),
+			*workerMessage,
+			pixelWidth,
+			pixelHeight,
+			sourcePixelWidth,
+			sourcePixelHeight,
+			latchData.resizePercentage);
 
 		float sensorHeight = (latchData.sensorDiagonalMM * sourcePixelHeight) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
 		float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
@@ -226,12 +235,19 @@ void FLensSolverWorker::DoWork()
 		{
 			cameraMatrix.at<float>(0, 2) = latchData.initialPrincipalPointPixelPosition.X;
 			cameraMatrix.at<float>(1, 2) = latchData.initialPrincipalPointPixelPosition.Y;
+			UE_LOG(LogTemp, Log, TEXT("%sSetting initial principal point to: (%f, %f)"), 
+				*workerMessage, 
+				latchData.initialPrincipalPointPixelPosition.X,
+				latchData.initialPrincipalPointPixelPosition.Y);
 		}
 
-		if ((flags & cv::CALIB_FIX_ASPECT_RATIO) && !(flags & cv::CALIB_USE_INTRINSIC_GUESS))
+		else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 		{
-			cameraMatrix.at<float>(0, 0) = sourcePixelWidth;
-			cameraMatrix.at<float>(1, 1) = sourcePixelHeight;
+			cameraMatrix.at<float>(0, 0) = 1.0f / (sourcePixelWidth * 0.5f);
+			cameraMatrix.at<float>(1, 1) = 1.0f / (sourcePixelHeight * 0.5f);
+			UE_LOG(LogTemp, Log, TEXT("%sKeeping aspect ratio at: %f"), 
+				*workerMessage, 
+				(sourcePixelWidth / (float)sourcePixelHeight));
 		}
 
 		/*
@@ -303,10 +319,16 @@ void FLensSolverWorker::DoWork()
 
 			for (int ci = 0; ci < corners[i].size(); ci++)
 			{
-				corners[i][ci].x /= resizeRatio.x;
-				corners[i][ci].y /= resizeRatio.y;
+				corners[i][ci].x *= inverseResizeRatio;
+				corners[i][ci].y *= inverseResizeRatio;
 			}
 		}
+
+		// cameraMatrix.at<float>(0, 0) *= resizeRatio.x;
+		// cameraMatrix.at<float>(1, 1) *= resizeRatio.y;
+
+		// cameraMatrix.at<float>(0, 2) *= resizeRatio.x;
+		// cameraMatrix.at<float>(1, 2) *= resizeRatio.y;
 
 		double error = cv::calibrateCamera(
 			objectPoints,
@@ -319,8 +341,44 @@ void FLensSolverWorker::DoWork()
 			flags,
 			termCriteria);
 
+		/*
+		UE_LOG(LogTemp, Log, TEXT("Camera matrix:\n(\n\t%f, %f, %f\n\t%f, %f, %f\n\t%f, %f, %f\n)"),
+			cameraMatrix.at<float>(0, 0),
+			cameraMatrix.at<float>(0, 1),
+			cameraMatrix.at<float>(0, 2),
+			cameraMatrix.at<float>(1, 0),
+			cameraMatrix.at<float>(1, 1),
+			cameraMatrix.at<float>(1, 2),
+			cameraMatrix.at<float>(2, 0),
+			cameraMatrix.at<float>(2, 1),
+			cameraMatrix.at<float>(2, 2));
+
+		cameraMatrix.at<float>(0, 0) *= resizeRatio.x;
+		cameraMatrix.at<float>(1, 1) *= resizeRatio.y;
+
+		cameraMatrix.at<float>(0, 2) *= resizeRatio.x;
+		cameraMatrix.at<float>(1, 2) *= resizeRatio.y;
+
+		UE_LOG(LogTemp, Log, TEXT("Camera matrix:\n(\n\t%f, %f, %f\n\t%f, %f, %f\n\t%f, %f, %f\n)"),
+			cameraMatrix.at<float>(0, 0),
+			cameraMatrix.at<float>(0, 1),
+			cameraMatrix.at<float>(0, 2),
+			cameraMatrix.at<float>(1, 0),
+			cameraMatrix.at<float>(1, 1),
+			cameraMatrix.at<float>(1, 2),
+			cameraMatrix.at<float>(2, 0),
+			cameraMatrix.at<float>(2, 1),
+			cameraMatrix.at<float>(2, 2));
+		*/
+
 		cv::calibrationMatrixValues(cameraMatrix, imageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
 		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(imageSize, principalPoint, focalLength);
+
+		fovX *= inverseResizeRatio;
+		fovY *= inverseResizeRatio;
+		principalPoint.x *= inverseResizeRatio;
+		principalPoint.y *= inverseResizeRatio;
+		focalLength *= inverseResizeRatio;
 
 		UE_LOG(LogTemp, Log, TEXT("%sCompleted camera calibration at zoom level: %f with solve error: %f with results: (\n\tFov X: %f,\n\tFov Y: %f,\n\tFocal Length: %f,\n\tAspect Ratio: %f\n)"),
 			*workerMessage,

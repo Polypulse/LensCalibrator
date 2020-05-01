@@ -56,5 +56,24 @@ struct FWorkerParameters
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString calibrationResultsFolderPath;
+
+	FWorkerParameters()
+	{
+		exhaustiveSearch = false;
+		useInitialIntrinsicValues = false;
+		keepPrincipalPixelPositionFixed = false;
+		keepAspectRatioFixed = true;
+		lensHasTangentalDistortion = false;
+		fixRadialDistortionCoefficientK1 = false;
+		fixRadialDistortionCoefficientK2 = false;
+		fixRadialDistortionCoefficientK3 = false;
+		fixRadialDistortionCoefficientK4 = false;
+		fixRadialDistortionCoefficientK5 = false;
+		fixRadialDistortionCoefficientK6 = false;
+		writeDebugTextureToFile = false;
+		debugTextureFolderPath = "";
+		writeCalibrationResultsToFile = false;
+		calibrationResultsFolderPath = "";
+	};
 };
 

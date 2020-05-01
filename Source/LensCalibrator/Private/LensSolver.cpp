@@ -313,8 +313,8 @@ void ULensSolver::DetectPointsRenderThread(
 	const bool latch)
 
 {
-	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.resizeResolution.X : oneTimeProcessParameters.currentResolution.X;
-	int height = oneTimeProcessParameters.resize ? oneTimeProcessParameters.resizeResolution.Y : oneTimeProcessParameters.currentResolution.Y;
+	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.X * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.X;
+	int height = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.Y * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.Y;
 	if (!allocated)
 	{
 		FRHIResourceCreateInfo createInfo;
@@ -404,8 +404,8 @@ void ULensSolver::DetectPointsRenderThread(
 			oneTimeProcessParameters.workerParameters,
 			latchImageCount,
 			textureZoomPair.zoomLevel,
-			oneTimeProcessParameters.resizeResolution,
 			oneTimeProcessParameters.currentResolution,
+			oneTimeProcessParameters.resizePercentage,
 			oneTimeProcessParameters.cornerCount,
 			oneTimeProcessParameters.squareSizeMM,
 			oneTimeProcessParameters.sensorDiagonalSizeMM
@@ -581,10 +581,9 @@ bool ULensSolver::ValidateOneTimeProcessParameters(const FOneTimeProcessParamete
 	}
 
 	if (oneTimeProcessParameters.resize &&
-		(oneTimeProcessParameters.resizeResolution.X <= 0 ||
-			oneTimeProcessParameters.resizeResolution.Y <= 0))
+		oneTimeProcessParameters.resizePercentage <= 0)
 	{
-		outputMessage = FString::Printf(TEXT("%s\n\tResize Resolution - Must be positive integer width & height values to resize the image to."), *validationHeader);
+		outputMessage = FString::Printf(TEXT("%s\n\tResize Resolution - Must be positive decimal number to resize the image to."), *validationHeader);
 		valid = false;
 	}
 
