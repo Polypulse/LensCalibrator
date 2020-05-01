@@ -203,6 +203,7 @@ void FLensSolverWorker::DoWork()
 		int pixelHeight = latchData.currentResolution.Y;
 
 		cv::Size imageSize(sourcePixelWidth, sourcePixelHeight);
+		cv::Point2f resizeRatio(pixelWidth / (float)sourcePixelWidth, pixelHeight / (float)sourcePixelHeight);
 
 		float sensorHeight = (latchData.sensorDiagonalMM * sourcePixelHeight) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
 		float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
@@ -248,8 +249,6 @@ void FLensSolverWorker::DoWork()
 
 		for (int i = 0; i < latchData.imageCount; i++)
 		{
-			UE_LOG(LogTemp, Log, TEXT("%sDequeued work unit with queued workload: %d"), *workerMessage, latchData.imageCount);
-
 			cv::Size patternSize(latchData.cornerCount.X, latchData.cornerCount.Y);
 			cv::Mat image;
 
@@ -292,19 +291,20 @@ void FLensSolverWorker::DoWork()
 
 			cv::cornerSubPix(image, corners[i], cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
 
-			// cv::drawChessboardCorners(image, patternSize, corners, patternFound);
-
-			// UE_LOG(LogTemp, Log, TEXT("Chessboard detected."));
-			// objectPoints.resize(corners.size(), objectPoints[0]);
+			if (latchData.workerParameters.writeDebugTextureToFile)
+			{
+				cv::drawChessboardCorners(image, patternSize, corners[i], patternFound);
+				WriteMatToFile(image, latchData.workerParameters.debugTextureFolderPath, workUnits[i].unitName + "-debug", workerMessage);
+			}
 
 			for (int y = 0; y < latchData.cornerCount.Y; y++)
 				for (int x = 0; x < latchData.cornerCount.X; x++)
 					objectPoints[i].push_back(cv::Point3f(x * latchData.squareSizeMM, y * latchData.squareSizeMM, 0.0f));
 
-			if (latchData.workerParameters.writeDebugTextureToFile)
+			for (int ci = 0; ci < corners[i].size(); ci++)
 			{
-				cv::drawChessboardCorners(image, patternSize, corners[i], patternFound);
-				WriteMatToFile(image, latchData.workerParameters.debugTextureFolderPath, workUnits[i].unitName + "-debug", workerMessage);
+				corners[i][ci].x /= resizeRatio.x;
+				corners[i][ci].y /= resizeRatio.y;
 			}
 		}
 
