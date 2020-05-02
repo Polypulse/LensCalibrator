@@ -480,11 +480,11 @@ void ULensSolver::DetectPointsRenderThread(
 
 void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	FRHICommandListImmediate& RHICmdList,
-	const FDistortionCorrectionMapParameters distortionCorrectionMapParameters,
+	const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapParameters,
 	const FString generatedOutputPath)
 {
-	int width = distortionCorrectionMapParameters.mapResolution.X;
-	int height = distortionCorrectionMapParameters.mapResolution.Y;
+	int width = distortionCorrectionMapParameters.outputMapResolution.X;
+	int height = distortionCorrectionMapParameters.outputMapResolution.Y;
 	if (!allocated)
 	{
 		FRHIResourceCreateInfo createInfo;
@@ -505,18 +505,18 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	}
 
 	FVector2D normalizedPrincipalPoint = FVector2D(
-		distortionCorrectionMapParameters.calibrationResult.principalPixelPoint.X / (float)distortionCorrectionMapParameters.calibrationResult.resolution.X,
-		distortionCorrectionMapParameters.calibrationResult.principalPixelPoint.Y / (float)distortionCorrectionMapParameters.calibrationResult.resolution.Y);
+		distortionCorrectionMapParameters.sourcePrincipalPixelPoint.X / (float)distortionCorrectionMapParameters.sourceResolution.X,
+		distortionCorrectionMapParameters.sourcePrincipalPixelPoint.Y / (float)distortionCorrectionMapParameters.sourceResolution.Y);
 
 	FString message = FString("Submitting the following parameters to distortion corretion map generation shader:\n{");
 	message += FString::Printf(TEXT("\n\tNormalized principal point: (%f, %f),\n\tDistortion Coefficients: [k1: %f, k2: %f, p1: %f, p2: %f, k3: %f]\n}"), 
 		normalizedPrincipalPoint.X, 
 		normalizedPrincipalPoint.Y,
-		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[0],
-		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[1],
-		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[2],
-		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[3],
-		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[4]);
+		distortionCorrectionMapParameters.distortionCoefficients[0],
+		distortionCorrectionMapParameters.distortionCoefficients[1],
+		distortionCorrectionMapParameters.distortionCoefficients[2],
+		distortionCorrectionMapParameters.distortionCoefficients[3],
+		distortionCorrectionMapParameters.distortionCoefficients[4]);
 
 	UE_LOG(LogTemp, Log, TEXT("%s"), *message);
 
@@ -542,7 +542,77 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCorrectionMapParameters.calibrationResult.distortionCoefficients);
+		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCorrectionMapParameters.distortionCoefficients);
+		// PixelShader->SetParameters(RHICmdList, textureZoomPair.texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(oneTimeProcessParameters.flipX ? -1.0f : 1.0f, oneTimeProcessParameters.flipY ? 1.0f : -1.0f));
+
+		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
+	}
+
+	RHICmdList.EndRenderPass();
+
+	FRHITexture2D * texture2D = distortionCorrectionRenderTexture->GetTexture2D();
+	TArray<FColor> surfaceData;
+
+	FReadSurfaceDataFlags ReadDataFlags;
+	ReadDataFlags.SetLinearToGamma(false);
+	ReadDataFlags.SetOutputStencil(false);
+	ReadDataFlags.SetMip(0);
+
+	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), surfaceData, ReadDataFlags);
+
+	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
+	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
+}
+
+void ULensSolver::CorrectImageDistortionRenderThread(
+	FRHICommandListImmediate& RHICmdList, 
+	const FDistortionCorrectionParameters distortionCorrectionParams, 
+	const FString generatedOutputPath)
+{
+	int width = distortionCorrectionParams.distortedTexture->GetSizeX();
+	int height = distortionCorrectionParams.distortedTexture->GetSizeY();
+	if (!allocated)
+	{
+		FRHIResourceCreateInfo createInfo;
+		FTexture2DRHIRef dummyTexRef;
+		RHICreateTargetableShaderResource2D(
+			width,
+			height,
+			EPixelFormat::PF_B8G8R8A8,
+			1,
+			TexCreate_None,
+			TexCreate_RenderTargetable,
+			false,
+			createInfo,
+			distortionCorrectionRenderTexture,
+			dummyTexRef);
+
+		allocated = true;
+	}
+
+	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_Store);
+	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMap"));
+	{
+		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
+		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
+
+		TShaderMapRef<FDistortionCorrectionShaderVS> VertexShader(GlobalShaderMap);
+		TShaderMapRef<FDistortionCorrectionShaderPS> PixelShader(GlobalShaderMap);
+
+		FGraphicsPipelineStateInitializer GraphicsPSOInit;
+		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+		RHICmdList.SetViewport(0, 0, 0.0f, width, height, 1.0f);
+
+		GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGB, BO_Add, BF_One, BF_SourceAlpha>::GetRHI();
+		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
+		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
+		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
+		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+
+		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+		// PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCorrectionMapParameters.distortionCoefficients);
 		// PixelShader->SetParameters(RHICmdList, textureZoomPair.texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(oneTimeProcessParameters.flipX ? -1.0f : 1.0f, oneTimeProcessParameters.flipY ? 1.0f : -1.0f));
 
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
@@ -861,22 +931,22 @@ void ULensSolver::OneTimeProcessTextureArrayOfTextureArrayZoomPairs(
 }
 
 void ULensSolver::GenerateDistortionCorrectionMap(
-	const FDistortionCorrectionMapParameters distortionCorrectionMapParameters)
+	const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams)
 {
-	if (distortionCorrectionMapParameters.calibrationResult.distortionCoefficients.Num() != 5)
+	if (distortionCorrectionMapGenerationParams.distortionCoefficients.Num() != 5)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, there should an array of 5 float value distortion coefficients in the calibration result DistortionCorrectionMapParameter member."));
 		return;
 	}
 
-	if (distortionCorrectionMapParameters.mapResolution.X <= 3 || distortionCorrectionMapParameters.mapResolution.Y <= 3)
+	if (distortionCorrectionMapGenerationParams.mapResolution.X <= 3 || distortionCorrectionMapGenerationParams.mapResolution.Y <= 3)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, the map resolution DistortionCorrectionMapParameter member is <= 3 pixels on the X or Y axis."));
 		return;
 	}
 
-	static const FString backupOutputPath = LensSolverUtilities::GenerateGenericOutputPath(FString("DistortionMaps/"));
-	FString targetOutputPath = distortionCorrectionMapParameters.outputPath;
+	static const FString backupOutputPath = LensSolverUtilities::GenerateGenericOutputPath(FString("DistortionCorrectionMaps/"));
+	FString targetOutputPath = distortionCorrectionMapGenerationParams.outputPath;
 
 	if (!LensSolverUtilities::ValidateFolder(targetOutputPath, backupOutputPath, FString("Distortion Correction: ")))
 	{
@@ -884,16 +954,59 @@ void ULensSolver::GenerateDistortionCorrectionMap(
 		return;
 	}
 
-	targetOutputPath = LensSolverUtilities::GenerateIndexedFilePath(targetOutputPath, FString::Printf(TEXT("DistortionCorrectionMap-%f"), distortionCorrectionMapParameters.calibrationResult.zoomLevel), ".bmp");
+	targetOutputPath = LensSolverUtilities::GenerateIndexedFilePath(targetOutputPath, FString::Printf(TEXT("DistortionCorrectionMap-%f"), distortionCorrectionMapGenerationParams.zoomLevel), ".bmp");
 
 	ULensSolver * lensSolver = this;
-	const FDistortionCorrectionMapParameters temp = distortionCorrectionMapParameters;
+	const FDistortionCorrectionMapGenerationParameters temp = distortionCorrectionMapGenerationParams;
 
 	ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
 	(
 		[lensSolver, temp, targetOutputPath](FRHICommandListImmediate& RHICmdList)
 		{
 			lensSolver->GenerateDistortionCorrectionMapRenderThread(
+				RHICmdList,
+				temp,
+				targetOutputPath);
+		}
+	);
+}
+
+void ULensSolver::CorrectImageDistortion(const FDistortionCorrectionParameters distortionCorrectionParams)
+{
+	if (distortionCorrectionParams.distortedTexture == nullptr || distortionCorrectionParams.distortionCorrectionTexture == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot correct distorted texture, one of the texture DistortionCorrectionParameters members is NULL!"));
+		return;
+	}
+
+	if (distortionCorrectionParams.distortedTexture->GetSizeX() <= 3 || 
+		distortionCorrectionParams.distortedTexture->GetSizeY() <= 3 ||
+		distortionCorrectionParams.distortionCorrectionTexture->GetSizeX() <= 3 ||
+		distortionCorrectionParams.distortionCorrectionTexture->GetSizeY() <= 3)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot correct distorted texture, one of the texture DistortionCorrectionParameters members is to small."));
+		return;
+	}
+
+	static const FString backupOutputPath = LensSolverUtilities::GenerateGenericOutputPath(FString("CorrectedDistortedImages/"));
+	FString targetOutputPath = distortionCorrectionParams.outputPath;
+
+	if (!LensSolverUtilities::ValidateFolder(targetOutputPath, backupOutputPath, FString("Distortion Correction: ")))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, unable to create folder path: \"%s\"."), *targetOutputPath);
+		return;
+	}
+
+	targetOutputPath = LensSolverUtilities::GenerateIndexedFilePath(targetOutputPath, FString::Printf(TEXT("CorrectedDistortedImage-%f"), distortionCorrectionParams.zoomLevel), ".bmp");
+
+	ULensSolver * lensSolver = this;
+	const FDistortionCorrectionParameters temp = distortionCorrectionParams;
+
+	ENQUEUE_RENDER_COMMAND(OneTimeCorrectImageDistortion)
+	(
+		[lensSolver, temp, targetOutputPath](FRHICommandListImmediate& RHICmdList)
+		{
+			lensSolver->CorrectImageDistortion(
 				RHICmdList,
 				temp,
 				targetOutputPath);

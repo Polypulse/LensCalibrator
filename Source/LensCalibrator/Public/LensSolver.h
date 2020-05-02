@@ -17,7 +17,8 @@
 #include "LatchData.h"
 #include "WorkerParameters.h"
 #include "OneTimeProcessParameters.h"
-#include "DistortionCorrectionMapParameters.h"
+#include "DistortionCorrectionMapGenerationParameters.h"
+#include "DistortionCorrectionParameters.h"
 #include "TextureArrayZoomPair.h"
 #include "TextureZoomPair.h"
 #include "LensSolver.generated.h"
@@ -116,7 +117,12 @@ private:
 
 	void GenerateDistortionCorrectionMapRenderThread(
 		FRHICommandListImmediate& RHICmdList,
-		const FDistortionCorrectionMapParameters distortionCorrectionMapParameters,
+		const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
+		const FString generatedOutputPath);
+
+	void CorrectImageDistortionRenderThread(
+		FRHICommandListImmediate& RHICmdList,
+		const FDistortionCorrectionParameters distortionCorrectionParams,
 		const FString generatedOutputPath);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
@@ -213,7 +219,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void GenerateDistortionCorrectionMap(
-		const FDistortionCorrectionMapParameters distortionCorrectionMapParameters);
+		const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams);
+
+	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
+	void CorrectImageDistortion(
+		const FDistortionCorrectionParameters distortionCorrectionParams);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StartBackgroundImageProcessors(int workerCount);
