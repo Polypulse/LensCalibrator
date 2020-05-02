@@ -17,6 +17,7 @@
 #include "LatchData.h"
 #include "WorkerParameters.h"
 #include "OneTimeProcessParameters.h"
+#include "DistortionCorrectionMapParameters.h"
 #include "TextureArrayZoomPair.h"
 #include "TextureZoomPair.h"
 #include "LensSolver.generated.h"
@@ -50,7 +51,8 @@ public:
 
 private:
 
-	FTexture2DRHIRef renderTexture;
+	FTexture2DRHIRef blitRenderTexture;
+	FTexture2DRHIRef distortionCorrectionRenderTexture;
 	UTexture2D * visualizationTexture;
 	bool allocated;
 
@@ -114,9 +116,8 @@ private:
 
 	void GenerateDistortionCorrectionMapRenderThread(
 		FRHICommandListImmediate& RHICmdList,
-		const FJobInfo jobInfo,
-		const FCalibrationResult calibrationResult,
-		const FIntPoint mapSize);
+		const FDistortionCorrectionMapParameters distortionCorrectionMapParameters,
+		const FString generatedOutputPath);
 
 	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
 	/*
@@ -209,6 +210,10 @@ public:
 		TArray<FTextureArrayZoomPair> inputTextures, 
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
+
+	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
+	void GenerateDistortionCorrectionMap(
+		const FDistortionCorrectionMapParameters distortionCorrectionMapParameters);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StartBackgroundImageProcessors(int workerCount);
