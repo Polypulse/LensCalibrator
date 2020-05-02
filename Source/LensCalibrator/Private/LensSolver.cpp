@@ -564,7 +564,16 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
 	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
 
-	queuedDistortionCorrectionMaps->Enqueue(surfaceData);
+	if (!queuedDistortionCorrectionMapResults.IsValid())
+		return;
+
+	FDistortionCorrectionMapGenerationResults distortionCorrectionMapGenerationResults;
+
+	distortionCorrectionMapGenerationResults.pixels = surfaceData;
+	distortionCorrectionMapGenerationResults.width = texture2D->GetSizeX();
+	distortionCorrectionMapGenerationResults.height = texture2D->GetSizeY();
+
+	queuedDistortionCorrectionMapResults->Enqueue(distortionCorrectionMapGenerationResults);
 }
 
 void ULensSolver::CorrectImageDistortionRenderThread(
@@ -638,7 +647,16 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
 	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
 
-	queuedCorrectedDistortedImages->Enqueue(surfaceData);
+	if (!queuedCorrectedDistortedImageResults.IsValid())
+		return;
+
+	FCorrectedDistortedImageResults correctedDistortedImageResults;
+
+	correctedDistortedImageResults.pixels = surfaceData;
+	correctedDistortedImageResults.width = texture2D->GetSizeX();
+	correctedDistortedImageResults.height = texture2D->GetSizeY();
+
+	queuedCorrectedDistortedImageResults->Enqueue(correctedDistortedImageResults);
 }
 
 UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height)
