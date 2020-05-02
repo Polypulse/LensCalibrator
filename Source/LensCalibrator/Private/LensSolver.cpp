@@ -1077,6 +1077,9 @@ void ULensSolver::GenerateDistortionCorrectionMap(
 	ULensSolver * lensSolver = this;
 	const FDistortionCorrectionMapGenerationParameters temp = distortionCorrectionMapGenerationParams;
 
+	if (!queuedDistortionCorrectionMapResults.IsValid())
+		queuedDistortionCorrectionMapResults = MakeShareable(new TQueue<FDistortionCorrectionMapGenerationResults>);
+
 	ENQUEUE_RENDER_COMMAND(GenerateDistortionCorrectionMap)
 	(
 		[lensSolver, temp, targetOutputPath](FRHICommandListImmediate& RHICmdList)
@@ -1119,6 +1122,9 @@ void ULensSolver::CorrectImageDistortion(const FDistortionCorrectionParameters d
 
 	ULensSolver * lensSolver = this;
 	const FDistortionCorrectionParameters temp = distortionCorrectionParams;
+
+	if (!queuedCorrectedDistortedImageResults.IsValid())
+		queuedCorrectedDistortedImageResults = MakeShareable(new TQueue<FCorrectedDistortedImageResults>);
 
 	ENQUEUE_RENDER_COMMAND(CorrectionImageDistortion)
 	(
