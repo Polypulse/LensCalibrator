@@ -15,6 +15,7 @@
 
 #include "LensSolverUtilities.h"
 #include "BlitShader.h"
+#include "DistortionCorrectionMapGenerationShader.h"
 #include "DistortionCorrectionShader.h"
 
 void ULensSolver::BeginPlay()
@@ -521,13 +522,13 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	UE_LOG(LogTemp, Log, TEXT("%s"), *message);
 
 	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_Store);
-	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMap"));
+	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
 		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
 
-		TShaderMapRef<FDistortionCorrectionShaderVS> VertexShader(GlobalShaderMap);
-		TShaderMapRef<FDistortionCorrectionShaderPS> PixelShader(GlobalShaderMap);
+		TShaderMapRef<FDistortionCorrectionMapGenerationVS> VertexShader(GlobalShaderMap);
+		TShaderMapRef<FDistortionCorrectionMapGenerationPS> PixelShader(GlobalShaderMap);
 
 		FGraphicsPipelineStateInitializer GraphicsPSOInit;
 		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
@@ -591,7 +592,7 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 	}
 
 	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_Store);
-	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMap"));
+	RHICmdList.BeginRenderPass(RPInfo, TEXT("CorrectImageDistortionPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
 		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
@@ -612,8 +613,10 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-		// PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCorrectionMapParameters.distortionCoefficients);
-		// PixelShader->SetParameters(RHICmdList, textureZoomPair.texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(oneTimeProcessParameters.flipX ? -1.0f : 1.0f, oneTimeProcessParameters.flipY ? 1.0f : -1.0f));
+		PixelShader->SetParameters(
+			RHICmdList,
+			distortionCorrectionParams.distortedTexture->TextureReference.TextureReferenceRHI.GetReference(),
+			distortionCorrectionParams.distortionCorrectionTexture->TextureReference.TextureReferenceRHI.GetReference());
 
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}

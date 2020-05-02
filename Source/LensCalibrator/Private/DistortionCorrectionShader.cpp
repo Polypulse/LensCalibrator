@@ -41,36 +41,38 @@ FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS() {}
 
 FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer)
 {
-	distortionCoefficientsParameter.Bind(Initializer.ParameterMap, TEXT("InDistortionCoefficients"));
-	normalizedPrincipalPointParameter.Bind(Initializer.ParameterMap, TEXT("InNormalizedPrinipcalPoint"));
+	InputDistortedTextureParameter.Bind(Initializer.ParameterMap, TEXT("InDistortedTexture"));
+	InputDistortedTextureSamplerParameter.Bind(Initializer.ParameterMap, TEXT("InDistortedTextureSampler"));
+
+	InputDistortionCorrectionTextureParameter.Bind(Initializer.ParameterMap, TEXT("InDistortionCorrectionTexture"));
+	InputDistortionCorrectionTextureSamplerParameter.Bind(Initializer.ParameterMap, TEXT("InDistortionCorrectionTextureSampler"));
 }
 
 bool FDistortionCorrectionShaderPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
 {
-	return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+	return  IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 }
 
 void FDistortionCorrectionShaderPS::SetParameters(
-		FRHICommandListImmediate& RHICmdList,
-		FVector2D normalizedPrincipalPoint,
-		TArray<float> inputDistortionCoefficients)
+	FRHICommandListImmediate& RHICmdList,
+	FTextureRHIRef InputDistortedTexture,
+	FTextureRHIRef InputDistortionCorrectionTexture)
 {
-	/*
-	SetTextureParameter(RHICmdList, GetPixelShader(), InputTextureParameter, InputTexture);
-	RHICmdList.SetShaderSampler(GetPixelShader(), InputTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
+	SetTextureParameter(RHICmdList, GetPixelShader(), InputDistortedTextureParameter, InputDistortedTexture);
+	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortedTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
 
-	SetShaderValue(RHICmdList, GetPixelShader(), flipDirectionParameter, flipDirection);
-	*/
-	SetShaderValue(RHICmdList, GetPixelShader(), normalizedPrincipalPointParameter, normalizedPrincipalPoint);
-	SetShaderValue(RHICmdList, GetPixelShader(), distortionCoefficientsParameter, inputDistortionCoefficients);
+	SetTextureParameter(RHICmdList, GetPixelShader(), InputDistortionCorrectionTextureParameter, InputDistortionCorrectionTexture);
+	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortionCorrectionTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
 }
 
 bool FDistortionCorrectionShaderPS::Serialize(FArchive& Ar) 
 {
 	bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
 	Ar
-		<< distortionCoefficientsParameter
-		<< normalizedPrincipalPointParameter;
+		<< InputDistortedTextureParameter
+		<< InputDistortedTextureSamplerParameter
+		<< InputDistortionCorrectionTextureParameter
+		<< InputDistortionCorrectionTextureSamplerParameter;
 
 	return bShaderHasOutdatedParameters;
 }

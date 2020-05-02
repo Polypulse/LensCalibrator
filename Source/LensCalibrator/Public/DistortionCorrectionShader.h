@@ -30,13 +30,11 @@ class FDistortionCorrectionShaderPS : public FGlobalShader
 	DECLARE_GLOBAL_SHADER(FDistortionCorrectionShaderPS);
 
 private:
-	/*
-	FShaderResourceParameter InputTextureParameter;
-	FShaderResourceParameter InputTextureSamplerParameter;
-	FShaderParameter flipDirectionParameter;
-	*/
-	FShaderParameter distortionCoefficientsParameter;
-	FShaderParameter normalizedPrincipalPointParameter;
+	FShaderResourceParameter InputDistortedTextureParameter;
+	FShaderResourceParameter InputDistortedTextureSamplerParameter;
+
+	FShaderResourceParameter InputDistortionCorrectionTextureParameter;
+	FShaderResourceParameter InputDistortionCorrectionTextureSamplerParameter;
 
 public:
 	FDistortionCorrectionShaderPS();
@@ -46,8 +44,8 @@ public:
 
 	void SetParameters(
 		FRHICommandListImmediate& RHICmdList,
-		FVector2D normalizedPrincipalPointParameter,
-		TArray<float> inputDistortionCoefficients);
+		FTextureRHIRef InputDistortedTexture,
+		FTextureRHIRef InputDistortionCorrectionTexture);
 
 	virtual bool Serialize(FArchive& Ar) override;
 };
