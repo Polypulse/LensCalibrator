@@ -30,12 +30,6 @@ struct FOneTimeProcessParameters
 	float resizePercentage;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	bool useResolutionTakenInCalibration;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FIntPoint resolutionTaken;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool flipX;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
@@ -50,6 +44,7 @@ struct FOneTimeProcessParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FIntPoint initialPrincipalPointPixelPosition;
 
+	FIntPoint currentResolution;
 
 	FOneTimeProcessParameters()
 	{
@@ -58,11 +53,10 @@ struct FOneTimeProcessParameters
 		squareSizeMM = 12.7f;
 		resize = true;
 		resizePercentage = 0.5f;
-		useResolutionTakenOnCamera = false;
-		resolutionTakenOnCamera = FIntPoint(0, 0);
 		flipX = false;
 		flipY = false;
 		sensorDiagonalSizeMM = 9.960784f;
 		initialPrincipalPointPixelPosition = FIntPoint(0, 0);
+		currentResolution = FIntPoint(0, 0);
 	}
 };

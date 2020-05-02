@@ -757,7 +757,12 @@ void ULensSolver::OneTimeProcessTextureArrayOfTextureArrayZoomPairs(
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
 
-	ouptutJobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
+	int useCount = 0;
+	for (int i = 0; i < inputTextures.Num(); i++)
+		if (inputTextures[i].use)
+			useCount++;
+
+	ouptutJobInfo = RegisterJob(useCount, UJobType::OneTime);
 	BeginDetectPoints(
 		ouptutJobInfo,
 		inputTextures,

@@ -384,13 +384,11 @@ void FLensSolverWorker::DoWork()
 		cv::calibrationMatrixValues(cameraMatrix, sourceImageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
 		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(sourceImageSize, principalPoint, focalLength);
 
-		/*
-		fovX *= inverseResizeRatio;
-		fovY *= inverseResizeRatio;
-		principalPoint.x *= inverseResizeRatio;
-		principalPoint.y *= inverseResizeRatio;
-		focalLength *= inverseResizeRatio;
-		*/
+		fovX *= 2.0f;
+		fovY *= 2.0f;
+		principalPoint.x *= 2.0f;
+		principalPoint.y *= 2.0f;
+		focalLength *= 2.0f;
 
 		principalPoint.x = sourcePixelWidth * (principalPoint.x / sensorWidth);
 		principalPoint.y = sourcePixelHeight * (principalPoint.y / sensorHeight);
