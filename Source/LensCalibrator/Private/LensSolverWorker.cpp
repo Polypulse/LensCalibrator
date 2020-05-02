@@ -241,8 +241,8 @@ void FLensSolverWorker::DoWork()
 
 		else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 		{
-			cameraMatrix.at<float>(0, 0) = pixelWidth;
-			cameraMatrix.at<float>(1, 1) = pixelHeight;
+			cameraMatrix.at<float>(0, 0) = 1.0f / (pixelWidth);
+			cameraMatrix.at<float>(1, 1) = 1.0f / (pixelHeight);
 			UE_LOG(LogTemp, Log, TEXT("%sKeeping aspect ratio at: %f"), 
 				*workerMessage, 
 				(sourcePixelWidth / (float)sourcePixelHeight));
