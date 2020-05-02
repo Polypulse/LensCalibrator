@@ -634,7 +634,7 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 
 	RHICmdList.EndRenderPass();
 
-	FRHITexture2D * texture2D = distortionCorrectionRenderTexture->GetTexture2D();
+	FRHITexture2D * texture2D = correctDistortedTextureRenderTexture->GetTexture2D();
 	TArray<FColor> surfaceData;
 
 	FReadSurfaceDataFlags ReadDataFlags;
