@@ -9,6 +9,7 @@
 #include "RenderUtils.h"
 #include "Engine/Texture2D.h"
 #include "JsonUtilities.h"
+#include "LensSolverUtilities.h"
 
 FLensSolverWorker::FLensSolverWorker(
 	IsClosingDel * inputIsClosingDel,
@@ -30,7 +31,7 @@ FLensSolverWorker::FLensSolverWorker(
 	workUnitCount = 0;
 	flagToExit = false;
 
-	calibrationVisualizationOutputPath = FPaths::ConvertRelativePathToFull(FPaths::GameDevelopersDir() + FString::Printf(TEXT("CalibrationVisualizations/Worker-%d/"), workerID));
+	calibrationVisualizationOutputPath = LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%d/"), workerID));
 }
 
 int FLensSolverWorker::GetWorkLoad () 
@@ -192,7 +193,7 @@ void FLensSolverWorker::DoWork()
 
 		std::vector<cv::Mat> rvecs, tvecs;
 		cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<float>::type);
-		cv::Mat distortionCoefficients = cv::Mat::zeros(8, 1, cv::DataType<float>::type);
+		cv::Mat distortionCoefficients = cv::Mat::zeros(5, 1, cv::DataType<float>::type);
 
 		int sourcePixelWidth = latchData.sourceResolution.X;
 		int sourcePixelHeight = latchData.sourceResolution.Y;
@@ -521,51 +522,12 @@ bool FLensSolverWorker::ShouldExit()
 	return shouldExit;
 }
 
-FString FLensSolverWorker::GenerateIndexedFilePath(const FString& folder, const FString& fileName, const FString & extension)
-{
-	FString partialOutputPath = folder + fileName;
-
-	int index = 0;
-	while (FPaths::FileExists(FString::Printf(TEXT("%s-%d.%s"), *partialOutputPath, index, *extension)))
-		index++;
-	return FString::Printf(TEXT("%s-%d.%s"), *partialOutputPath, index, *extension);
-}
-
-bool FLensSolverWorker::ValidateFolder(FString& folder, const FString & workerMessage)
-{
-	if (folder.IsEmpty())
-		folder = calibrationVisualizationOutputPath;
-
-	else
-	{
-		if (!FPaths::ValidatePath(folder))
-		{
-			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is not a valid."), *workerMessage, *folder);
-			return false;
-		}
-
-		if (FPaths::FileExists(folder))
-		{
-			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is to a file, not a directory."), *workerMessage, *folder);
-			return false;
-		}
-	}
-
-	if (!FPaths::DirectoryExists(folder))
-	{
-		FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*folder);
-		UE_LOG(LogTemp, Log, TEXT("%sCreated directory at path: \"%s\"."), *workerMessage, *folder);
-	}
-
-	return true;
-}
-
 void FLensSolverWorker::WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage)
 {
-	if (!ValidateFolder(folder, workerMessage))
+	if (!LensSolverUtilities::ValidateFolder(folder, calibrationVisualizationOutputPath, workerMessage))
 		return;
 
-	FString outputPath = GenerateIndexedFilePath(folder, fileName, "jpg");
+	FString outputPath = LensSolverUtilities::GenerateIndexedFilePath(folder, fileName, "jpg");
 	
 	if (!cv::imwrite(TCHAR_TO_UTF8(*outputPath), image))
 	{
@@ -578,10 +540,10 @@ void FLensSolverWorker::WriteMatToFile(cv::Mat image, FString folder, FString fi
 
 void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, FString fileName, const FString workerMessage)
 {
-	if (!ValidateFolder(folder, workerMessage))
+	if (!LensSolverUtilities::ValidateFolder(folder, calibrationVisualizationOutputPath, workerMessage))
 		return;
 
-	FString outputPath = GenerateIndexedFilePath(folder, fileName, "json");
+	FString outputPath = LensSolverUtilities::GenerateIndexedFilePath(folder, fileName, "json");
 
 	TSharedPtr<FJsonObject> obj = MakeShareable(new FJsonObject);
 	TSharedPtr<FJsonObject> result = MakeShareable(new FJsonObject);

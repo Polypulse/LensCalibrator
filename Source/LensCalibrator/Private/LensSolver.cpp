@@ -13,7 +13,9 @@
 #include "Engine/RendererSettings.h"
 #include "PixelShaderUtils.h"
 
+#include "LensSolverUtilities.h"
 #include "BlitShader.h"
+#include "DistortionCorrectionShader.h"
 
 void ULensSolver::BeginPlay()
 {
@@ -364,13 +366,13 @@ void ULensSolver::DetectPointsRenderThread(
 			TexCreate_RenderTargetable,
 			false,
 			createInfo,
-			renderTexture,
+			blitRenderTexture,
 			dummyTexRef);
 
 		allocated = true;
 	}
 
-	FRHIRenderPassInfo RPInfo(renderTexture, ERenderTargetActions::Clear_Store);
+	FRHIRenderPassInfo RPInfo(blitRenderTexture, ERenderTargetActions::Clear_Store);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("PresentAndCopyMediaTexture"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
@@ -399,7 +401,7 @@ void ULensSolver::DetectPointsRenderThread(
 
 	RHICmdList.EndRenderPass();
 
-	FRHITexture2D * texture2D = renderTexture->GetTexture2D();
+	FRHITexture2D * texture2D = blitRenderTexture->GetTexture2D();
 	TArray<FColor> surfaceData;
 
 	FReadSurfaceDataFlags ReadDataFlags;
@@ -470,11 +472,73 @@ void ULensSolver::DetectPointsRenderThread(
 }
 
 void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
-	FRHICommandListImmediate& RHICmdList, 
-	const FJobInfo jobInfo, 
-	const FCalibrationResult calibrationResult,
-	const FIntPoint mapSize)
+	FRHICommandListImmediate& RHICmdList,
+	const FDistortionCorrectionMapParameters distortionCorrectionMapParameters,
+	const FString generatedOutputPath)
 {
+	int width = distortionCorrectionMapParameters.mapResolution.X;
+	int height = distortionCorrectionMapParameters.mapResolution.Y;
+	if (!allocated)
+	{
+		FRHIResourceCreateInfo createInfo;
+		FTexture2DRHIRef dummyTexRef;
+		RHICreateTargetableShaderResource2D(
+			width,
+			height,
+			EPixelFormat::PF_B8G8R8A8,
+			1,
+			TexCreate_None,
+			TexCreate_RenderTargetable,
+			false,
+			createInfo,
+			blitRenderTexture,
+			dummyTexRef);
+
+		allocated = true;
+	}
+
+	FRHIRenderPassInfo RPInfo(blitRenderTexture, ERenderTargetActions::Clear_Store);
+	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMap"));
+	{
+		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
+		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
+
+		TShaderMapRef<FDistortionCorrectionShaderVS> VertexShader(GlobalShaderMap);
+		TShaderMapRef<FDistortionCorrectionShaderPS> PixelShader(GlobalShaderMap);
+
+		FGraphicsPipelineStateInitializer GraphicsPSOInit;
+		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+		RHICmdList.SetViewport(0, 0, 0.0f, width, height, 1.0f);
+
+		GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGB, BO_Add, BF_One, BF_SourceAlpha>::GetRHI();
+		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
+		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
+		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
+		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+
+		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+		PixelShader->SetParameters(RHICmdList, distortionCorrectionMapParameters.calibrationResult.distortionCoefficients);
+		// PixelShader->SetParameters(RHICmdList, textureZoomPair.texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(oneTimeProcessParameters.flipX ? -1.0f : 1.0f, oneTimeProcessParameters.flipY ? 1.0f : -1.0f));
+
+		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
+	}
+
+	RHICmdList.EndRenderPass();
+
+	FRHITexture2D * texture2D = distortionCorrectionRenderTexture->GetTexture2D();
+	TArray<FColor> surfaceData;
+
+	FReadSurfaceDataFlags ReadDataFlags;
+	ReadDataFlags.SetLinearToGamma(false);
+	ReadDataFlags.SetOutputStencil(false);
+	ReadDataFlags.SetMip(0);
+
+	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), surfaceData, ReadDataFlags);
+
+	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
+	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
 }
 
 UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height)
@@ -767,6 +831,47 @@ void ULensSolver::OneTimeProcessTextureArrayOfTextureArrayZoomPairs(
 		ouptutJobInfo,
 		inputTextures,
 		oneTimeProcessParameters
+	);
+}
+
+void ULensSolver::GenerateDistortionCorrectionMap(
+	const FDistortionCorrectionMapParameters distortionCorrectionMapParameters)
+{
+	if (distortionCorrectionMapParameters.calibrationResult.distortionCoefficients.Num() != 5)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, there should an array of 5 float value distortion coefficients in the calibration result DistortionCorrectionMapParameter member."));
+		return;
+	}
+
+	if (distortionCorrectionMapParameters.mapResolution.X <= 3 || distortionCorrectionMapParameters.mapResolution.Y <= 3)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, the map resolution DistortionCorrectionMapParameter member is <= 3 pixels on the X or Y axis."));
+		return;
+	}
+
+	static const FString backupOutputPath = LensSolverUtilities::GenerateGenericOutputPath(FString("DistortionMaps/"));
+	FString targetOutputPath = distortionCorrectionMapParameters.outputPath;
+
+	if (!LensSolverUtilities::ValidateFolder(targetOutputPath, backupOutputPath, FString("Distortion Correction: ")))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, unable to create folder path: \"%s\"."), *targetOutputPath);
+		return;
+	}
+
+	targetOutputPath = LensSolverUtilities::GenerateIndexedFilePath(targetOutputPath, FString::Printf(TEXT("DistortionCorrectionMap-%f"), distortionCorrectionMapParameters.calibrationResult.zoomLevel), ".bmp");
+
+	ULensSolver * lensSolver = this;
+	const FDistortionCorrectionMapParameters temp = distortionCorrectionMapParameters;
+
+	ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
+	(
+		[lensSolver, temp, targetOutputPath](FRHICommandListImmediate& RHICmdList)
+		{
+			lensSolver->GenerateDistortionCorrectionMapRenderThread(
+				RHICmdList,
+				temp,
+				targetOutputPath);
+		}
 	);
 }
 

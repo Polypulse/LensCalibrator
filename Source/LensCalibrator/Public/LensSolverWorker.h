@@ -69,8 +69,6 @@ private:
 	void QueueSolvedPoints(FCalibrationResult solvedPoints);
 	bool Exit ();
 	bool ShouldExit();
-	FString GenerateIndexedFilePath(const FString& folder, const FString& fileName, const FString & extension);
-	bool ValidateFolder(FString& folder, const FString & workerMessage);
 	void WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage);
 	void WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, FString fileName, const FString workerMessage);
 
