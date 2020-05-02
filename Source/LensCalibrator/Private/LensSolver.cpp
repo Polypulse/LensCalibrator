@@ -896,22 +896,42 @@ void ULensSolver::PollCalibrationResults()
 
 void ULensSolver::PollDistortionCorrectionMapGenerationResults()
 {
-	if (!queuedDistortionCorrectionMaps.IsValid())
+	if (!queuedDistortionCorrectionMapResults.IsValid())
 		return;
 
-	bool isQueued = queuedDistortionCorrectionMaps->IsEmpty() == false;
+	bool isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
 	while (isQueued)
 	{
-		TArray<FColor> distortionCorrectionMapPixels;
-		if (!queuedDistortionCorrectionMaps.IsValid())
+		FDistortionCorrectionMapGenerationResults distortionCorrectionMapResult;
+		if (!queuedDistortionCorrectionMapResults.IsValid())
 			return;
 
-		queuedDistortionCorrectionMaps->Dequeue(distortionCorrectionMapPixels);
+		queuedDistortionCorrectionMapResults->Dequeue(distortionCorrectionMapResult);
+		UTexture2D* texture = CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height);
+		this->OnGeneratedDistortionMap(texture);
+
+		isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
 	}
 }
 
 void ULensSolver::PollCorrectedDistortedImageResults()
 {
+	if (!queuedCorrectedDistortedImageResults.IsValid())
+		return;
+
+	bool isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
+	while (isQueued)
+	{
+		FCorrectedDistortedImageResults correctedDistortedImageResult;
+		if (!queuedCorrectedDistortedImageResults.IsValid())
+			return;
+
+		queuedCorrectedDistortedImageResults->Dequeue(correctedDistortedImageResult);
+		UTexture2D* texture = CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height);
+		this->OnGeneratedDistortionMap(texture);
+
+		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
+	}
 }
 
 bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* mediaTexture, FString url)

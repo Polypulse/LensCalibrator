@@ -19,6 +19,8 @@
 #include "OneTimeProcessParameters.h"
 #include "DistortionCorrectionMapGenerationParameters.h"
 #include "DistortionCorrectionParameters.h"
+#include "DistortionCorrectionMapGenerationResults.h"
+#include "CorrectedDistortedImageResults.h"
 #include "TextureArrayZoomPair.h"
 #include "TextureZoomPair.h"
 #include "LensSolver.generated.h"
@@ -58,8 +60,8 @@ private:
 	bool allocated;
 
 	TSharedPtr<TQueue<FCalibrationResult>> queuedSolvedPointsPtr;
-	TSharedPtr<TQueue<TArray<FColor>>> queuedDistortionCorrectionMaps;
-	TSharedPtr<TQueue<TArray<FColor>>> queuedCorrectedDistortedImages;
+	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;
+	TSharedPtr<TQueue<FCorrectedDistortedImageResults>> queuedCorrectedDistortedImageResults;
 
 	mutable FCriticalSection threadLock;
 	TArray<FWorkerInterfaceContainer> workers;
