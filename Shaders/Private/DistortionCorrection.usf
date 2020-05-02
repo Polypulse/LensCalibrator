@@ -1,5 +1,6 @@
 #pragma once
 
+float2 InNormalizedPrincipalPoint;
 float InDistortionCoefficients[5];
 
 struct InputVS
@@ -32,6 +33,22 @@ OutputVS MainVS(InputVS IN)
 OutputPS MainPS(OutputVS IN)
 {
 	OutputPS Out;
-	Out.Color = float4(IN.UV.xy, 0.0, 1.0);
+
+	float k1, k2, p1, p2, k3;
+	k1 = InDistortionCoefficients[0];
+	k2 = InDistortionCoefficients[1];
+	p1 = InDistortionCoefficients[2];
+	p2 = InDistortionCoefficients[3];
+	k3 = InDistortionCoefficients[4];
+
+	float ppx = InNormalizedPrincipalPoint.x * 2.0 - 1.0;
+	float ppy = InNormalizedPrincipalPoint.y * 2.0 - 1.0;
+
+	float cx = (IN.UV.x - ppx);
+	float cy = (IN.UV.y - ppy);
+	float r = sqrt(cx * cx + cy * cy);
+	float x = cx * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0)) + p1 * (pow(r, 2.0) + 2.0 * pow(cx, 2.0)) + 2.0 * p2 * (cx * cy);
+	float y = cy * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0)) + p2 * (pow(r, 2.0) + 2.0 * pow(cy, 2.0)) + 2.0 * p1 * (cx * cy);
+	Out.Color = float4(x, y, 0.0, 1.0);
 	return Out;
 }

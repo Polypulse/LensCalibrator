@@ -449,12 +449,13 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.jobInfo = latchData.jobInfo;
 		solvedPoints.zoomLevel = latchData.zoomLevel;
 		solvedPoints.success = true;
-		solvedPoints.resolution = latchData.sourceResolution;
 		solvedPoints.fovX = fovX;
 		solvedPoints.fovY = fovY;
 		solvedPoints.focalLengthMM = focalLength;
-		solvedPoints.sensorSizeMM = FVector2D(sensorWidth, sensorHeight);
 		solvedPoints.aspectRatio = aspectRatio;
+		solvedPoints.sensorSizeMM = FVector2D(sensorWidth, sensorHeight);
+		solvedPoints.principalPixelPoint = FVector2D(principalPoint.x, principalPoint.y);
+		solvedPoints.resolution = latchData.sourceResolution;
 		solvedPoints.perspectiveMatrix = perspectiveMatrix;
 
 		if (latchData.workerParameters.writeCalibrationResultsToFile)
@@ -556,6 +557,21 @@ void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FCalibrationResult& so
 	result->SetNumberField("focallength", solvePoints.focalLengthMM);
 	result->SetNumberField("aspectratio", solvePoints.aspectRatio);
 
+	TSharedPtr<FJsonObject> sensorSizeObj = MakeShareable(new FJsonObject);
+	sensorSizeObj->SetNumberField("X", solvePoints.sensorSizeMM.X);
+	sensorSizeObj->SetNumberField("y", solvePoints.sensorSizeMM.Y);
+	result->SetObjectField("sensorsizemm", sensorSizeObj);
+
+	TSharedPtr<FJsonObject> principalObj = MakeShareable(new FJsonObject);
+	principalObj->SetNumberField("X", solvePoints.principalPixelPoint.X);
+	principalObj->SetNumberField("y", solvePoints.principalPixelPoint.Y);
+	result->SetObjectField("principalpixelpoint", principalObj);
+
+	TSharedPtr<FJsonObject> resolutionObj = MakeShareable(new FJsonObject);
+	resolutionObj->SetNumberField("X", solvePoints.resolution.X);
+	resolutionObj->SetNumberField("y", solvePoints.resolution.Y);
+	result->SetObjectField("resolution", resolutionObj);
+
 	TArray<TSharedPtr<FJsonValue>> matVals;
 
 	for (int i = 0; i < 16; i++)
@@ -563,16 +579,11 @@ void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FCalibrationResult& so
 
 	result->SetArrayField("perspectivematrix", matVals);
 
-	/*
-	TArray<TSharedPtr<FJsonValue>> points;
-	for (int i = 0; i < solvePoints.points.Num(); i++)
-	{
-		points.Add(MakeShareable(new FJsonValueNumber(solvePoints.points[i].X)));
-		points.Add(MakeShareable(new FJsonValueNumber(solvePoints.points[i].Y)));
-	}
+	TArray<TSharedPtr<FJsonValue>> distortionCoefficients;
+	for (int i = 0; i < solvePoints.distortionCoefficients.Num(); i++)
+		distortionCoefficients.Add(MakeShareable(new FJsonValueNumber(solvePoints.distortionCoefficients[i])));
 
-	result->SetArrayField("points", points);
-	*/
+	result->SetArrayField("distortioncoefficients", distortionCoefficients);
 	obj->SetObjectField("result", result);
 
 	FString outputJson(TEXT("{}"));

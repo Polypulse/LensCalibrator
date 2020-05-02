@@ -504,6 +504,22 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 		allocated = true;
 	}
 
+	FVector2D normalizedPrincipalPoint = FVector2D(
+		distortionCorrectionMapParameters.calibrationResult.principalPixelPoint.X / (float)distortionCorrectionMapParameters.calibrationResult.resolution.X,
+		distortionCorrectionMapParameters.calibrationResult.principalPixelPoint.Y / (float)distortionCorrectionMapParameters.calibrationResult.resolution.Y);
+
+	FString message = FString("Submitting the following parameters to distortion corretion map generation shader:\n{");
+	message += FString::Printf(TEXT("\n\tNormalized principal point: (%f, %f),\n\tDistortion Coefficients: [k1: %f, k2: %f, p1: %f, p2: %f, k3: %f]\n}"), 
+		normalizedPrincipalPoint.X, 
+		normalizedPrincipalPoint.Y,
+		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[0],
+		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[1],
+		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[2],
+		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[3],
+		distortionCorrectionMapParameters.calibrationResult.distortionCoefficients[4]);
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), *message);
+
 	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_Store);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMap"));
 	{
@@ -526,7 +542,7 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-		PixelShader->SetParameters(RHICmdList, distortionCorrectionMapParameters.calibrationResult.distortionCoefficients);
+		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCorrectionMapParameters.calibrationResult.distortionCoefficients);
 		// PixelShader->SetParameters(RHICmdList, textureZoomPair.texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(oneTimeProcessParameters.flipX ? -1.0f : 1.0f, oneTimeProcessParameters.flipY ? 1.0f : -1.0f));
 
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);

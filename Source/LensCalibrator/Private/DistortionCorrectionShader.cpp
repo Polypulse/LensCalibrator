@@ -42,6 +42,7 @@ FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS() {}
 FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer)
 {
 	distortionCoefficientsParameter.Bind(Initializer.ParameterMap, TEXT("InDistortionCoefficients"));
+	normalizedPrincipalPointParameter.Bind(Initializer.ParameterMap, TEXT("InNormalizedPrinipcalPoint"));
 }
 
 bool FDistortionCorrectionShaderPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
@@ -51,6 +52,7 @@ bool FDistortionCorrectionShaderPS::ShouldCompilePermutation(const FGlobalShader
 
 void FDistortionCorrectionShaderPS::SetParameters(
 		FRHICommandListImmediate& RHICmdList,
+		FVector2D normalizedPrincipalPoint,
 		TArray<float> inputDistortionCoefficients)
 {
 	/*
@@ -59,6 +61,7 @@ void FDistortionCorrectionShaderPS::SetParameters(
 
 	SetShaderValue(RHICmdList, GetPixelShader(), flipDirectionParameter, flipDirection);
 	*/
+	SetShaderValue(RHICmdList, GetPixelShader(), normalizedPrincipalPointParameter, normalizedPrincipalPoint);
 	SetShaderValue(RHICmdList, GetPixelShader(), distortionCoefficientsParameter, inputDistortionCoefficients);
 }
 
@@ -66,7 +69,8 @@ bool FDistortionCorrectionShaderPS::Serialize(FArchive& Ar)
 {
 	bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
 	Ar
-		<< distortionCoefficientsParameter;
+		<< distortionCoefficientsParameter
+		<< normalizedPrincipalPointParameter;
 
 	return bShaderHasOutdatedParameters;
 }

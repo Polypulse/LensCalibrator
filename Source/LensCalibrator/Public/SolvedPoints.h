@@ -11,7 +11,6 @@ struct FCalibrationResult
 {
 	GENERATED_BODY()
 
-
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FJobInfo jobInfo;
 
@@ -31,10 +30,13 @@ struct FCalibrationResult
 	float focalLengthMM;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float aspectRatio;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FVector2D sensorSizeMM;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	float aspectRatio;
+	FVector2D principalPixelPoint;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FIntPoint resolution;

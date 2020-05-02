@@ -36,6 +36,7 @@ private:
 	FShaderParameter flipDirectionParameter;
 	*/
 	FShaderParameter distortionCoefficientsParameter;
+	FShaderParameter normalizedPrincipalPointParameter;
 
 public:
 	FDistortionCorrectionShaderPS();
@@ -45,6 +46,7 @@ public:
 
 	void SetParameters(
 		FRHICommandListImmediate& RHICmdList,
+		FVector2D normalizedPrincipalPointParameter,
 		TArray<float> inputDistortionCoefficients);
 
 	virtual bool Serialize(FArchive& Ar) override;
