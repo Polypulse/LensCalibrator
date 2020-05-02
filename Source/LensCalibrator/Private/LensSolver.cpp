@@ -596,13 +596,13 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 			TexCreate_RenderTargetable,
 			false,
 			createInfo,
-			distortionCorrectionRenderTexture,
+			correctDistortedTextureRenderTexture,
 			dummyTexRef);
 
 		allocated = true;
 	}
 
-	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_Store);
+	FRHIRenderPassInfo RPInfo(correctDistortedTextureRenderTexture, ERenderTargetActions::Clear_Store);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("CorrectImageDistortionPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;

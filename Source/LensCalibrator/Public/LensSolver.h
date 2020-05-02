@@ -56,6 +56,7 @@ private:
 
 	FTexture2DRHIRef blitRenderTexture;
 	FTexture2DRHIRef distortionCorrectionRenderTexture;
+	FTexture2DRHIRef correctDistortedTextureRenderTexture;
 	UTexture2D * visualizationTexture;
 	bool allocated;
 
