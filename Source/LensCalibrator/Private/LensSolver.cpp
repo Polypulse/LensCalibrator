@@ -563,6 +563,8 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
 	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
+
+	queuedDistortionCorrectionMaps->Enqueue(surfaceData);
 }
 
 void ULensSolver::CorrectImageDistortionRenderThread(
@@ -635,6 +637,8 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
 	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
+
+	queuedCorrectedDistortedImages->Enqueue(surfaceData);
 }
 
 UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height)
@@ -837,6 +841,79 @@ void ULensSolver::ReturnErrorSolvedPoints(FJobInfo jobInfo)
 	this->DequeueSolvedPoints(solvedPoints);
 }
 
+void ULensSolver::PollCalibrationResults()
+{
+	if (!queuedSolvedPointsPtr.IsValid())
+		return;
+
+	bool isQueued = queuedSolvedPointsPtr->IsEmpty() == false;
+	while (isQueued)
+	{
+		FCalibrationResult lastSolvedPoints;
+		if (!queuedSolvedPointsPtr.IsValid())
+			return;
+
+		if (!queuedSolvedPointsPtr->Peek(lastSolvedPoints))
+			return;
+
+		if (!jobs.Contains(lastSolvedPoints.jobInfo.jobID))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
+			return;
+		}
+
+		queuedSolvedPointsPtr->Pop();
+
+		UE_LOG(LogTemp, Log, TEXT("Dequeued solved points."));
+
+		/*
+		if (!jobs.Contains(lastSolvedPoints.jobInfo.jobID))
+		{
+			UE_LOG(LogTemp, Fatal, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
+			return;
+		}
+		*/
+
+		/*
+		if (this == nullptr)
+			return;
+		*/
+
+		this->DequeueSolvedPoints(lastSolvedPoints);
+		isQueued = queuedSolvedPointsPtr->IsEmpty() == false;
+
+		FJob *job = jobs.Find(lastSolvedPoints.jobInfo.jobID);
+		job->completedWorkUnits++;
+
+		if (job->completedWorkUnits >= lastSolvedPoints.jobInfo.workUnitCount)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *lastSolvedPoints.jobInfo.jobID);
+			this->FinishedJob(lastSolvedPoints.jobInfo);
+			jobs.Remove(lastSolvedPoints.jobInfo.jobID);
+		}
+	}
+}
+
+void ULensSolver::PollDistortionCorrectionMapGenerationResults()
+{
+	if (!queuedDistortionCorrectionMaps.IsValid())
+		return;
+
+	bool isQueued = queuedDistortionCorrectionMaps->IsEmpty() == false;
+	while (isQueued)
+	{
+		TArray<FColor> distortionCorrectionMapPixels;
+		if (!queuedDistortionCorrectionMaps.IsValid())
+			return;
+
+		queuedDistortionCorrectionMaps->Dequeue(distortionCorrectionMapPixels);
+	}
+}
+
+void ULensSolver::PollCorrectedDistortedImageResults()
+{
+}
+
 bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* mediaTexture, FString url)
 {
 	return
@@ -942,7 +1019,7 @@ void ULensSolver::GenerateDistortionCorrectionMap(
 		return;
 	}
 
-	if (distortionCorrectionMapGenerationParams.mapResolution.X <= 3 || distortionCorrectionMapGenerationParams.mapResolution.Y <= 3)
+	if (distortionCorrectionMapGenerationParams.outputMapResolution.X <= 3 || distortionCorrectionMapGenerationParams.outputMapResolution.Y <= 3)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, the map resolution DistortionCorrectionMapParameter member is <= 3 pixels on the X or Y axis."));
 		return;
@@ -962,7 +1039,7 @@ void ULensSolver::GenerateDistortionCorrectionMap(
 	ULensSolver * lensSolver = this;
 	const FDistortionCorrectionMapGenerationParameters temp = distortionCorrectionMapGenerationParams;
 
-	ENQUEUE_RENDER_COMMAND(OneTimeProcessMediaTexture)
+	ENQUEUE_RENDER_COMMAND(GenerateDistortionCorrectionMap)
 	(
 		[lensSolver, temp, targetOutputPath](FRHICommandListImmediate& RHICmdList)
 		{
@@ -1005,11 +1082,11 @@ void ULensSolver::CorrectImageDistortion(const FDistortionCorrectionParameters d
 	ULensSolver * lensSolver = this;
 	const FDistortionCorrectionParameters temp = distortionCorrectionParams;
 
-	ENQUEUE_RENDER_COMMAND(OneTimeCorrectImageDistortion)
+	ENQUEUE_RENDER_COMMAND(CorrectionImageDistortion)
 	(
 		[lensSolver, temp, targetOutputPath](FRHICommandListImmediate& RHICmdList)
 		{
-			lensSolver->CorrectImageDistortion(
+			lensSolver->CorrectImageDistortionRenderThread(
 				RHICmdList,
 				temp,
 				targetOutputPath);
@@ -1106,72 +1183,19 @@ void ULensSolver::DequeueSolvedPoints_Implemenation (FCalibrationResult& solvedP
 }
 */
 
-void ULensSolver::PollSolvedPoints()
+void ULensSolver::Poll()
 {
+	PollCalibrationResults();
+	PollDistortionCorrectionMapGenerationResults();
+	PollCorrectedDistortedImageResults();
+
 	/*
 	if (this == nullptr)
 		return;
 	*/
-
-	if (!queuedSolvedPointsPtr.IsValid())
-		return;
-
-	bool isQueued = queuedSolvedPointsPtr->IsEmpty() == false;
-	bool outputIsQueued = isQueued;
-
-	FCalibrationResult lastSolvedPoints;
-	bool dequeued = false;
-
-	while (isQueued)
-	{
-		if (!queuedSolvedPointsPtr.IsValid())
-			return;
-
-		if (!queuedSolvedPointsPtr->Peek(lastSolvedPoints))
-			return;
-
-		if (!jobs.Contains(lastSolvedPoints.jobInfo.jobID))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
-			return;
-		}
-
-		queuedSolvedPointsPtr->Pop();
-
-		UE_LOG(LogTemp, Log, TEXT("Dequeued solved points."));
-		dequeued = true;
-
-		/*
-		if (!jobs.Contains(lastSolvedPoints.jobInfo.jobID))
-		{
-			UE_LOG(LogTemp, Fatal, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
-			return;
-		}
-		*/
-
-		/*
-		if (this == nullptr)
-			return;
-		*/
-
-		this->DequeueSolvedPoints(lastSolvedPoints);
-		isQueued = queuedSolvedPointsPtr->IsEmpty() == false;
-
-		FJob *job = jobs.Find(lastSolvedPoints.jobInfo.jobID);
-		job->completedWorkUnits++;
-
-		if (job->completedWorkUnits >= lastSolvedPoints.jobInfo.workUnitCount)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *lastSolvedPoints.jobInfo.jobID);
-			this->FinishedJob(lastSolvedPoints.jobInfo);
-			jobs.Remove(lastSolvedPoints.jobInfo.jobID);
-		}
-		
-	}
-
+	/*
 	if (dequeued)
 	{
-		/*
 		if (GEngine != nullptr && GEngine->GameViewport != nullptr)
 		{
 			FSceneViewport * sceneViewport = GEngine->GameViewport->GetGameViewport();
@@ -1193,8 +1217,8 @@ void ULensSolver::PollSolvedPoints()
 				);
 			}
 		}
-		*/
 	}
+	*/
 }
 
 void ULensSolver::OnSolvedPoints(FCalibrationResult solvedPoints)

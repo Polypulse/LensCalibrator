@@ -58,6 +58,8 @@ private:
 	bool allocated;
 
 	TSharedPtr<TQueue<FCalibrationResult>> queuedSolvedPointsPtr;
+	TSharedPtr<TQueue<TArray<FColor>>> queuedDistortionCorrectionMaps;
+	TSharedPtr<TQueue<TArray<FColor>>> queuedCorrectedDistortedImages;
 
 	mutable FCriticalSection threadLock;
 	TArray<FWorkerInterfaceContainer> workers;
@@ -142,6 +144,10 @@ private:
 	bool ValidateOneTimeProcessParameters(const FOneTimeProcessParameters& oneTimeProcessParameters);
 	void ReturnErrorSolvedPoints(FJobInfo jobInfo);
 
+	void PollCalibrationResults ();
+	void PollDistortionCorrectionMapGenerationResults ();
+	void PollCorrectedDistortedImageResults ();
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -154,6 +160,14 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
 	void FinishedJob (FJobInfo jobInfo);
 	virtual void FinishedJob_Implementation (FJobInfo jobInfo) {}
+
+	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
+	void OnGeneratedDistortionMap (UTexture2D * generatedDistortionMap);
+	virtual void OnGeneratedDistortionMap_Implementation (UTexture2D * generatedDistortionMap) {}
+
+	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
+	void OnDistortedImageCorrected (UTexture2D * correctedDistortedImage);
+	virtual void OnDistortedImageCorrected_Implementation (UTexture2D * correctedDistortedImage) {}
 
 public:
 
@@ -232,7 +246,7 @@ public:
 	void StopBackgroundImageprocessors();
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	void PollSolvedPoints ();
+	void Poll ();
 
 	void OnSolvedPoints(FCalibrationResult solvedPoints);
 };
