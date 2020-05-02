@@ -53,11 +53,10 @@ private:
 	TQueue<FLensSolverWorkUnit> workQueue;
 	TQueue<FLatchData> latchQueue;
 
-	int latchedWorkUnitCount;
-	int workUnitCount;
 	int workerID;
 
-	bool flagToExit;
+	mutable int workUnitCount;
+	mutable bool flagToExit;
 
 	FCriticalSection threadLock;
 

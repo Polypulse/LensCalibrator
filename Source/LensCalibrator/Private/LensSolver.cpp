@@ -356,7 +356,7 @@ void ULensSolver::DetectPointsRenderThread(
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-		PixelShader->SetParameters(RHICmdList, textureZoomPair.texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(oneTimeProcessParameters.flipX ? -1.0f : 1.0f, oneTimeProcessParameters.flipY ? -1.0f : 1.0f));
+		PixelShader->SetParameters(RHICmdList, textureZoomPair.texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(oneTimeProcessParameters.flipX ? -1.0f : 1.0f, oneTimeProcessParameters.flipY ? 1.0f : -1.0f));
 
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}
@@ -394,7 +394,10 @@ void ULensSolver::DetectPointsRenderThread(
 	workerUnit.unitName = textureName;
 	workerUnit.pixels = surfaceData;
 
-	workers[0].queueWorkUnitDel.Execute(workerUnit);
+	if (nextWorkerIndex < 0 || nextWorkerIndex > workers.Num() - 1)
+		nextWorkerIndex = 0;
+
+	workers[nextWorkerIndex].queueWorkUnitDel.Execute(workerUnit);
 
 	if (latch)
 	{
@@ -412,17 +415,23 @@ void ULensSolver::DetectPointsRenderThread(
 		};
 
 		UE_LOG(LogTemp, Log, TEXT("Latching worker."))
-		workers[0].signalLatch.Execute(latchData);
+		workers[nextWorkerIndex].signalLatch.Execute(latchData);
 
+		/*
 		workers.Sort([](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) {
 			return workerA.getWorkLoadDel.Execute() > workerB.getWorkLoadDel.Execute();
 		});
+		*/
+
+		nextWorkerIndex++;
+		if (nextWorkerIndex > workers.Num() - 1)
+			nextWorkerIndex = 0;
 	}
 
 	threadLock.Unlock();
 }
 
-void ULensSolver::GenerateDistortionCorrectionDisplacementMapRenderThread(
+void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	FRHICommandListImmediate& RHICmdList, 
 	const FJobInfo jobInfo, 
 	const FCalibrationResult calibrationResult,

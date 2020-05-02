@@ -58,6 +58,7 @@ private:
 
 	mutable FCriticalSection threadLock;
 	TArray<FWorkerInterfaceContainer> workers;
+	int nextWorkerIndex;
 	TMap<FString, FJob> jobs;
 
 	FJobInfo RegisterJob (int latchedWorkUnitCount, UJobType jobType);
@@ -109,7 +110,7 @@ private:
 		const int latchImageCount,
 		const bool latch);
 
-	void GenerateDistortionCorrectionDisplacementMapRenderThread(
+	void GenerateDistortionCorrectionMapRenderThread(
 		FRHICommandListImmediate& RHICmdList,
 		const FJobInfo jobInfo,
 		const FCalibrationResult calibrationResult,

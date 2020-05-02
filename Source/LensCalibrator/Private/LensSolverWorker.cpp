@@ -27,7 +27,6 @@ FLensSolverWorker::FLensSolverWorker(
 
 	workerID = inputWorkerID;
 
-	latchedWorkUnitCount = 0;
 	workUnitCount = 0;
 	flagToExit = false;
 
@@ -55,7 +54,6 @@ void FLensSolverWorker::QueueWorkUnit(FLensSolverWorkUnit workUnit)
 void FLensSolverWorker::Latch(const FLatchData inputLatchData)
 {
 	threadLock.Lock();
-	latchedWorkUnitCount = workUnitCount;
 	latchQueue.Enqueue(inputLatchData);
 	threadLock.Unlock();
 }
@@ -172,17 +170,16 @@ void FLensSolverWorker::DoWork()
 				continue;
 			}
 
-			workUnitCount -= latchData.imageCount;
-
 			workUnits.SetNum(latchData.imageCount);
 			for (int i = 0; i < latchData.imageCount; i++)
 				workQueue.Dequeue(workUnits[i]);
 
+			workUnitCount -= latchData.imageCount;
 			threadLock.Unlock();
 		}
 
 
-		UE_LOG(LogTemp, Log, TEXT("%sDequeued %d work units in latched queue."), *workerMessage, latchedWorkUnitCount)
+		UE_LOG(LogTemp, Log, TEXT("%sDequeued %d work units in latched queue."), *workerMessage, latchData.imageCount)
 
 		std::vector<std::vector<cv::Point2f>> corners(latchData.imageCount);
 		std::vector<std::vector<cv::Point3f>> objectPoints(latchData.imageCount);
@@ -265,19 +262,23 @@ void FLensSolverWorker::DoWork()
 
 		for (int i = 0; i < latchData.imageCount; i++)
 		{
+			if (ShouldExit())
+				break;
+
 			cv::Size patternSize(latchData.cornerCount.X, latchData.cornerCount.Y);
 			cv::Mat image;
 
 			if (image.rows != pixelWidth || image.cols != pixelHeight)
 			{
 				UE_LOG(LogTemp, Log, TEXT("%sAllocating image from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, pixelWidth, pixelHeight);
-				image = cv::Mat(pixelWidth, pixelWidth, cv::DataType<uint8>::type);
+				image = cv::Mat(pixelHeight, pixelWidth, cv::DataType<uint8>::type);
 			}
 
 			UE_LOG(LogTemp, Log, TEXT("%sCopying pixel data of pixel count: %d to OpenCV Mat of size: (%d, %d)."), *workerMessage, workUnits[i].pixels.Num(), pixelWidth, pixelHeight);
 			int pixelCount = pixelWidth * pixelHeight;
 			for (int pi = 0; pi < pixelCount; pi++)
-				image.at<uint8>(pi / pixelWidth, pi % pixelWidth) = workUnits[i].pixels[(pixelCount - 1) - pi].R;
+				image.at<uint8>(pi / pixelWidth, pi % pixelWidth) = workUnits[i].pixels[pi].R;
+
 			UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnits[i].pixels.Num(), pixelWidth, pixelHeight);
 
 			bool patternFound = false;
@@ -317,12 +318,17 @@ void FLensSolverWorker::DoWork()
 				for (int x = 0; x < latchData.cornerCount.X; x++)
 					objectPoints[i].push_back(cv::Point3f(x * latchData.squareSizeMM, y * latchData.squareSizeMM, 0.0f));
 
+			/*
 			for (int ci = 0; ci < corners[i].size(); ci++)
 			{
 				corners[i][ci].x *= inverseResizeRatio;
 				corners[i][ci].y *= inverseResizeRatio;
 			}
+			*/
 		}
+
+		if (ShouldExit())
+			break;
 
 		// cameraMatrix.at<float>(0, 0) *= resizeRatio.x;
 		// cameraMatrix.at<float>(1, 1) *= resizeRatio.y;
@@ -333,7 +339,7 @@ void FLensSolverWorker::DoWork()
 		double error = cv::calibrateCamera(
 			objectPoints,
 			corners,
-			imageSize,
+			cv::Size(pixelWidth, pixelHeight),
 			cameraMatrix,
 			distortionCoefficients,
 			rvecs,
@@ -371,7 +377,7 @@ void FLensSolverWorker::DoWork()
 			cameraMatrix.at<float>(2, 2));
 		*/
 
-		cv::calibrationMatrixValues(cameraMatrix, imageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
+		cv::calibrationMatrixValues(cameraMatrix, cv::Size(pixelWidth, pixelHeight), sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
 		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(imageSize, principalPoint, focalLength);
 
 		fovX *= inverseResizeRatio;
@@ -402,6 +408,9 @@ void FLensSolverWorker::DoWork()
 			aspectRatio);
 
 		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);
+
+		if (ShouldExit())
+			break;
 
 		/*
 		TArray<uint8> visualizationData;
