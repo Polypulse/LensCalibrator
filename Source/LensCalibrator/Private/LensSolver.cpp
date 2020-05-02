@@ -228,6 +228,13 @@ void ULensSolver::BeginDetectPoints(
 		return;
 	}
 
+	if (inputTextures.textures.Num() == 0 || inputTextures.textures[0] == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No input textures."));
+		ReturnErrorSolvedPoints(inputJobInfo);
+		return;
+	}
+
 	FIntPoint targetResolution = FIntPoint(inputTextures.textures[0]->GetSizeX(), inputTextures.textures[0]->GetSizeY());
 	for (int i = 0; i < inputTextures.textures.Num(); i++)
 	{
@@ -761,6 +768,9 @@ void ULensSolver::OneTimeProcessTextureArrayOfTextureArrayZoomPairs(
 	for (int i = 0; i < inputTextures.Num(); i++)
 		if (inputTextures[i].use)
 			useCount++;
+
+	if (useCount == 0)
+		return;
 
 	ouptutJobInfo = RegisterJob(useCount, UJobType::OneTime);
 	BeginDetectPoints(
