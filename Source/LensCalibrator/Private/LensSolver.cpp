@@ -408,6 +408,7 @@ void ULensSolver::DetectPointsRenderThread(
 			latchImageCount,
 			textureZoomPair.zoomLevel,
 			oneTimeProcessParameters.currentResolution,
+			oneTimeProcessParameters.resize,
 			oneTimeProcessParameters.resizePercentage,
 			oneTimeProcessParameters.cornerCount,
 			oneTimeProcessParameters.squareSizeMM,
@@ -825,20 +826,27 @@ void ULensSolver::PollSolvedPoints()
 		if (!queuedSolvedPointsPtr.IsValid())
 			return;
 
-		if (!queuedSolvedPointsPtr->Dequeue(lastSolvedPoints))
+		if (!queuedSolvedPointsPtr->Peek(lastSolvedPoints))
+			return;
+
+		if (!jobs.Contains(lastSolvedPoints.jobInfo.jobID))
 		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to dequeue solved points."));
+			UE_LOG(LogTemp, Warning, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
 			return;
 		}
+
+		queuedSolvedPointsPtr->Pop();
 
 		UE_LOG(LogTemp, Log, TEXT("Dequeued solved points."));
 		dequeued = true;
 
+		/*
 		if (!jobs.Contains(lastSolvedPoints.jobInfo.jobID))
 		{
 			UE_LOG(LogTemp, Fatal, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
 			return;
 		}
+		*/
 
 		/*
 		if (this == nullptr)

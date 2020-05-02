@@ -17,6 +17,7 @@ struct FLatchData
 	int imageCount;
 	float zoomLevel;
 	FIntPoint sourceResolution;
+	bool resize;
 	float resizePercentage;
 	FIntPoint cornerCount;
 	float squareSizeMM;

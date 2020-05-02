@@ -195,13 +195,14 @@ void FLensSolverWorker::DoWork()
 
 		int sourcePixelWidth = latchData.sourceResolution.X;
 		int sourcePixelHeight = latchData.sourceResolution.Y;
-		int pixelWidth = FMath::FloorToInt(latchData.sourceResolution.X * latchData.resizePercentage);
-		int pixelHeight = FMath::FloorToInt(latchData.sourceResolution.Y * latchData.resizePercentage);
+		int pixelWidth = FMath::FloorToInt(latchData.sourceResolution.X * (latchData.resize ? latchData.resizePercentage : 1.0f));
+		int pixelHeight = FMath::FloorToInt(latchData.sourceResolution.Y * (latchData.resize ? latchData.resizePercentage : 1.0f));
 
 		cv::Point2d principalPoint(sourcePixelWidth, sourcePixelHeight);
-		cv::Size imageSize(sourcePixelWidth, sourcePixelHeight);
+		cv::Size sourceImageSize(sourcePixelWidth, sourcePixelHeight);
+		cv::Size imageSize(pixelWidth, pixelHeight);
 
-		float inverseResizeRatio = 1.0f / latchData.resizePercentage;
+		float inverseResizeRatio = latchData.resize ? 1.0f / latchData.resizePercentage : 1.0f;
 
 		UE_LOG(LogTemp, Log, TEXT("%sPixel size: (%d, %d), source size: (%d, %d), resize ratio: %f."),
 			*workerMessage,
@@ -209,7 +210,7 @@ void FLensSolverWorker::DoWork()
 			pixelHeight,
 			sourcePixelWidth,
 			sourcePixelHeight,
-			latchData.resizePercentage);
+			1.0f / inverseResizeRatio);
 
 		float sensorHeight = (latchData.sensorDiagonalMM * sourcePixelHeight) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
 		float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
@@ -240,8 +241,8 @@ void FLensSolverWorker::DoWork()
 
 		else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 		{
-			cameraMatrix.at<float>(0, 0) = 1.0f / (sourcePixelWidth * 0.5f);
-			cameraMatrix.at<float>(1, 1) = 1.0f / (sourcePixelHeight * 0.5f);
+			cameraMatrix.at<float>(0, 0) = pixelWidth;
+			cameraMatrix.at<float>(1, 1) = pixelHeight;
 			UE_LOG(LogTemp, Log, TEXT("%sKeeping aspect ratio at: %f"), 
 				*workerMessage, 
 				(sourcePixelWidth / (float)sourcePixelHeight));
@@ -339,7 +340,7 @@ void FLensSolverWorker::DoWork()
 		double error = cv::calibrateCamera(
 			objectPoints,
 			corners,
-			cv::Size(pixelWidth, pixelHeight),
+			imageSize,
 			cameraMatrix,
 			distortionCoefficients,
 			rvecs,
@@ -377,17 +378,19 @@ void FLensSolverWorker::DoWork()
 			cameraMatrix.at<float>(2, 2));
 		*/
 
-		cv::calibrationMatrixValues(cameraMatrix, cv::Size(pixelWidth, pixelHeight), sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
-		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(imageSize, principalPoint, focalLength);
+		cv::calibrationMatrixValues(cameraMatrix, imageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
+		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(sourceImageSize, principalPoint, focalLength);
 
+		/*
 		fovX *= inverseResizeRatio;
 		fovY *= inverseResizeRatio;
 		principalPoint.x *= inverseResizeRatio;
 		principalPoint.y *= inverseResizeRatio;
 		focalLength *= inverseResizeRatio;
+		*/
 
 		FString format = FString("%sCompleted camera calibration at zoom level: %f "
-			"with solve error: %f"
+			"with solve error: %f "
 			"with results: ("
 			"\n\tFov X: %f,"
 			"\n\tFov Y: %f,"
