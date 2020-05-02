@@ -128,7 +128,7 @@ private:
 	*/
 
 	bool ValidateZoom(const FJobInfo& jobInfo, const float zoomValue);
-	bool ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture);
+	bool ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture, const int textureIndex, const FIntPoint targetResolution);
 	bool ValidateMediaTexture(const FJobInfo & jobInfo, const UMediaTexture* inputTexture);
 	bool ValidateOneTimeProcessParameters(const FOneTimeProcessParameters& oneTimeProcessParameters);
 	void ReturnErrorSolvedPoints(FJobInfo jobInfo);

@@ -14,4 +14,13 @@ struct FTextureArrayZoomPair
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float zoomLevel;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	bool use;
+
+	FTextureArrayZoomPair()
+	{
+		zoomLevel = 0.0f;
+		use = true;
+	}
 };

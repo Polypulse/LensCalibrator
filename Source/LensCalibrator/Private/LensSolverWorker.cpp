@@ -181,10 +181,11 @@ void FLensSolverWorker::DoWork()
 
 		UE_LOG(LogTemp, Log, TEXT("%sDequeued %d work units in latched queue."), *workerMessage, latchData.imageCount)
 
-		std::vector<std::vector<cv::Point2f>> corners(latchData.imageCount);
-		std::vector<std::vector<cv::Point3f>> objectPoints(latchData.imageCount);
+		std::vector<std::vector<cv::Point2f>> corners;
+		std::vector<std::vector<cv::Point3f>> objectPoints;
 
 		std::vector<cv::Mat> images;
+		cv::Mat image;
 
 		double fovX = 0, fovY = 0, focalLength = 0, aspectRatio = 0;
 		FMatrix perspectiveMatrix = FMatrix::Identity;
@@ -195,19 +196,25 @@ void FLensSolverWorker::DoWork()
 
 		int sourcePixelWidth = latchData.sourceResolution.X;
 		int sourcePixelHeight = latchData.sourceResolution.Y;
-		int pixelWidth = FMath::FloorToInt(latchData.sourceResolution.X * (latchData.resize ? latchData.resizePercentage : 1.0f));
-		int pixelHeight = FMath::FloorToInt(latchData.sourceResolution.Y * (latchData.resize ? latchData.resizePercentage : 1.0f));
+		int resizedPixelWidth = FMath::FloorToInt(latchData.sourceResolution.X * (latchData.resize ? latchData.resizePercentage : 1.0f));
+		int resizedPixelHeight = FMath::FloorToInt(latchData.sourceResolution.Y * (latchData.resize ? latchData.resizePercentage : 1.0f));
 
 		cv::Point2d principalPoint(sourcePixelWidth, sourcePixelHeight);
 		cv::Size sourceImageSize(sourcePixelWidth, sourcePixelHeight);
-		cv::Size imageSize(pixelWidth, pixelHeight);
+		cv::Size resizedImageSize(resizedPixelWidth, resizedPixelHeight);
 
 		float inverseResizeRatio = latchData.resize ? 1.0f / latchData.resizePercentage : 1.0f;
 
-		UE_LOG(LogTemp, Log, TEXT("%sPixel size: (%d, %d), source size: (%d, %d), resize ratio: %f."),
+		if (image.rows != resizedPixelWidth || image.cols != resizedPixelHeight)
+		{
+			UE_LOG(LogTemp, Log, TEXT("%sAllocating image from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, resizedPixelWidth, resizedPixelHeight);
+			image = cv::Mat(resizedPixelHeight, resizedPixelWidth, cv::DataType<uint8>::type);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("%sResized pixel size: (%d, %d), source size: (%d, %d), resize ratio: %f."),
 			*workerMessage,
-			pixelWidth,
-			pixelHeight,
+			resizedPixelWidth,
+			resizedPixelHeight,
 			sourcePixelWidth,
 			sourcePixelHeight,
 			1.0f / inverseResizeRatio);
@@ -241,8 +248,8 @@ void FLensSolverWorker::DoWork()
 
 		else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 		{
-			cameraMatrix.at<float>(0, 0) = 1.0f / (pixelWidth);
-			cameraMatrix.at<float>(1, 1) = 1.0f / (pixelHeight);
+			cameraMatrix.at<float>(0, 0) = 1.0f / (sourcePixelWidth * 0.5f);
+			cameraMatrix.at<float>(1, 1) = 1.0f / (sourcePixelHeight * 0.5f);
 			UE_LOG(LogTemp, Log, TEXT("%sKeeping aspect ratio at: %f"), 
 				*workerMessage, 
 				(sourcePixelWidth / (float)sourcePixelHeight));
@@ -266,21 +273,17 @@ void FLensSolverWorker::DoWork()
 			if (ShouldExit())
 				break;
 
+			std::vector<cv::Point2f> imageCorners;
+			std::vector<cv::Point3f> imageObjectPoints;
+
 			cv::Size patternSize(latchData.cornerCount.X, latchData.cornerCount.Y);
-			cv::Mat image;
 
-			if (image.rows != pixelWidth || image.cols != pixelHeight)
-			{
-				UE_LOG(LogTemp, Log, TEXT("%sAllocating image from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, pixelWidth, pixelHeight);
-				image = cv::Mat(pixelHeight, pixelWidth, cv::DataType<uint8>::type);
-			}
-
-			UE_LOG(LogTemp, Log, TEXT("%sCopying pixel data of pixel count: %d to OpenCV Mat of size: (%d, %d)."), *workerMessage, workUnits[i].pixels.Num(), pixelWidth, pixelHeight);
-			int pixelCount = pixelWidth * pixelHeight;
+			UE_LOG(LogTemp, Log, TEXT("%sCopying pixel data of pixel count: %d to OpenCV Mat of size: (%d, %d)."), *workerMessage, workUnits[i].pixels.Num(), resizedPixelWidth, resizedPixelHeight);
+			int pixelCount = resizedPixelWidth * resizedPixelHeight;
 			for (int pi = 0; pi < pixelCount; pi++)
-				image.at<uint8>(pi / pixelWidth, pi % pixelWidth) = workUnits[i].pixels[pi].R;
+				image.at<uint8>(pi / resizedPixelWidth, pi % resizedPixelWidth) = workUnits[i].pixels[pi].R;
 
-			UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnits[i].pixels.Num(), pixelWidth, pixelHeight);
+			UE_LOG(LogTemp, Log, TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, workUnits[i].pixels.Num(), resizedPixelWidth, resizedPixelHeight);
 
 			bool patternFound = false;
 
@@ -290,12 +293,11 @@ void FLensSolverWorker::DoWork()
 			if (latchData.workerParameters.exhaustiveSearch)
 				findFlags |= cv::CALIB_CB_EXHAUSTIVE;
 
-			patternFound = cv::findChessboardCorners(image, patternSize, corners[i], findFlags);
+			patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
 
 			if (!patternFound)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("%sNo pattern in view."), *workerMessage);
-				QueueSolvedPointsError(latchData.jobInfo, latchData.zoomLevel);
+				UE_LOG(LogTemp, Warning, TEXT("%sNo pattern found in image: %d, moving onto the next image."), *workerMessage, i);
 				continue;
 			}
 
@@ -307,25 +309,26 @@ void FLensSolverWorker::DoWork()
 				0.0001
 			);
 
-			cv::cornerSubPix(image, corners[i], cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
+			cv::cornerSubPix(image, imageCorners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
 
 			if (latchData.workerParameters.writeDebugTextureToFile)
 			{
-				cv::drawChessboardCorners(image, patternSize, corners[i], patternFound);
+				cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
 				WriteMatToFile(image, latchData.workerParameters.debugTextureFolderPath, workUnits[i].unitName + "-debug", workerMessage);
 			}
 
 			for (int y = 0; y < latchData.cornerCount.Y; y++)
 				for (int x = 0; x < latchData.cornerCount.X; x++)
-					objectPoints[i].push_back(cv::Point3f(x * latchData.squareSizeMM, y * latchData.squareSizeMM, 0.0f));
+					imageObjectPoints.push_back(cv::Point3f(x * latchData.squareSizeMM, y * latchData.squareSizeMM, 0.0f));
 
-			/*
-			for (int ci = 0; ci < corners[i].size(); ci++)
+			for (int ci = 0; ci < imageCorners.size(); ci++)
 			{
-				corners[i][ci].x *= inverseResizeRatio;
-				corners[i][ci].y *= inverseResizeRatio;
+				imageCorners[ci].x = imageCorners[ci].x * inverseResizeRatio;
+				imageCorners[ci].y = imageCorners[ci].y * inverseResizeRatio;
 			}
-			*/
+
+			corners.push_back(imageCorners);
+			objectPoints.push_back(imageObjectPoints);
 		}
 
 		if (ShouldExit())
@@ -340,7 +343,7 @@ void FLensSolverWorker::DoWork()
 		double error = cv::calibrateCamera(
 			objectPoints,
 			corners,
-			imageSize,
+			sourceImageSize,
 			cameraMatrix,
 			distortionCoefficients,
 			rvecs,
@@ -378,7 +381,7 @@ void FLensSolverWorker::DoWork()
 			cameraMatrix.at<float>(2, 2));
 		*/
 
-		cv::calibrationMatrixValues(cameraMatrix, imageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
+		cv::calibrationMatrixValues(cameraMatrix, sourceImageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
 		perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(sourceImageSize, principalPoint, focalLength);
 
 		/*
@@ -389,14 +392,17 @@ void FLensSolverWorker::DoWork()
 		focalLength *= inverseResizeRatio;
 		*/
 
+		principalPoint.x = sourcePixelWidth * (principalPoint.x / sensorWidth);
+		principalPoint.y = sourcePixelHeight * (principalPoint.y / sensorHeight);
+
 		FString format = FString("%sCompleted camera calibration at zoom level: %f "
 			"with solve error: %f "
 			"with results: ("
-			"\n\tFov X: %f,"
-			"\n\tFov Y: %f,"
+			"\n\tField of View in degrees: (%f, %f)"
 			"\n\tSensor width in MM: %f,"
 			"\n\tSensor height in MM: %f,"
 			"\n\tFocal Length in MM: %f,"
+			"\n\tPrincipal Point Pixel: (%f, %f),"
 			"\n\tAspect Ratio: %f\n)");
 
 		FString msg = FString::Printf(*format,
@@ -408,6 +414,7 @@ void FLensSolverWorker::DoWork()
 			sensorWidth,
 			sensorHeight,
 			focalLength,
+			principalPoint.x, principalPoint.y,
 			aspectRatio);
 
 		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);

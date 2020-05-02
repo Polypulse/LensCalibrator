@@ -60,7 +60,7 @@ void ULensSolver::BeginDetectPoints(
 	FOneTimeProcessParameters oneTimeProcessParameters,
 	const bool inputLatch)
 {
-	if (!ValidateTexture(inputJobInfo, inputTextureZoomPair.texture))
+	if (!ValidateTexture(inputJobInfo, inputTextureZoomPair.texture, 0, FIntPoint(inputTextureZoomPair.texture->GetSizeX(), inputTextureZoomPair.texture->GetSizeY())))
 	{
 		ReturnErrorSolvedPoints(inputJobInfo);
 		return;
@@ -196,7 +196,6 @@ void ULensSolver::BeginDetectPoints(
 	const FTextureArrayZoomPair& inputTextures,
 	FOneTimeProcessParameters inputOneTimeProcessParameters)
 {
-
 	if (!ValidateZoom(inputJobInfo, inputTextures.zoomLevel))
 	{
 		ReturnErrorSolvedPoints(inputJobInfo);
@@ -216,10 +215,10 @@ void ULensSolver::BeginDetectPoints(
 		return;
 	}
 
-
+	FIntPoint targetResolution = FIntPoint(inputTextures.textures[0]->GetSizeX(), inputTextures.textures[0]->GetSizeY());
 	for (int i = 0; i < inputTextures.textures.Num(); i++)
 	{
-		if (!ValidateTexture(inputJobInfo, inputTextures.textures[i]))
+		if (!ValidateTexture(inputJobInfo, inputTextures.textures[i], i, targetResolution))
 		{
 			ReturnErrorSolvedPoints(inputJobInfo);
 			return;
@@ -271,11 +270,33 @@ void ULensSolver::BeginDetectPoints(
 		return;
 	}
 
+	bool useAny = false;
 	for (int i = 0; i < inputTextures.Num(); i++)
-		BeginDetectPoints(
-			jobInfo,
-			inputTextures[i],
-			oneTimeProcessParameters);
+	{
+		if (inputTextures[i].use)
+		{
+			useAny = true;
+			break;
+		}
+	}
+
+	if (!useAny)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No textures to process, check your inputs and make sure you have the \"use\" flag checked."))
+		ReturnErrorSolvedPoints(jobInfo);
+		return;
+	}
+
+	for (int i = 0; i < inputTextures.Num(); i++)
+	{
+		if (inputTextures[i].use)
+		{
+			BeginDetectPoints(
+				jobInfo,
+				inputTextures[i],
+				oneTimeProcessParameters);
+		}
+	}
 }
 
 /*
@@ -540,7 +561,7 @@ bool ULensSolver::ValidateZoom(const FJobInfo& jobInfo, const float zoomValue)
 	return true;
 }
 
-bool ULensSolver::ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture)
+bool ULensSolver::ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture, const int textureIndex, const FIntPoint targetResolution)
 {
 	if (inputTexture == nullptr)
 	{
@@ -553,6 +574,19 @@ bool ULensSolver::ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* in
 		inputTexture->GetSizeY() <= 3)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot process texture, it's to small."));
+		ReturnErrorSolvedPoints(jobInfo);
+		return false;
+	}
+
+	if (inputTexture->GetSizeX() != targetResolution.X || inputTexture->GetSizeY() != targetResolution.Y)
+	{
+		UE_LOG(LogTemp, Error, TEXT("The texture at index: %d has a different resolution: (%d, %d) from the resolution: (%d, %d) of the first image in the job."),
+			textureIndex,
+			inputTexture->GetSizeX(),
+			inputTexture->GetSizeY(),
+			targetResolution.X,
+			targetResolution.Y);
+
 		ReturnErrorSolvedPoints(jobInfo);
 		return false;
 	}
@@ -598,8 +632,7 @@ bool ULensSolver::ValidateOneTimeProcessParameters(const FOneTimeProcessParamete
 		valid = false;
 	}
 
-	if (oneTimeProcessParameters.resize &&
-		oneTimeProcessParameters.resizePercentage <= 0)
+	if (oneTimeProcessParameters.resize && oneTimeProcessParameters.resizePercentage <= 0.0f)
 	{
 		outputMessage = FString::Printf(TEXT("%s\n\tResize Resolution - Must be positive decimal number to resize the image to."), *validationHeader);
 		valid = false;

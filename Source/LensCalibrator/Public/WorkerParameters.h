@@ -7,6 +7,13 @@
 
 #include "WorkerParameters.generated.h"
 
+UENUM()
+enum FindCheckerboardSearchMethod
+{
+	Exhaustive,
+	Fast
+};
+
 USTRUCT(BlueprintType)
 struct FWorkerParameters
 {
