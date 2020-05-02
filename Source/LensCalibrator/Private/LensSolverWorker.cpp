@@ -222,7 +222,7 @@ void FLensSolverWorker::DoWork()
 		float sensorHeight = (latchData.sensorDiagonalMM * sourcePixelHeight) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
 		float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
 
-		UE_LOG(LogTemp, Log, TEXT("%sSensor size: (%fmm, %fmm), diagonal: (%fmm)."), *workerMessage, sensorWidth, sensorHeight, latchData.sensorDiagonalMM);
+		UE_LOG(LogTemp, Log, TEXT("%sSensor size: (%f, %f) mm, diagonal: (%f) mm."), *workerMessage, sensorWidth, sensorHeight, latchData.sensorDiagonalMM);
 
 		int flags = 0;
 		flags |= latchData.workerParameters.useInitialIntrinsicValues		 ?	cv::CALIB_USE_INTRINSIC_GUESS : 0;

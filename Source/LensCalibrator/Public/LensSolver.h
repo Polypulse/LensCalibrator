@@ -65,6 +65,8 @@ private:
 
 	int GetWorkerCount ();
 
+	void RandomSortTArray(TArray<UTexture2D*>& arr);
+
 	void BeginDetectPoints(
 		const FJobInfo inputJobInfo,
 		const FTextureZoomPair& inputTextureZoomPair,
@@ -86,12 +88,12 @@ private:
 
 	void BeginDetectPoints(
 		const FJobInfo inputJobInfo,
-		const FTextureArrayZoomPair& inputTextures,
+		FTextureArrayZoomPair& inputTextures,
 		FOneTimeProcessParameters inputOneTimeProcessParameters);
 
 	void BeginDetectPoints(
 		const FJobInfo jobInfo,
-		const TArray<FTextureArrayZoomPair> & inputTextures,
+		TArray<FTextureArrayZoomPair> & inputTextures,
 		FOneTimeProcessParameters oneTimeProcessParameters);
 
 	/*
@@ -219,3 +221,4 @@ public:
 
 	void OnSolvedPoints(FCalibrationResult solvedPoints);
 };
+

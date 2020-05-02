@@ -171,6 +171,19 @@ void ULensSolver::BeginDetectPoints(
 }
 */
 
+void ULensSolver::RandomSortTArray(TArray<UTexture2D*>& arr)
+{
+	if (arr.Num() == 0)
+		return;
+	int32 lastIndex = arr.Num() - 1;
+	for (int32 i = 0; i <= lastIndex; ++i)
+	{
+		int32 index = FMath::RandRange(i, lastIndex);
+		if (i != index)
+			arr.Swap(i, index);
+	}
+}
+
 void ULensSolver::BeginDetectPoints(
 	const FJobInfo jobInfo,
 	const TArray<FTextureZoomPair> & textureZoomPairs,
@@ -193,7 +206,7 @@ void ULensSolver::BeginDetectPoints(
 
 void ULensSolver::BeginDetectPoints(
 	const FJobInfo inputJobInfo,
-	const FTextureArrayZoomPair& inputTextures,
+	FTextureArrayZoomPair& inputTextures,
 	FOneTimeProcessParameters inputOneTimeProcessParameters)
 {
 	if (!ValidateZoom(inputJobInfo, inputTextures.zoomLevel))
@@ -224,6 +237,8 @@ void ULensSolver::BeginDetectPoints(
 			return;
 		}
 	}
+
+	RandomSortTArray(inputTextures.textures);
 
 	for (int i = 0; i < inputTextures.textures.Num(); i++)
 	{
@@ -260,7 +275,7 @@ void ULensSolver::BeginDetectPoints(
 
 void ULensSolver::BeginDetectPoints(
 	const FJobInfo jobInfo,
-	const TArray<FTextureArrayZoomPair>& inputTextures,
+	TArray<FTextureArrayZoomPair>& inputTextures,
 	FOneTimeProcessParameters oneTimeProcessParameters)
 {
 	if (inputTextures.Num() == 0)
@@ -422,7 +437,7 @@ void ULensSolver::DetectPointsRenderThread(
 
 	if (latch)
 	{
-		FLatchData latchData = 
+		FLatchData latchData =
 		{
 			jobInfo,
 			oneTimeProcessParameters.workerParameters,
@@ -433,7 +448,8 @@ void ULensSolver::DetectPointsRenderThread(
 			oneTimeProcessParameters.resizePercentage,
 			oneTimeProcessParameters.cornerCount,
 			oneTimeProcessParameters.squareSizeMM,
-			oneTimeProcessParameters.sensorDiagonalSizeMM
+			oneTimeProcessParameters.sensorDiagonalSizeMM,
+			oneTimeProcessParameters.initialPrincipalPointPixelPosition
 		};
 
 		UE_LOG(LogTemp, Log, TEXT("Latching worker."))
