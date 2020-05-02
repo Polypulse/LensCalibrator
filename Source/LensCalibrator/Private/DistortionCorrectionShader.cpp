@@ -41,11 +41,7 @@ FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS() {}
 
 FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer)
 {
-	/*
-	InputTextureParameter.Bind(Initializer.ParameterMap, TEXT("InTexture"));
-	InputTextureSamplerParameter.Bind(Initializer.ParameterMap, TEXT("InTextureSampler"));
-	flipDirectionParameter.Bind(Initializer.ParameterMap, TEXT("InFlipDirection"));
-	*/
+	distortionCoefficientsParameter.Bind(Initializer.ParameterMap, TEXT("InDistortionCoefficients"));
 }
 
 bool FDistortionCorrectionShaderPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)

@@ -498,13 +498,13 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 			TexCreate_RenderTargetable,
 			false,
 			createInfo,
-			blitRenderTexture,
+			distortionCorrectionRenderTexture,
 			dummyTexRef);
 
 		allocated = true;
 	}
 
-	FRHIRenderPassInfo RPInfo(blitRenderTexture, ERenderTargetActions::Clear_Store);
+	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_Store);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMap"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
