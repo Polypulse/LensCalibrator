@@ -380,7 +380,7 @@ void ULensSolver::DetectPointsRenderThread(
 		blitRenderTextureAllocated = true;
 	}
 
-	FRHIRenderPassInfo RPInfo(blitRenderTexture, ERenderTargetActions::Clear_Store);
+	FRHIRenderPassInfo RPInfo(blitRenderTexture, ERenderTargetActions::Clear_DontStore);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("PresentAndCopyMediaTexture"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
@@ -521,7 +521,7 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 
 	UE_LOG(LogTemp, Log, TEXT("%s"), *message);
 
-	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_Store);
+	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_DontStore);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
@@ -563,6 +563,7 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
 	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
+	// FFileHelper::CreateBitmap(*generatedOutputPath, texture2D->GetSizeX(), texture2D->GetSizeY(), surfaceData.GetData());
 	UE_LOG(LogTemp, Log, TEXT("Wrote distortion correction map to path: \"%s\"."), *generatedOutputPath);
 
 	if (!queuedDistortionCorrectionMapResults.IsValid())
@@ -603,7 +604,7 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 		correctDistortedTextureRenderTextureAllocated = true;
 	}
 
-	FRHIRenderPassInfo RPInfo(correctDistortedTextureRenderTexture, ERenderTargetActions::Clear_Store);
+	FRHIRenderPassInfo RPInfo(correctDistortedTextureRenderTexture, ERenderTargetActions::Clear_DontStore);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("CorrectImageDistortionPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
@@ -647,6 +648,7 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
 	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
+	// FFileHelper::CreateBitmap(*generatedOutputPath, texture2D->GetSizeX(), texture2D->GetSizeY(), surfaceData.GetData());
 	UE_LOG(LogTemp, Log, TEXT("Wrote corrected distorted image to path: \"%s\"."), *generatedOutputPath);
 
 	if (!queuedCorrectedDistortedImageResults.IsValid())
@@ -896,7 +898,7 @@ void ULensSolver::PollDistortionCorrectionMapGenerationResults()
 			distortionCorrectionMapResult.width, 
 			distortionCorrectionMapResult.height);
 
-		UTexture2D* texture = LensSolverUtilities::CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false);
+		UTexture2D* texture = LensSolverUtilities::CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true);
 		this->OnGeneratedDistortionMap(texture);
 
 		isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
@@ -921,7 +923,7 @@ void ULensSolver::PollCorrectedDistortedImageResults()
 			correctedDistortedImageResult.width, 
 			correctedDistortedImageResult.height);
 
-		UTexture2D* texture = LensSolverUtilities::CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height, true);
+		UTexture2D* texture = LensSolverUtilities::CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height, true, false);
 		this->OnDistortedImageCorrected(texture);
 
 		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
@@ -1056,7 +1058,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		for (int i = 0; i < imagesInDirectory.Num(); i++)
 		{
 			UTexture2D* loadedTexture = nullptr;
-			if (!LensSolverUtilities::LoadTexture(imagesInDirectory[i], true, loadedTexture))
+			if (!LensSolverUtilities::LoadTexture(imagesInDirectory[i], true, false, loadedTexture))
 			{
 				UE_LOG(LogTemp, Warning, TEXT("Unable load image: \"%s\", moving on to the next image."), *imagesInDirectory[i]);
 				continue;

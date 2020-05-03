@@ -62,7 +62,7 @@ void FDistortionCorrectionShaderPS::SetParameters(
 	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortedTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
 
 	SetTextureParameter(RHICmdList, GetPixelShader(), InputDistortionCorrectionTextureParameter, InputDistortionCorrectionTexture);
-	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortionCorrectionTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
+	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortionCorrectionTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
 }
 
 bool FDistortionCorrectionShaderPS::Serialize(FArchive& Ar) 

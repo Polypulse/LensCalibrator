@@ -10,6 +10,6 @@ public:
 	static bool GetFilesInFolder(const FString& folder, TArray<FString>& files);
 
 	static FString GenerateGenericOutputPath(const FString & subFolder);
-	static UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height, bool sRGB);
-	static bool LoadTexture(FString absoluteTexturePath, bool sRGB, UTexture2D*& texture);
+	static UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height, bool sRGB, bool isLUT);
+	static bool LoadTexture(FString absoluteTexturePath, bool sRGB, bool isLUT, UTexture2D*& texture);
 };

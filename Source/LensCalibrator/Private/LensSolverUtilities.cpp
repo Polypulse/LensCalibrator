@@ -100,10 +100,15 @@ FString LensSolverUtilities::GenerateGenericOutputPath(const FString & subFolder
 	return FPaths::ConvertRelativePathToFull(FPaths::GameDevelopersDir() + subFolder);
 }
 
-UTexture2D * LensSolverUtilities::CreateTexture2D(TArray<FColor> * rawData, int width, int height, bool sRGB)
+UTexture2D * LensSolverUtilities::CreateTexture2D(TArray<FColor> * rawData, int width, int height, bool sRGB, bool isLUT)
 {
 	UTexture2D* texture = UTexture2D::CreateTransient(width, height, EPixelFormat::PF_B8G8R8A8);
 	texture->SRGB = sRGB;
+	if (isLUT)
+	{
+		texture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+		texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+	}
 
 	if (texture == nullptr)
 	{
@@ -136,7 +141,7 @@ UTexture2D * LensSolverUtilities::CreateTexture2D(TArray<FColor> * rawData, int 
 }
 
 
-bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, UTexture2D*& texture)
+bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, bool isLUT, UTexture2D*& texture)
 {
 	if (!FPaths::FileExists(absoluteTexturePath))
 	{
@@ -190,6 +195,12 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, UT
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to create Texture2D file: \"%s\"."), *absoluteTexturePath);
 		return false;
+	}
+
+	if (isLUT)
+	{
+		texture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+		texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
 	}
 
 	texture->SRGB = sRGB;
