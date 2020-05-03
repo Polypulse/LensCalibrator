@@ -30,7 +30,6 @@ public class LensCalibrator : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
 			}
 			);
 			
@@ -38,6 +37,7 @@ public class LensCalibrator : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"Core",
 				"CoreUObject",
 				"Engine",
 				"Slate",

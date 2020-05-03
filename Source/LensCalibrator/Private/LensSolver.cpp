@@ -661,41 +661,6 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 	queuedCorrectedDistortedImageResults->Enqueue(correctedDistortedImageResults);
 }
 
-UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height, bool sRGB)
-{
-	UTexture2D* texture = UTexture2D::CreateTransient(width, height, EPixelFormat::PF_B8G8R8A8);
-	texture->SRGB = sRGB;
-
-	if (texture == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Unable to create transient texture"));
-		return nullptr;
-	}
-
-	texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-	texture->PlatformData->Mips[0].SizeX = width;
-	texture->PlatformData->Mips[0].SizeY = height;
-	texture->PlatformData->Mips[0].BulkData.Realloc(width * height * 4);
-	texture->PlatformData->Mips[0].BulkData.Unlock();
-
-	uint8 * textureData = (uint8*)texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-
-	if (textureData == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BulkData.Lock returned nullptr!"));
-		return nullptr;
-	}
-	
-	FMemory::Memcpy(textureData, rawData->GetData(), width * height * 4);
-	texture->PlatformData->Mips[0].BulkData.Unlock();
-
-	// texture->Resource = texture->CreateResource();
-	texture->UpdateResource();
-	texture->RefreshSamplerStates();
-
-	return texture;
-}
-
 /*
 void ULensSolver::VisualizeCalibration(
 	FRHICommandListImmediate& RHICmdList, 
@@ -931,7 +896,7 @@ void ULensSolver::PollDistortionCorrectionMapGenerationResults()
 			distortionCorrectionMapResult.width, 
 			distortionCorrectionMapResult.height);
 
-		UTexture2D* texture = CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false);
+		UTexture2D* texture = LensSolverUtilities::CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false);
 		this->OnGeneratedDistortionMap(texture);
 
 		isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
@@ -956,7 +921,7 @@ void ULensSolver::PollCorrectedDistortedImageResults()
 			correctedDistortedImageResult.width, 
 			correctedDistortedImageResult.height);
 
-		UTexture2D* texture = CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height, true);
+		UTexture2D* texture = LensSolverUtilities::CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height, true);
 		this->OnDistortedImageCorrected(texture);
 
 		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
@@ -1035,7 +1000,7 @@ void ULensSolver::OneTimeProcessTextureArrayZoomPair(
 	);
 }
 
-void ULensSolver::OneTimeProcessTextureArrayOfTextureArrayZoomPairs(
+void ULensSolver::OneTimeProcessArrayOfTextureArrayZoomPairs(
 		TArray<FTextureArrayZoomPair> inputTextures, 
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo)
@@ -1057,6 +1022,58 @@ void ULensSolver::OneTimeProcessTextureArrayOfTextureArrayZoomPairs(
 		inputTextures,
 		oneTimeProcessParameters
 	);
+}
+
+void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
+	TArray<FTextureFolderZoomPair> inputTextures, 
+	FOneTimeProcessParameters oneTimeProcessParameters, 
+	FJobInfo& ouptutJobInfo)
+{
+	if (inputTextures.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No input texture folders."));
+		return;
+	}
+
+	TArray<FTextureArrayZoomPair> textureArrayZoomPairs;
+	for (int ti = 0; ti < inputTextures.Num(); ti++)
+	{
+		TArray<FString> imagesInDirectory;
+		TArray<UTexture2D*> textures;
+
+		if (!inputTextures[ti].use)
+			continue;
+
+		if (!LensSolverUtilities::GetFilesInFolder(inputTextures[ti].absoluteFolderPath, imagesInDirectory))
+			return;
+
+		if (imagesInDirectory.Num() == 0)
+		{
+			UE_LOG(LogTemp, Error, TEXT("No textures in directory: \"%s\", canceled job."), *inputTextures[ti].absoluteFolderPath);
+			return;
+		}
+
+		for (int i = 0; i < imagesInDirectory.Num(); i++)
+		{
+			UTexture2D* loadedTexture = nullptr;
+			if (!LensSolverUtilities::LoadTexture(imagesInDirectory[i], true, loadedTexture))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Unable load image: \"%s\", moving on to the next image."), *imagesInDirectory[i]);
+				continue;
+			}
+
+			textures.Add(loadedTexture);
+		}
+
+		FTextureArrayZoomPair textureArrayZoomPair;
+		textureArrayZoomPair.textures = textures;
+		textureArrayZoomPair.zoomLevel = inputTextures[ti].zoomLevel;
+		textureArrayZoomPair.use = true;
+
+		textureArrayZoomPairs.Add(textureArrayZoomPair);
+	}
+
+	OneTimeProcessArrayOfTextureArrayZoomPairs(textureArrayZoomPairs, oneTimeProcessParameters, ouptutJobInfo);
 }
 
 void ULensSolver::GenerateDistortionCorrectionMap(

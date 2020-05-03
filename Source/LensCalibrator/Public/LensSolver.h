@@ -22,6 +22,7 @@
 #include "DistortionCorrectionMapGenerationResults.h"
 #include "CorrectedDistortedImageResults.h"
 #include "TextureArrayZoomPair.h"
+#include "TextureFolderZoomPair.h"
 #include "TextureZoomPair.h"
 #include "LensSolver.generated.h"
 
@@ -130,8 +131,6 @@ private:
 		FRHICommandListImmediate& RHICmdList,
 		const FDistortionCorrectionParameters distortionCorrectionParams,
 		const FString generatedOutputPath);
-
-	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height, bool sRGB);
 	/*
 	void VisualizeCalibration(
 		FRHICommandListImmediate& RHICmdList, 
@@ -230,8 +229,14 @@ public:
 		FJobInfo & ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	void OneTimeProcessTextureArrayOfTextureArrayZoomPairs(
+	void OneTimeProcessArrayOfTextureArrayZoomPairs(
 		TArray<FTextureArrayZoomPair> inputTextures, 
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo);
+
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
+	void OneTimeProcessArrayOfTextureFolderZoomPairs(
+		TArray<FTextureFolderZoomPair> inputTextures, 
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
