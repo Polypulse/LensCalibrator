@@ -100,48 +100,80 @@ FString LensSolverUtilities::GenerateGenericOutputPath(const FString & subFolder
 	return FPaths::ConvertRelativePathToFull(FPaths::GameDevelopersDir() + subFolder);
 }
 
-UTexture2D * LensSolverUtilities::CreateTexture2D(TArray<FColor> * rawData, int width, int height, bool sRGB, bool isLUT)
+bool LensSolverUtilities::CreateTexture2D(
+	void * rawData, 
+	int width,
+	int height,
+	bool sRGB,
+	bool isLUT,
+	UTexture2D *& output,
+	EPixelFormat pixelFormat)
 {
-	UTexture2D* texture = UTexture2D::CreateTransient(width, height, EPixelFormat::PF_B8G8R8A8);
-	texture->SRGB = sRGB;
+	int stride = 0;
+	int size = 0;
+	switch (pixelFormat)
+	{
+	case EPixelFormat::PF_B8G8R8A8:
+	case EPixelFormat::PF_R8G8B8A8:
+	case EPixelFormat::PF_A8R8G8B8:
+		size = 1;
+		stride = 4;
+		break;
+	case EPixelFormat::PF_A16B16G16R16:
+		size = 2;
+		stride = 4;
+		break;
+	default:
+		UE_LOG(LogTemp, Error, TEXT("Non-implemented pixel format: \"%s\"."), GetPixelFormatString(pixelFormat));
+		return false;
+	}
+
+	output = UTexture2D::CreateTransient(width, height, pixelFormat);
+	output->SRGB = sRGB;
+
+	UE_LOG(LogTemp, Log, TEXT("Created transient UTexture2D with the following parameters:\n{\n\tResolution: (%d, %d),\n\tPixel Format: \"%s\",\n\tsRGB: %d\n}"), width, height, GetPixelFormatString(pixelFormat), sRGB ? 1 : 0);
+
 	if (isLUT)
 	{
-		texture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
-		texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+		output->Filter = TextureFilter::TF_Nearest;
+		output->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+		output->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+		output->CompressionNone = true;
+		output->NeverStream = true;
 	}
 
-	if (texture == nullptr)
+	if (output == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Unable to create transient texture"));
-		return nullptr;
+		return false;
 	}
 
-	texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-	texture->PlatformData->Mips[0].SizeX = width;
-	texture->PlatformData->Mips[0].SizeY = height;
-	texture->PlatformData->Mips[0].BulkData.Realloc(width * height * 4);
-	texture->PlatformData->Mips[0].BulkData.Unlock();
+	output->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+	output->PlatformData->Mips[0].SizeX = width;
+	output->PlatformData->Mips[0].SizeY = height;
+	output->PlatformData->Mips[0].BulkData.Realloc(width * height * 4);
+	output->PlatformData->Mips[0].BulkData.Unlock();
 
-	uint8 * textureData = (uint8*)texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+	uint8 * textureData = (uint8*)output->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 
 	if (textureData == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BulkData.Lock returned nullptr!"));
-		return nullptr;
+		return false;
 	}
 	
-	FMemory::Memcpy(textureData, rawData->GetData(), width * height * 4);
-	texture->PlatformData->Mips[0].BulkData.Unlock();
+	FMemory::Memcpy(textureData, rawData, width * height * stride * size);
+	output->PlatformData->Mips[0].BulkData.Unlock();
 
 	// texture->Resource = texture->CreateResource();
-	texture->UpdateResource();
-	texture->RefreshSamplerStates();
+	output->UpdateResource();
+	output->RefreshSamplerStates();
 
-	return texture;
+	return true;
 }
 
 
-bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, bool isLUT, UTexture2D*& texture)
+bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, bool isLUT, UTexture2D*& texture, EPixelFormat pixelFormat)
 {
 	if (!FPaths::FileExists(absoluteTexturePath))
 	{
@@ -190,7 +222,7 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, bo
 		return false;
 	}
 
-	texture = UTexture2D::CreateTransient(imageWrapper->GetWidth(), imageWrapper->GetHeight(), EPixelFormat::PF_B8G8R8A8);
+	texture = UTexture2D::CreateTransient(imageWrapper->GetWidth(), imageWrapper->GetHeight(), pixelFormat);
 	if (texture == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to create Texture2D file: \"%s\"."), *absoluteTexturePath);
@@ -226,6 +258,55 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, bo
 
 	UE_LOG(LogTemp, Log, TEXT("Successfully read texture from file: \"%s\"."), *absoluteTexturePath);
 
+	return true;
+}
+
+bool LensSolverUtilities::WriteTexture16(
+	FString absoluteTexturePath,
+	int width,
+	int height,
+	TUniquePtr<TImagePixelData<FFloat16Color>> data)
+{
+	IImageWriteQueueModule* imageWriteQueueModule = FModuleManager::Get().GetModulePtr<IImageWriteQueueModule>("ImageWriteQueue");
+	if (imageWriteQueueModule == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Unable to retrieve ImageWriteQueue."));
+		return false;
+	}
+
+	TUniquePtr<FImageWriteTask> imageTask = MakeUnique<FImageWriteTask>();
+
+	imageTask->Format = EImageFormat::PNG;
+	imageTask->Filename = absoluteTexturePath;
+	imageTask->bOverwriteFile = true;
+	imageTask->CompressionQuality = (int32)EImageCompressionQuality::Uncompressed;
+	imageTask->PixelData = MoveTemp(data);
+
+	TFuture<bool> dispatchedTask = imageWriteQueueModule->GetWriteQueue().Enqueue(MoveTemp(imageTask));
+
+	if (dispatchedTask.IsValid())
+		dispatchedTask.Wait();
+
+	return true;
+
+	/*
+	const size_t BitsPerPixel = (sizeof(FFloat16Color) / 4) * 8;
+
+	IImageWrapperModule& imageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(TEXT("ImageWrapper"));
+	FImageWriter imageWrapper = imageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
+	
+	if (imageWrapper.IsValid() &&
+		imageWrapper->SetRaw(data, sizeof(FFloat16Color) * width * height, width, height, ERGBFormat::RGBA, BitsPerPixel))
+	{
+		EImageCompressionQuality LocalCompressionQuality = EImageCompressionQuality::Default;
+
+		// Compress and write image
+		// OutBitmapData = imageWrapper->GetCompressed((int32)LocalCompressionQuality);
+		
+		bSuccess = true;
+	}
+
+	*/
 	return true;
 }
 

@@ -12,6 +12,12 @@
 #include "RHIStaticStates.h"
 #include "Engine/RendererSettings.h"
 #include "PixelShaderUtils.h"
+#include "Engine.h"
+#include "ImagePixelData.h"
+#include "ImageWriteStream.h"
+#include "ImageWriteTask.h"
+#include "ImageWriteQueue.h"
+#include "UniquePtr.h"
 
 #include "LensSolverUtilities.h"
 #include "BlitShader.h"
@@ -481,11 +487,11 @@ void ULensSolver::DetectPointsRenderThread(
 
 void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	FRHICommandListImmediate& RHICmdList,
-	const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapParameters,
+	const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
 	const FString generatedOutputPath)
 {
-	int width = distortionCorrectionMapParameters.outputMapResolution.X;
-	int height = distortionCorrectionMapParameters.outputMapResolution.Y;
+	int width = distortionCorrectionMapGenerationParams.outputMapResolution.X;
+	int height = distortionCorrectionMapGenerationParams.outputMapResolution.Y;
 	if (!distortionCorrectionRenderTextureAllocated)
 	{
 		FRHIResourceCreateInfo createInfo;
@@ -493,7 +499,7 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 		RHICreateTargetableShaderResource2D(
 			width,
 			height,
-			EPixelFormat::PF_B8G8R8A8,
+			EPixelFormat::PF_FloatRGBA,
 			1,
 			TexCreate_None,
 			TexCreate_RenderTargetable,
@@ -506,18 +512,18 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	}
 
 	FVector2D normalizedPrincipalPoint = FVector2D(
-		distortionCorrectionMapParameters.sourcePrincipalPixelPoint.X / (float)distortionCorrectionMapParameters.sourceResolution.X,
-		distortionCorrectionMapParameters.sourcePrincipalPixelPoint.Y / (float)distortionCorrectionMapParameters.sourceResolution.Y);
+		distortionCorrectionMapGenerationParams.sourcePrincipalPixelPoint.X / (float)distortionCorrectionMapGenerationParams.sourceResolution.X,
+		distortionCorrectionMapGenerationParams.sourcePrincipalPixelPoint.Y / (float)distortionCorrectionMapGenerationParams.sourceResolution.Y);
 
 	FString message = FString("Submitting the following parameters to distortion corretion map generation shader:\n{");
 	message += FString::Printf(TEXT("\n\tNormalized principal point: (%f, %f),\n\tDistortion Coefficients: [k1: %f, k2: %f, p1: %f, p2: %f, k3: %f]\n}"), 
 		normalizedPrincipalPoint.X, 
 		normalizedPrincipalPoint.Y,
-		distortionCorrectionMapParameters.distortionCoefficients[0],
-		distortionCorrectionMapParameters.distortionCoefficients[1],
-		distortionCorrectionMapParameters.distortionCoefficients[2],
-		distortionCorrectionMapParameters.distortionCoefficients[3],
-		distortionCorrectionMapParameters.distortionCoefficients[4]);
+		distortionCorrectionMapGenerationParams.distortionCoefficients[0],
+		distortionCorrectionMapGenerationParams.distortionCoefficients[1],
+		distortionCorrectionMapGenerationParams.distortionCoefficients[2],
+		distortionCorrectionMapGenerationParams.distortionCoefficients[3],
+		distortionCorrectionMapGenerationParams.distortionCoefficients[4]);
 
 	UE_LOG(LogTemp, Log, TEXT("%s"), *message);
 
@@ -543,7 +549,7 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCorrectionMapParameters.distortionCoefficients);
+		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCorrectionMapGenerationParams.distortionCoefficients);
 		// PixelShader->SetParameters(RHICmdList, textureZoomPair.texture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(oneTimeProcessParameters.flipX ? -1.0f : 1.0f, oneTimeProcessParameters.flipY ? 1.0f : -1.0f));
 
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
@@ -551,18 +557,28 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 
 	RHICmdList.EndRenderPass();
 
-	FRHITexture2D * texture2D = distortionCorrectionRenderTexture->GetTexture2D();
-	TArray<FColor> surfaceData;
+	FIntRect rect = FIntRect(0, 0, distortionCorrectionMapGenerationParams.outputMapResolution.X, distortionCorrectionMapGenerationParams.outputMapResolution.Y);
 
+	FRHITexture2D * texture2D = distortionCorrectionRenderTexture->GetTexture2D();
+	TUniquePtr<TImagePixelData<FFloat16Color>> pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
+
+	/*
 	FReadSurfaceDataFlags ReadDataFlags;
 	ReadDataFlags.SetLinearToGamma(false);
 	ReadDataFlags.SetOutputStencil(false);
 	ReadDataFlags.SetMip(0);
+	*/
 
-	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), surfaceData, ReadDataFlags);
+	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixelData->Pixels, (ECubeFace)0, 0, 0);
+	check(pixelData->IsDataWellFormed());
 
-	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
-	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
+	TArray<FFloat16Color> pixelDataCopy = pixelData->Pixels;
+	if (!LensSolverUtilities::WriteTexture16(generatedOutputPath, width, height, MoveTemp(pixelData)))
+	{
+	}
+
+	// uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
+	// FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
 	// FFileHelper::CreateBitmap(*generatedOutputPath, texture2D->GetSizeX(), texture2D->GetSizeY(), surfaceData.GetData());
 	UE_LOG(LogTemp, Log, TEXT("Wrote distortion correction map to path: \"%s\"."), *generatedOutputPath);
 
@@ -571,7 +587,7 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 
 	FDistortionCorrectionMapGenerationResults distortionCorrectionMapGenerationResults;
 
-	distortionCorrectionMapGenerationResults.pixels = surfaceData;
+	distortionCorrectionMapGenerationResults.pixels = pixelDataCopy;
 	distortionCorrectionMapGenerationResults.width = texture2D->GetSizeX();
 	distortionCorrectionMapGenerationResults.height = texture2D->GetSizeY();
 
@@ -898,8 +914,11 @@ void ULensSolver::PollDistortionCorrectionMapGenerationResults()
 			distortionCorrectionMapResult.width, 
 			distortionCorrectionMapResult.height);
 
-		UTexture2D* texture = LensSolverUtilities::CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true);
-		this->OnGeneratedDistortionMap(texture);
+
+		UTexture2D* output = nullptr;
+		if (!LensSolverUtilities::CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true, output, PF_FloatRGBA))
+			return;
+		this->OnGeneratedDistortionMap(output);
 
 		isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
 	}
@@ -923,8 +942,10 @@ void ULensSolver::PollCorrectedDistortedImageResults()
 			correctedDistortedImageResult.width, 
 			correctedDistortedImageResult.height);
 
-		UTexture2D* texture = LensSolverUtilities::CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height, true, false);
-		this->OnDistortedImageCorrected(texture);
+		UTexture2D* output = nullptr;
+		if (!LensSolverUtilities::CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height, true, false, output))
+			return;
+		this->OnDistortedImageCorrected(output);
 
 		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
 	}

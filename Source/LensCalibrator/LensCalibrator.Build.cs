@@ -15,7 +15,8 @@ public class LensCalibrator : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
-				"Runtime/MediaAssets/Public"
+				"Runtime/MediaAssets/Public",
+				"Runtime/ImageWriteQueue/Public"
 			}
 			);
 				
@@ -45,6 +46,7 @@ public class LensCalibrator : ModuleRules
 				"MediaAssets",
 				"RenderCore",
 				"ImageWrapper",
+				"ImageWriteQueue",
 				"RHI",
 				"Json",
 				"JsonUtilities"
