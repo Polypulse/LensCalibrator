@@ -3,10 +3,10 @@
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 
-#include "DistortionCorrectionParameters.generated.h"
+#include "DistortTextureWithDistortionCoefficientParameters.generated.h"
 
 USTRUCT(BlueprintType)
-struct FDistortionCorrectionParameters
+struct FDistortTextureWithDistortionCoefficientParameters
 {
 	GENERATED_BODY()
 
@@ -14,11 +14,14 @@ struct FDistortionCorrectionParameters
 	UTexture2D* distortedTexture;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	UTexture2D* distortionCorrectionTexture;
+	TArray<float> distortionCoefficients;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float zoomLevel;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString outputPath;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	bool reverseOperation;
 };

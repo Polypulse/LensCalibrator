@@ -56,13 +56,16 @@ bool FDistortionCorrectionShaderPS::ShouldCompilePermutation(const FGlobalShader
 void FDistortionCorrectionShaderPS::SetParameters(
 	FRHICommandListImmediate& RHICmdList,
 	FTextureRHIRef InputDistortedTexture,
-	FTextureRHIRef InputDistortionCorrectionTexture)
+	FTextureRHIRef InputDistortionCorrectionTexture,
+	bool reverse)
 {
 	SetTextureParameter(RHICmdList, GetPixelShader(), InputDistortedTextureParameter, InputDistortedTexture);
 	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortedTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
 
 	SetTextureParameter(RHICmdList, GetPixelShader(), InputDistortionCorrectionTextureParameter, InputDistortionCorrectionTexture);
 	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortionCorrectionTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
+
+	SetShaderValue(RHICmdList, GetPixelShader(), reverseParameter, reverse ? -1 : 1);
 }
 
 bool FDistortionCorrectionShaderPS::Serialize(FArchive& Ar) 
@@ -72,7 +75,8 @@ bool FDistortionCorrectionShaderPS::Serialize(FArchive& Ar)
 		<< InputDistortedTextureParameter
 		<< InputDistortedTextureSamplerParameter
 		<< InputDistortionCorrectionTextureParameter
-		<< InputDistortionCorrectionTextureSamplerParameter;
+		<< InputDistortionCorrectionTextureSamplerParameter
+		<< reverseParameter;
 
 	return bShaderHasOutdatedParameters;
 }

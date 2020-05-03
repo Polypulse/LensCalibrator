@@ -594,9 +594,9 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	queuedDistortionCorrectionMapResults->Enqueue(distortionCorrectionMapGenerationResults);
 }
 
-void ULensSolver::CorrectImageDistortionRenderThread(
+void ULensSolver::UndistortImageRenderThread(
 	FRHICommandListImmediate& RHICmdList, 
-	const FDistortionCorrectionParameters distortionCorrectionParams, 
+	const FDistortTextureWithDistortionCorrectionMapParameters distortionCorrectionParams, 
 	const FString generatedOutputPath)
 {
 	int width = distortionCorrectionParams.distortedTexture->GetSizeX();
@@ -645,7 +645,8 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 		PixelShader->SetParameters(
 			RHICmdList,
 			distortionCorrectionParams.distortedTexture->TextureReference.TextureReferenceRHI.GetReference(),
-			distortionCorrectionParams.distortionCorrectionTexture->TextureReference.TextureReferenceRHI.GetReference());
+			distortionCorrectionParams.distortionCorrectionTexture->TextureReference.TextureReferenceRHI.GetReference(),
+			distortionCorrectionParams.reverseOperation);
 
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}
@@ -1147,7 +1148,7 @@ void ULensSolver::GenerateDistortionCorrectionMap(
 	);
 }
 
-void ULensSolver::CorrectImageDistortion(const FDistortionCorrectionParameters distortionCorrectionParams)
+void ULensSolver::DistortTextureWithDistortionCorrectionMap(const FDistortTextureWithDistortionCorrectionMapParameters distortionCorrectionParams)
 {
 	if (distortionCorrectionParams.distortedTexture == nullptr || distortionCorrectionParams.distortionCorrectionTexture == nullptr)
 	{
@@ -1176,7 +1177,7 @@ void ULensSolver::CorrectImageDistortion(const FDistortionCorrectionParameters d
 	targetOutputPath = LensSolverUtilities::GenerateIndexedFilePath(targetOutputPath, FString::Printf(TEXT("CorrectedDistortedImage-%f"), distortionCorrectionParams.zoomLevel), "bmp");
 
 	ULensSolver * lensSolver = this;
-	const FDistortionCorrectionParameters temp = distortionCorrectionParams;
+	const FDistortTextureWithDistortionCorrectionMapParameters tempDistortionCorrectionParams = distortionCorrectionParams;
 
 	if (!queuedCorrectedDistortedImageResults.IsValid())
 		queuedCorrectedDistortedImageResults = MakeShareable(new TQueue<FCorrectedDistortedImageResults>);
@@ -1187,14 +1188,18 @@ void ULensSolver::CorrectImageDistortion(const FDistortionCorrectionParameters d
 
 	ENQUEUE_RENDER_COMMAND(CorrectionImageDistortion)
 	(
-		[lensSolver, temp, targetOutputPath](FRHICommandListImmediate& RHICmdList)
+		[lensSolver, tempDistortionCorrectionParams, targetOutputPath](FRHICommandListImmediate& RHICmdList)
 		{
-			lensSolver->CorrectImageDistortionRenderThread(
+			lensSolver->UndistortImageRenderThread(
 				RHICmdList,
-				temp,
+				tempDistortionCorrectionParams,
 				targetOutputPath);
 		}
 	);
+}
+
+void ULensSolver::DistortTextureWithDistortionCoefficients(FDistortTextureWithDistortionCoefficientParameters distortionCorrectionParams)
+{
 }
 
 /*

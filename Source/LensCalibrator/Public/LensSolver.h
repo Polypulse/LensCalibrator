@@ -18,7 +18,8 @@
 #include "WorkerParameters.h"
 #include "OneTimeProcessParameters.h"
 #include "DistortionCorrectionMapGenerationParameters.h"
-#include "DistortionCorrectionParameters.h"
+#include "DistortTextureWithDistortionCoefficientParameters.h"
+#include "DistortTextureWithDistortionCorrectionMapParameters.h"
 #include "DistortionCorrectionMapGenerationResults.h"
 #include "CorrectedDistortedImageResults.h"
 #include "TextureArrayZoomPair.h"
@@ -127,9 +128,14 @@ private:
 		const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
 		const FString generatedOutputPath);
 
-	void CorrectImageDistortionRenderThread(
+	void UndistortImageRenderThread(
 		FRHICommandListImmediate& RHICmdList,
-		const FDistortionCorrectionParameters distortionCorrectionParams,
+		const FDistortTextureWithDistortionCorrectionMapParameters distortionCorrectionParams,
+		const FString generatedOutputPath);
+
+	void DistortImageRenderThread(
+		FRHICommandListImmediate& RHICmdList,
+		const FDistortTextureWithDistortionCorrectionMapParameters distortionCorrectionParams,
 		const FString generatedOutputPath);
 	/*
 	void VisualizeCalibration(
@@ -245,8 +251,12 @@ public:
 		FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams);
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
-	void CorrectImageDistortion(
-		FDistortionCorrectionParameters distortionCorrectionParams);
+	void DistortTextureWithDistortionCorrectionMap(
+		FDistortTextureWithDistortionCorrectionMapParameters distortionCorrectionParams);
+
+	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
+	void DistortTextureWithDistortionCoefficients(
+		FDistortTextureWithDistortionCoefficientParameters distortionCorrectionParams);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StartBackgroundImageProcessors(int workerCount);

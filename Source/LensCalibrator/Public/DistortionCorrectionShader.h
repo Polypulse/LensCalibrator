@@ -36,6 +36,8 @@ private:
 	FShaderResourceParameter InputDistortionCorrectionTextureParameter;
 	FShaderResourceParameter InputDistortionCorrectionTextureSamplerParameter;
 
+	FShaderParameter reverseParameter;
+
 public:
 	FDistortionCorrectionShaderPS();
 	FDistortionCorrectionShaderPS(const ShaderMetaType::CompiledShaderInitializerType& Initializer);
@@ -45,7 +47,8 @@ public:
 	void SetParameters(
 		FRHICommandListImmediate& RHICmdList,
 		FTextureRHIRef InputDistortedTexture,
-		FTextureRHIRef InputDistortionCorrectionTexture);
+		FTextureRHIRef InputDistortionCorrectionTexture,
+		bool reverse);
 
 	virtual bool Serialize(FArchive& Ar) override;
 };
