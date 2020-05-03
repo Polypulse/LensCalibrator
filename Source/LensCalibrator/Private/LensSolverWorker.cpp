@@ -387,8 +387,8 @@ void FLensSolverWorker::DoWork()
 
 		fovX *= 2.0f;
 		fovY *= 2.0f;
-		principalPoint.x *= 2.0f;
-		principalPoint.y *= 2.0f;
+		// principalPoint.x *= 2.0f;
+		// principalPoint.y *= 2.0f;
 		focalLength *= 2.0f;
 
 		principalPoint.x = sourcePixelWidth * (principalPoint.x / sensorWidth);
