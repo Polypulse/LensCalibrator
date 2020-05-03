@@ -131,7 +131,7 @@ private:
 		const FDistortionCorrectionParameters distortionCorrectionParams,
 		const FString generatedOutputPath);
 
-	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height);
+	UTexture2D * CreateTexture2D(TArray<FColor> * rawData, int width, int height, bool sRGB);
 	/*
 	void VisualizeCalibration(
 		FRHICommandListImmediate& RHICmdList, 
@@ -237,11 +237,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void GenerateDistortionCorrectionMap(
-		const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams);
+		FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams);
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void CorrectImageDistortion(
-		const FDistortionCorrectionParameters distortionCorrectionParams);
+		FDistortionCorrectionParameters distortionCorrectionParams);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StartBackgroundImageProcessors(int workerCount);

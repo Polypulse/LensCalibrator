@@ -563,6 +563,7 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
 	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
+	UE_LOG(LogTemp, Log, TEXT("Wrote distortion correction map to path: \"%s\"."), *generatedOutputPath);
 
 	if (!queuedDistortionCorrectionMapResults.IsValid())
 		return;
@@ -592,7 +593,7 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 			height,
 			EPixelFormat::PF_B8G8R8A8,
 			1,
-			TexCreate_None,
+			TexCreate_SRGB,
 			TexCreate_RenderTargetable,
 			false,
 			createInfo,
@@ -646,6 +647,7 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
 	FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
+	UE_LOG(LogTemp, Log, TEXT("Wrote corrected distorted image to path: \"%s\"."), *generatedOutputPath);
 
 	if (!queuedCorrectedDistortedImageResults.IsValid())
 		return;
@@ -659,22 +661,24 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 	queuedCorrectedDistortedImageResults->Enqueue(correctedDistortedImageResults);
 }
 
-UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height)
+UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height, bool sRGB)
 {
-	UTexture2D* visualizationTexture = UTexture2D::CreateTransient(width, height, EPixelFormat::PF_B8G8R8A8);
-	if (visualizationTexture == nullptr)
+	UTexture2D* texture = UTexture2D::CreateTransient(width, height, EPixelFormat::PF_B8G8R8A8);
+	texture->SRGB = sRGB;
+
+	if (texture == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Unable to create transient texture"));
 		return nullptr;
 	}
 
-	visualizationTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-	visualizationTexture->PlatformData->Mips[0].SizeX = width;
-	visualizationTexture->PlatformData->Mips[0].SizeY = height;
-	visualizationTexture->PlatformData->Mips[0].BulkData.Realloc(width * height * 4);
-	visualizationTexture->PlatformData->Mips[0].BulkData.Unlock();
+	texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+	texture->PlatformData->Mips[0].SizeX = width;
+	texture->PlatformData->Mips[0].SizeY = height;
+	texture->PlatformData->Mips[0].BulkData.Realloc(width * height * 4);
+	texture->PlatformData->Mips[0].BulkData.Unlock();
 
-	uint8 * textureData = (uint8*)visualizationTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+	uint8 * textureData = (uint8*)texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 
 	if (textureData == nullptr)
 	{
@@ -683,28 +687,28 @@ UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, i
 	}
 	
 	FMemory::Memcpy(textureData, rawData->GetData(), width * height * 4);
-	visualizationTexture->PlatformData->Mips[0].BulkData.Unlock();
+	texture->PlatformData->Mips[0].BulkData.Unlock();
 
 	// texture->Resource = texture->CreateResource();
-	visualizationTexture->UpdateResource();
-	visualizationTexture->RefreshSamplerStates();
+	texture->UpdateResource();
+	texture->RefreshSamplerStates();
 
-	return visualizationTexture;
+	return texture;
 }
 
 /*
 void ULensSolver::VisualizeCalibration(
 	FRHICommandListImmediate& RHICmdList, 
 	FSceneViewport* sceneViewport, 
-	UTexture2D * visualizationTexture, 
+	UTexture2D * texture, 
 	FCalibrationResult solvedPoints,
 	bool flipX,
 	bool flipY)
 {
-	if (visualizationTexture == nullptr)
+	if (texture == nullptr)
 		return;
 
-	FTextureRHIRef visualizationTextureRHIRef = visualizationTexture->Resource->TextureRHI;
+	FTextureRHIRef visualizationTextureRHIRef = texture->Resource->TextureRHI;
 
 	FTexture2DRHIRef viewportTexture2DRHIRef = sceneViewport->GetRenderTargetTexture();
 	int width = viewportTexture2DRHIRef->GetSizeX();
@@ -741,8 +745,8 @@ void ULensSolver::VisualizeCalibration(
 	RHICmdList.EndRenderPass();
 	sceneViewport->Draw(true);
 
-	// solvedPoints.visualizationTexture->ReleaseResource();
-	// visualizationTexture->ConditionalBeginDestroy();
+	// solvedPoints.texture->ReleaseResource();
+	// texture->ConditionalBeginDestroy();
 }
 */
 
@@ -922,7 +926,12 @@ void ULensSolver::PollDistortionCorrectionMapGenerationResults()
 			return;
 
 		queuedDistortionCorrectionMapResults->Dequeue(distortionCorrectionMapResult);
-		UTexture2D* texture = CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height);
+
+		UE_LOG(LogTemp, Log, TEXT("Dequeued distortion correction map result from render thread of size: (%d, %d)."), 
+			distortionCorrectionMapResult.width, 
+			distortionCorrectionMapResult.height);
+
+		UTexture2D* texture = CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false);
 		this->OnGeneratedDistortionMap(texture);
 
 		isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
@@ -942,8 +951,13 @@ void ULensSolver::PollCorrectedDistortedImageResults()
 			return;
 
 		queuedCorrectedDistortedImageResults->Dequeue(correctedDistortedImageResult);
-		UTexture2D* texture = CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height);
-		this->OnGeneratedDistortionMap(texture);
+
+		UE_LOG(LogTemp, Log, TEXT("Dequeued corrected distorted image result from render thread of size: (%d, %d)."), 
+			correctedDistortedImageResult.width, 
+			correctedDistortedImageResult.height);
+
+		UTexture2D* texture = CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height, true);
+		this->OnDistortedImageCorrected(texture);
 
 		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
 	}
@@ -1069,13 +1083,17 @@ void ULensSolver::GenerateDistortionCorrectionMap(
 		return;
 	}
 
-	targetOutputPath = LensSolverUtilities::GenerateIndexedFilePath(targetOutputPath, FString::Printf(TEXT("DistortionCorrectionMap-%f"), distortionCorrectionMapGenerationParams.zoomLevel), ".bmp");
+	targetOutputPath = LensSolverUtilities::GenerateIndexedFilePath(targetOutputPath, FString::Printf(TEXT("DistortionCorrectionMap-%f"), distortionCorrectionMapGenerationParams.zoomLevel), "bmp");
 
 	ULensSolver * lensSolver = this;
 	const FDistortionCorrectionMapGenerationParameters temp = distortionCorrectionMapGenerationParams;
 
 	if (!queuedDistortionCorrectionMapResults.IsValid())
 		queuedDistortionCorrectionMapResults = MakeShareable(new TQueue<FDistortionCorrectionMapGenerationResults>);
+
+	UE_LOG(LogTemp, Log, TEXT("Queuing render command to generate distortion correction map of size: (%d, %d)."),
+		distortionCorrectionMapGenerationParams.outputMapResolution.X,
+		distortionCorrectionMapGenerationParams.outputMapResolution.Y);
 
 	ENQUEUE_RENDER_COMMAND(GenerateDistortionCorrectionMap)
 	(
@@ -1115,13 +1133,17 @@ void ULensSolver::CorrectImageDistortion(const FDistortionCorrectionParameters d
 		return;
 	}
 
-	targetOutputPath = LensSolverUtilities::GenerateIndexedFilePath(targetOutputPath, FString::Printf(TEXT("CorrectedDistortedImage-%f"), distortionCorrectionParams.zoomLevel), ".bmp");
+	targetOutputPath = LensSolverUtilities::GenerateIndexedFilePath(targetOutputPath, FString::Printf(TEXT("CorrectedDistortedImage-%f"), distortionCorrectionParams.zoomLevel), "bmp");
 
 	ULensSolver * lensSolver = this;
 	const FDistortionCorrectionParameters temp = distortionCorrectionParams;
 
 	if (!queuedCorrectedDistortedImageResults.IsValid())
 		queuedCorrectedDistortedImageResults = MakeShareable(new TQueue<FCorrectedDistortedImageResults>);
+
+	UE_LOG(LogTemp, Log, TEXT("Queuing render command to correct distorted image of size: (%d, %d)."),
+		distortionCorrectionParams.distortedTexture->GetSizeX(),
+		distortionCorrectionParams.distortedTexture->GetSizeY());
 
 	ENQUEUE_RENDER_COMMAND(CorrectionImageDistortion)
 	(
@@ -1242,7 +1264,7 @@ void ULensSolver::Poll()
 			GEngine->GameViewport->bDisableWorldRendering = 1;
 			sceneViewport->SetGameRenderingEnabled(false);
 
-			UTexture2D * visualizationTexture = CreateTexture2D(&lastSolvedPoints.visualizationData, lastSolvedPoints.width, lastSolvedPoints.height);
+			UTexture2D * texture = CreateTexture2D(&lastSolvedPoints.visualizationData, lastSolvedPoints.width, lastSolvedPoints.height);
 			lastSolvedPoints.visualizationData.Empty();
 
 			if (sceneViewport != nullptr)
@@ -1250,9 +1272,9 @@ void ULensSolver::Poll()
 				ULensSolver * lensSolver = this;
 				ENQUEUE_RENDER_COMMAND(VisualizeCalibration)
 				(
-					[lensSolver, sceneViewport, visualizationTexture, lastSolvedPoints](FRHICommandListImmediate& RHICmdList)
+					[lensSolver, sceneViewport, texture, lastSolvedPoints](FRHICommandListImmediate& RHICmdList)
 					{
-						lensSolver->VisualizeCalibration(RHICmdList, sceneViewport, visualizationTexture, lastSolvedPoints);
+						lensSolver->VisualizeCalibration(RHICmdList, sceneViewport, texture, lastSolvedPoints);
 					}
 				);
 			}

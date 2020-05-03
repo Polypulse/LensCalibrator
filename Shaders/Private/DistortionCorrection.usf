@@ -36,6 +36,11 @@ OutputVS MainVS(InputVS IN)
 OutputPS MainPS(OutputVS IN)
 {
 	OutputPS Out;
-	Out.Color = InDistortedTexture.Sample(InDistortedTextureSampler, InDistortionCorrectionTexture.Sample(InDistortionCorrectionTextureSampler, IN.UV.xy));
+	float2 undistortedUVs = InDistortionCorrectionTexture.Sample(InDistortionCorrectionTextureSampler, IN.UV.xy).rg;
+
+	Out.Color = float4(0.0, 0.0, 0.0, 1.0);
+	if (undistortedUVs.x > 0.0 && undistortedUVs.y > 0.0 && undistortedUVs.x < 1.0 && undistortedUVs.y < 1.0)
+		Out.Color = InDistortedTexture.Sample(InDistortedTextureSampler, undistortedUVs);
+
 	return Out;
 }

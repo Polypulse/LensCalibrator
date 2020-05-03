@@ -41,14 +41,24 @@ OutputPS MainPS(OutputVS IN)
 	p2 = InDistortionCoefficients[3];
 	k3 = InDistortionCoefficients[4];
 
-	float ppx = InNormalizedPrincipalPoint.x * 2.0 - 1.0;
-	float ppy = InNormalizedPrincipalPoint.y * 2.0 - 1.0;
+	float ppx = InNormalizedPrincipalPoint.x;
+	float ppy = InNormalizedPrincipalPoint.y;
 
-	float cx = (IN.UV.x - ppx);
-	float cy = (IN.UV.y - ppy);
+	float uvx = IN.UV.x;
+	float uvy = IN.UV.y;
+
+	float cx = (uvx - ppx);
+	float cy = (uvy - ppy);
+
 	float r = sqrt(cx * cx + cy * cy);
-	float x = cx * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0)) + p1 * (pow(r, 2.0) + 2.0 * pow(cx, 2.0)) + 2.0 * p2 * (cx * cy);
-	float y = cy * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0)) + p2 * (pow(r, 2.0) + 2.0 * pow(cy, 2.0)) + 2.0 * p1 * (cx * cy);
+
+	float x = uvx + cx * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0))/* + p1 * (pow(r, 2.0) + 2 * pow(cx, 2.0)) + 2 * p2 * (cx * cy)*/;
+	float y = uvy + cy * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0))/* + p2 * (pow(r, 2.0) + 2 * pow(cy, 2.0)) + 2 * p1 * (cx * cy)*/;
+
+	// float d = length(float2(ppx, ppy) - IN.UV.xy);
+	// Out.Color = float4(d, d, d, 1.0);
+	
+	// Out.Color = float4(IN.UV.xy, 0.0, 1.0);
 	Out.Color = float4(x, y, 0.0, 1.0);
 	return Out;
 }

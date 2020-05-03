@@ -437,12 +437,10 @@ void FLensSolverWorker::DoWork()
 		}
 		*/
 
-		TArray<FVector2D> pointsCache;
-		if (pointsCache.Num() != corners[0].size())
-			pointsCache.SetNum(corners[0].size());
-
-		for (int i = 0; i < pointsCache.Num(); i++)
-			pointsCache[i] = FVector2D(corners[0][i].x, corners[0][i].y);
+		TArray<float> outputDistortionCoefficients;
+		outputDistortionCoefficients.SetNum(5);
+		for (int i = 0; i < distortionCoefficients.rows; i++)
+			outputDistortionCoefficients[i] = distortionCoefficients.at<float>(i, 0);
 
 		FCalibrationResult solvedPoints;
 
@@ -457,6 +455,7 @@ void FLensSolverWorker::DoWork()
 		solvedPoints.principalPixelPoint = FVector2D(principalPoint.x, principalPoint.y);
 		solvedPoints.resolution = latchData.sourceResolution;
 		solvedPoints.perspectiveMatrix = perspectiveMatrix;
+		solvedPoints.distortionCoefficients = outputDistortionCoefficients;
 
 		if (latchData.workerParameters.writeCalibrationResultsToFile)
 			WriteSolvedPointsToJSONFile(solvedPoints, latchData.workerParameters.calibrationResultsFolderPath, "result", workerMessage);
