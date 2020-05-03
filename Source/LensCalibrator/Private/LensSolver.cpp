@@ -916,7 +916,7 @@ void ULensSolver::PollDistortionCorrectionMapGenerationResults()
 
 
 		UTexture2D* output = nullptr;
-		if (!LensSolverUtilities::CreateTexture2D(&distortionCorrectionMapResult.pixels, distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true, output, PF_FloatRGBA))
+		if (!LensSolverUtilities::CreateTexture2D((void*)distortionCorrectionMapResult.pixels.GetData(), distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true, output, PF_FloatRGBA))
 			return;
 		this->OnGeneratedDistortionMap(output);
 
@@ -943,7 +943,7 @@ void ULensSolver::PollCorrectedDistortedImageResults()
 			correctedDistortedImageResult.height);
 
 		UTexture2D* output = nullptr;
-		if (!LensSolverUtilities::CreateTexture2D(&correctedDistortedImageResult.pixels, correctedDistortedImageResult.width, correctedDistortedImageResult.height, true, false, output))
+		if (!LensSolverUtilities::CreateTexture2D((void*)correctedDistortedImageResult.pixels.GetData(), correctedDistortedImageResult.width, correctedDistortedImageResult.height, true, false, output))
 			return;
 		this->OnDistortedImageCorrected(output);
 

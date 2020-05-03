@@ -119,6 +119,7 @@ bool LensSolverUtilities::CreateTexture2D(
 		size = 1;
 		stride = 4;
 		break;
+	case EPixelFormat::PF_FloatRGBA:
 	case EPixelFormat::PF_A16B16G16R16:
 		size = 2;
 		stride = 4;
@@ -151,7 +152,7 @@ bool LensSolverUtilities::CreateTexture2D(
 	output->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 	output->PlatformData->Mips[0].SizeX = width;
 	output->PlatformData->Mips[0].SizeY = height;
-	output->PlatformData->Mips[0].BulkData.Realloc(width * height * 4);
+	output->PlatformData->Mips[0].BulkData.Realloc(width * height * stride * size);
 	output->PlatformData->Mips[0].BulkData.Unlock();
 
 	uint8 * textureData = (uint8*)output->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
