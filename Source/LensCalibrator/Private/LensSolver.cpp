@@ -361,7 +361,7 @@ void ULensSolver::DetectPointsRenderThread(
 {
 	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.X * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.X;
 	int height = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.Y * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.Y;
-	if (!allocated)
+	if (!blitRenderTextureAllocated)
 	{
 		FRHIResourceCreateInfo createInfo;
 		FTexture2DRHIRef dummyTexRef;
@@ -377,7 +377,7 @@ void ULensSolver::DetectPointsRenderThread(
 			blitRenderTexture,
 			dummyTexRef);
 
-		allocated = true;
+		blitRenderTextureAllocated = true;
 	}
 
 	FRHIRenderPassInfo RPInfo(blitRenderTexture, ERenderTargetActions::Clear_Store);
@@ -486,7 +486,7 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 {
 	int width = distortionCorrectionMapParameters.outputMapResolution.X;
 	int height = distortionCorrectionMapParameters.outputMapResolution.Y;
-	if (!allocated)
+	if (!distortionCorrectionRenderTextureAllocated)
 	{
 		FRHIResourceCreateInfo createInfo;
 		FTexture2DRHIRef dummyTexRef;
@@ -502,7 +502,7 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 			distortionCorrectionRenderTexture,
 			dummyTexRef);
 
-		allocated = true;
+		distortionCorrectionRenderTextureAllocated = true;
 	}
 
 	FVector2D normalizedPrincipalPoint = FVector2D(
@@ -583,7 +583,7 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 {
 	int width = distortionCorrectionParams.distortedTexture->GetSizeX();
 	int height = distortionCorrectionParams.distortedTexture->GetSizeY();
-	if (!allocated)
+	if (!correctDistortedTextureRenderTextureAllocated)
 	{
 		FRHIResourceCreateInfo createInfo;
 		FTexture2DRHIRef dummyTexRef;
@@ -599,7 +599,7 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 			correctDistortedTextureRenderTexture,
 			dummyTexRef);
 
-		allocated = true;
+		correctDistortedTextureRenderTextureAllocated = true;
 	}
 
 	FRHIRenderPassInfo RPInfo(correctDistortedTextureRenderTexture, ERenderTargetActions::Clear_Store);
@@ -661,21 +661,18 @@ void ULensSolver::CorrectImageDistortionRenderThread(
 
 UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, int height)
 {
-	if (visualizationTexture == nullptr || visualizationTexture->GetSizeX() != width || visualizationTexture->GetSizeY() != height)
+	UTexture2D* visualizationTexture = UTexture2D::CreateTransient(width, height, EPixelFormat::PF_B8G8R8A8);
+	if (visualizationTexture == nullptr)
 	{
-		visualizationTexture = UTexture2D::CreateTransient(width, height, EPixelFormat::PF_B8G8R8A8);
-		if (visualizationTexture == nullptr)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Unable to create transient texture"));
-			return nullptr;
-		}
-
-		visualizationTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-		visualizationTexture->PlatformData->Mips[0].SizeX = width;
-		visualizationTexture->PlatformData->Mips[0].SizeY = height;
-		visualizationTexture->PlatformData->Mips[0].BulkData.Realloc(rawData->Num());
-		visualizationTexture->PlatformData->Mips[0].BulkData.Unlock();
+		UE_LOG(LogTemp, Error, TEXT("Unable to create transient texture"));
+		return nullptr;
 	}
+
+	visualizationTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+	visualizationTexture->PlatformData->Mips[0].SizeX = width;
+	visualizationTexture->PlatformData->Mips[0].SizeY = height;
+	visualizationTexture->PlatformData->Mips[0].BulkData.Realloc(width * height * 4);
+	visualizationTexture->PlatformData->Mips[0].BulkData.Unlock();
 
 	uint8 * textureData = (uint8*)visualizationTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 
@@ -685,7 +682,7 @@ UTexture2D * ULensSolver::CreateTexture2D(TArray<FColor> * rawData, int width, i
 		return nullptr;
 	}
 	
-	FMemory::Memcpy(textureData, rawData->GetData(), rawData->Num());
+	FMemory::Memcpy(textureData, rawData->GetData(), width * height * 4);
 	visualizationTexture->PlatformData->Mips[0].BulkData.Unlock();
 
 	// texture->Resource = texture->CreateResource();
@@ -1185,7 +1182,6 @@ void ULensSolver::StartBackgroundImageProcessors(int workerCount)
 		workers.Add(workerInterfaceContainer);
 	}
 
-	visualizationTexture = nullptr;
 	threadLock.Unlock();
 }
 

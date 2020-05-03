@@ -55,10 +55,11 @@ public:
 private:
 
 	FTexture2DRHIRef blitRenderTexture;
+	bool blitRenderTextureAllocated;
 	FTexture2DRHIRef distortionCorrectionRenderTexture;
+	bool distortionCorrectionRenderTextureAllocated;
 	FTexture2DRHIRef correctDistortedTextureRenderTexture;
-	UTexture2D * visualizationTexture;
-	bool allocated;
+	bool correctDistortedTextureRenderTextureAllocated;
 
 	TSharedPtr<TQueue<FCalibrationResult>> queuedSolvedPointsPtr;
 	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;
