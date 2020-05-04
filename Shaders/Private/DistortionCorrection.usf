@@ -6,7 +6,7 @@ SamplerState InDistortedTextureSampler;
 Texture2D InDistortionCorrectionTexture;
 SamplerState InDistortionCorrectionTextureSampler;
 
-int reverse;
+int InReverse;
 
 struct InputVS
 {
@@ -40,11 +40,9 @@ OutputPS MainPS(OutputVS IN)
 	OutputPS Out;
 
 	float2 undistortedUVs = InDistortionCorrectionTexture.Sample(InDistortionCorrectionTextureSampler, IN.UV.xy).rg;
-	float2 diff = undistortedUVs - IN.UV.xy;
 
 	Out.Color = float4(0.0, 0.0, 0.0, 1.0);
 	if (undistortedUVs.x > 0.0 && undistortedUVs.y > 0.0 && undistortedUVs.x < 1.0 && undistortedUVs.y < 1.0)
-		Out.Color = InDistortedTexture.Sample(InDistortedTextureSampler, IN.UV.xy + diff * reverse);
-
+		Out.Color = InDistortedTexture.Sample(InDistortedTextureSampler, undistortedUVs); 
 	return Out;
 }

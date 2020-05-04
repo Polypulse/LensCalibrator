@@ -43,6 +43,7 @@ FDistortionCorrectionMapGenerationPS::FDistortionCorrectionMapGenerationPS(const
 {
 	distortionCoefficientsParameter.Bind(Initializer.ParameterMap, TEXT("InDistortionCoefficients"));
 	normalizedPrincipalPointParameter.Bind(Initializer.ParameterMap, TEXT("InNormalizedPrincipalPoint"));
+	normalizedPrincipalPointParameter.Bind(Initializer.ParameterMap, TEXT("InGenerateInverseMap"));
 }
 
 bool FDistortionCorrectionMapGenerationPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
@@ -51,9 +52,10 @@ bool FDistortionCorrectionMapGenerationPS::ShouldCompilePermutation(const FGloba
 }
 
 void FDistortionCorrectionMapGenerationPS::SetParameters(
-		FRHICommandListImmediate& RHICmdList,
-		FVector2D normalizedPrincipalPoint,
-		TArray<float> inputDistortionCoefficients)
+	FRHICommandListImmediate& RHICmdList,
+	const FVector2D normalizedPrincipalPoint,
+	const TArray<float> inputDistortionCoefficients,
+	const bool generateInverseMap)
 {
 	/*
 	SetTextureParameter(RHICmdList, GetPixelShader(), InputTextureParameter, InputTexture);
@@ -63,6 +65,7 @@ void FDistortionCorrectionMapGenerationPS::SetParameters(
 	*/
 	SetShaderValue(RHICmdList, GetPixelShader(), normalizedPrincipalPointParameter, normalizedPrincipalPoint);
 	SetShaderValue(RHICmdList, GetPixelShader(), distortionCoefficientsParameter, inputDistortionCoefficients);
+	SetShaderValue(RHICmdList, GetPixelShader(), generateInverseMapParameter, generateInverseMap ? 1 : 0);
 }
 
 bool FDistortionCorrectionMapGenerationPS::Serialize(FArchive& Ar) 
@@ -70,7 +73,8 @@ bool FDistortionCorrectionMapGenerationPS::Serialize(FArchive& Ar)
 	bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
 	Ar
 		<< distortionCoefficientsParameter
-		<< normalizedPrincipalPointParameter;
+		<< normalizedPrincipalPointParameter
+		<< generateInverseMapParameter;
 
 	return bShaderHasOutdatedParameters;
 }

@@ -2,6 +2,7 @@
 
 float2 InNormalizedPrincipalPoint;
 float InDistortionCoefficients[5];
+int InGenerateInverseMap;
 
 struct InputVS
 {

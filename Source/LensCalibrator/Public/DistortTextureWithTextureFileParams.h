@@ -1,12 +1,13 @@
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 
-#include "DistortTextureWithDistortionCoefficientParameters.generated.h"
+#include "DistortTextureWithTextureFileParams.generated.h"
 
 USTRUCT(BlueprintType)
-struct FDistortTextureWithDistortionCoefficientParameters
+struct FDistortTextureWithTextureFileParams
 {
 	GENERATED_BODY()
 
@@ -14,7 +15,7 @@ struct FDistortTextureWithDistortionCoefficientParameters
 	UTexture2D* distortedTexture;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	TArray<float> distortionCoefficients;
+	FString absoluteFilePath;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float zoomLevel;
@@ -24,4 +25,13 @@ struct FDistortTextureWithDistortionCoefficientParameters
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool reverseOperation;
+
+	FDistortTextureWithTextureFileParams()
+	{
+		distortedTexture = nullptr;
+		absoluteFilePath = FString("");
+		outputPath = FString("");
+		zoomLevel = 0.0f;
+		reverseOperation = false;
+	}
 };

@@ -37,6 +37,7 @@ private:
 	*/
 	FShaderParameter distortionCoefficientsParameter;
 	FShaderParameter normalizedPrincipalPointParameter;
+	FShaderParameter generateInverseMapParameter;
 
 public:
 	FDistortionCorrectionMapGenerationPS();
@@ -46,8 +47,9 @@ public:
 
 	void SetParameters(
 		FRHICommandListImmediate& RHICmdList,
-		FVector2D normalizedPrincipalPointParameter,
-		TArray<float> inputDistortionCoefficients);
+		const FVector2D normalizedPrincipalPointParameter,
+		const TArray<float> inputDistortionCoefficients,
+		const bool generateInverseMap);
 
 	virtual bool Serialize(FArchive& Ar) override;
 };

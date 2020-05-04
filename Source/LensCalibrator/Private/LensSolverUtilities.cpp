@@ -17,30 +17,55 @@ FString LensSolverUtilities::GenerateIndexedFilePath(const FString& folder, cons
 	return FString::Printf(TEXT("%s-%d.%s"), *partialOutputPath, index, *extension);
 }
 
-bool LensSolverUtilities::ValidateFolder(FString& folder, const FString & backupFolder, const FString& logMessageHeader)
+bool LensSolverUtilities::ValidateFolder(FString& path, const FString & backupFolder, const FString& logMessageHeader)
 {
-	if (folder.IsEmpty())
-		folder = backupFolder;
-
-	else
+	if (path.IsEmpty())
 	{
-		if (!FPaths::ValidatePath(folder))
+		path = backupFolder;
+		if (!FPaths::DirectoryExists(path))
 		{
-			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is not a valid."), *logMessageHeader, *folder);
-			return false;
-		}
-
-		if (FPaths::FileExists(folder))
-		{
-			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is to a file, not a directory."), *logMessageHeader, *folder);
-			return false;
+			FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*path);
+			UE_LOG(LogTemp, Log, TEXT("%sCreated directory at path: \"%s\"."), *logMessageHeader, *path);
 		}
 	}
 
-	if (!FPaths::DirectoryExists(folder))
+	else
 	{
-		FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*folder);
-		UE_LOG(LogTemp, Log, TEXT("%sCreated directory at path: \"%s\"."), *logMessageHeader, *folder);
+		if (!FPaths::ValidatePath(path))
+		{
+			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is not a valid."), *logMessageHeader, *path);
+			return false;
+		}
+
+		FString extension = FPaths::GetExtension(path);
+		if (!extension.IsEmpty())
+		{
+			FString containingFolderPath = FPaths::GetPathLeaf(path);
+			if (!FPaths::DirectoryExists(containingFolderPath))
+			{
+				FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*containingFolderPath);
+				UE_LOG(LogTemp, Log, TEXT("%sCreated directory at path: \"%s\"."), *logMessageHeader, *containingFolderPath);
+			}
+		}
+	}
+
+	return true;
+}
+
+bool LensSolverUtilities::ValidatePath(FString& path, const FString& backupFolder, const FString & backupName, const FString & backupExtension, const FString& logMessageHeader)
+{
+	if (path.IsEmpty())
+		return ValidateFolder(path, backupFolder, logMessageHeader);
+
+	if (FPaths::FileExists(path))
+		return true;
+
+	FString extension = FPaths::GetExtension(path);
+	if (extension.IsEmpty())
+	{
+		if (!ValidateFolder(path, backupFolder, logMessageHeader))
+			return false;
+		path = LensSolverUtilities::GenerateIndexedFilePath(path, backupName, backupExtension);
 	}
 
 	return true;
@@ -176,6 +201,30 @@ bool LensSolverUtilities::CreateTexture2D(
 
 bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, bool isLUT, UTexture2D*& texture, EPixelFormat pixelFormat)
 {
+	int bitDepth = 0;
+	ERGBFormat rgbFormat;
+	switch (pixelFormat)
+	{
+	case EPixelFormat::PF_B8G8R8A8:
+		rgbFormat = ERGBFormat::BGRA;
+		bitDepth = 8;
+		break;
+
+	case EPixelFormat::PF_R8G8B8A8:
+		rgbFormat = ERGBFormat::RGBA;
+		bitDepth = 8;
+		break;
+
+	case EPixelFormat::PF_FloatRGBA:
+		rgbFormat = ERGBFormat::RGBA;
+		bitDepth = 16;
+		break;
+
+	default:
+		UE_LOG(LogTemp, Error, TEXT("Non-implemented pixel format: \"%s\"."), GetPixelFormatString(pixelFormat));
+		return false;
+	}
+
 	if (!FPaths::FileExists(absoluteTexturePath))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot find at path: \"%s\"."), *absoluteTexturePath);
@@ -209,9 +258,7 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, bo
 
 	const TArray<uint8>* rawData = nullptr;
 
-	if (!imageWrapper->SetCompressed(fileData.GetData(), fileData.Num()) ||
-		!imageWrapper->GetRaw(ERGBFormat::BGRA, 8, rawData) || 
-		rawData == false)
+	if (!imageWrapper->SetCompressed(fileData.GetData(), fileData.Num()) || !imageWrapper->GetRaw(rgbFormat, bitDepth, rawData))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to decompress texture data in file: \"%s\"."), *absoluteTexturePath);
 		return false;

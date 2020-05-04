@@ -46,6 +46,8 @@ FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS(const ShaderMetaTyp
 
 	InputDistortionCorrectionTextureParameter.Bind(Initializer.ParameterMap, TEXT("InDistortionCorrectionTexture"));
 	InputDistortionCorrectionTextureSamplerParameter.Bind(Initializer.ParameterMap, TEXT("InDistortionCorrectionTextureSampler"));
+
+	reverseParameter.Bind(Initializer.ParameterMap, TEXT("InReverse"));
 }
 
 bool FDistortionCorrectionShaderPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
@@ -65,7 +67,7 @@ void FDistortionCorrectionShaderPS::SetParameters(
 	SetTextureParameter(RHICmdList, GetPixelShader(), InputDistortionCorrectionTextureParameter, InputDistortionCorrectionTexture);
 	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortionCorrectionTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
 
-	SetShaderValue(RHICmdList, GetPixelShader(), reverseParameter, reverse ? -1 : 1);
+	SetShaderValue(RHICmdList, GetPixelShader(), reverseParameter, (reverse ? 1 : 0));
 }
 
 bool FDistortionCorrectionShaderPS::Serialize(FArchive& Ar) 
