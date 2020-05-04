@@ -1,26 +1,14 @@
-/* Copyright (C) Polypulse LLC - All Rights Reserved
- * Written by Sean Connor <sean@polypulse.io>, April 2020 */
-
 #pragma once
+
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 
-#include "WorkerParameters.generated.h"
-
-UENUM()
-enum FindCheckerboardSearchMethod
-{
-	Exhaustive,
-	Fast
-};
+#include "CalibrationWorkerParameters.generated.h"
 
 USTRUCT(BlueprintType)
-struct FWorkerParameters
+struct FCalibrationWorkerParameters
 {
 	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	bool exhaustiveSearch;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool useInitialIntrinsicValues;
@@ -53,20 +41,13 @@ struct FWorkerParameters
 	bool fixRadialDistortionCoefficientK6;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	bool writeDebugTextureToFile;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString debugTextureFolderPath;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool writeCalibrationResultsToFile;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString calibrationResultsFolderPath;
 
-	FWorkerParameters()
+	FCalibrationWorkerParameters()
 	{
-		exhaustiveSearch = false;
 		useInitialIntrinsicValues = false;
 		keepPrincipalPixelPositionFixed = false;
 		keepAspectRatioFixed = true;
@@ -77,10 +58,8 @@ struct FWorkerParameters
 		fixRadialDistortionCoefficientK4 = false;
 		fixRadialDistortionCoefficientK5 = false;
 		fixRadialDistortionCoefficientK6 = false;
-		writeDebugTextureToFile = false;
-		debugTextureFolderPath = "";
+
 		writeCalibrationResultsToFile = false;
 		calibrationResultsFolderPath = "";
-	};
+	}
 };
-

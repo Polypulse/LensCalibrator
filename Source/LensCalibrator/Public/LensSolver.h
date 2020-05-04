@@ -30,20 +30,10 @@
 #include "TextureArrayZoomPair.h"
 #include "TextureFolderZoomPair.h"
 #include "TextureZoomPair.h"
+
+#include "LensSolverWorkerInterfaceContainer.h"
+
 #include "LensSolver.generated.h"
-
-USTRUCT()
-struct FWorkerInterfaceContainer
-{
-	GENERATED_BODY()
-
-	FAutoDeleteAsyncTask<FLensSolverWorker> * worker;
-
-	FLensSolverWorker::GetWorkLoadDel getWorkLoadDel;
-	FLensSolverWorker::QueueWorkUnitDel queueWorkUnitDel;
-	FLensSolverWorker::IsClosingDel isClosingDel;
-	FLensSolverWorker::SignalLatchDel signalLatch;
-};
 
 UCLASS( Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LENSCALIBRATOR_API ULensSolver : public UActorComponent
@@ -51,8 +41,6 @@ class LENSCALIBRATOR_API ULensSolver : public UActorComponent
 	GENERATED_BODY()
 
 public:
-
-
 
 	/*
 	DECLARE_DELEGATE_OneParam(FSolvedPointsQueuedDel, bool)

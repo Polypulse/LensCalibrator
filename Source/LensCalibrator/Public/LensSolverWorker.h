@@ -20,19 +20,8 @@
 #include "JobInfo.h"
 #include "LatchData.h"
 #include "WorkerParameters.h"
+#include "LensSolverWorkUnit.h"
 #include "LensSolverWorker.generated.h"
-
-
-USTRUCT(BlueprintType)
-struct FLensSolverWorkUnit
-{
-	GENERATED_BODY()
-
-	FString unitName;
-
-	int index;
-	TArray<FColor> pixels;
-};
 
 class FLensSolverWorker : public FNonAbandonableTask
 {
@@ -40,8 +29,9 @@ class FLensSolverWorker : public FNonAbandonableTask
 
 public:
 	DECLARE_DELEGATE_OneParam(OnSolvePointsDel, FCalibrationResult)
+	DECLARE_DELEGATE_OneParam(QueueLogDel, FString)
 	DECLARE_DELEGATE_RetVal(int, GetWorkLoadDel)
-	DECLARE_DELEGATE_OneParam(QueueWorkUnitDel, FLensSolverWorkUnit)
+	DECLARE_DELEGATE_OneParam(QueueWorkUnitDel, FLensSolverTextureWorkUnit)
 	DECLARE_DELEGATE_OneParam(SignalLatchDel, const FLatchData)
 	DECLARE_DELEGATE_RetVal(bool, IsClosingDel)
 
@@ -49,12 +39,10 @@ private:
 	FString calibrationVisualizationOutputPath;
 
 	OnSolvePointsDel onSolvePointsDel;
-
 	TQueue<FLensSolverWorkUnit> workQueue;
 	TQueue<FLatchData> latchQueue;
 
 	int workerID;
-
 	mutable int workUnitCount;
 	mutable bool flagToExit;
 
@@ -68,7 +56,6 @@ private:
 	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
 	void QueueSolvedPoints(FCalibrationResult solvedPoints);
 	bool Exit ();
-	bool ShouldExit();
 	void WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage);
 	void WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, FString fileName, const FString workerMessage);
 
@@ -93,10 +80,21 @@ public:
 		RETURN_QUICK_DECLARE_CYCLE_STAT(FLensSolverWorker, STATGROUP_ThreadPoolAsyncTasks);
 	}
 
+	int GetWorkerID();
+
 protected:
 	
 	void DoWork();
+	virtual void Tick() = 0;
+	bool ShouldExit();
+
+	void Lock();
+	void Unlock();
+
 	int GetWorkLoad ();
-	void QueueWorkUnit(FLensSolverWorkUnit workUnit);
+	virtual void QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit) = 0;
+	virtual bool WorkUnitInQueue() = 0;
+	void QueueLog(FString log);
+
 	void Latch(const FLatchData inputLatchData);
 };

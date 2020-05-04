@@ -442,7 +442,7 @@ void ULensSolver::DetectPointsRenderThread(
 	FString textureName;
 	textureZoomPair.texture->GetName(textureName);
 
-	FLensSolverWorkUnit workerUnit;
+	FLensSolverTextureWorkUnit workerUnit;
 	workerUnit.unitName = textureName;
 	workerUnit.pixels = surfaceData;
 

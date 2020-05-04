@@ -44,12 +44,16 @@ int FLensSolverWorker::GetWorkLoad ()
 	return count; 
 }
 
-void FLensSolverWorker::QueueWorkUnit(FLensSolverWorkUnit workUnit)
+void FLensSolverWorker::QueueWorkUnit(FLensSolverTextureWorkUnit workUnit)
 {
 	workQueue.Enqueue(workUnit);
 	threadLock.Lock();
 	workUnitCount++;
 	threadLock.Unlock();
+}
+
+void FLensSolverWorker::QueueLog(FString log)
+{
 }
 
 void FLensSolverWorker::Latch(const FLatchData inputLatchData)
@@ -141,6 +145,11 @@ FTransform FLensSolverWorker::GenerateTransformFromRAndTVecs(std::vector<cv::Mat
 	return outputTransform;
 }
 
+int FLensSolverWorker::GetWorkerID()
+{
+	return workerID;
+}
+
 void FLensSolverWorker::DoWork()
 {
 	while (true)
@@ -157,7 +166,7 @@ void FLensSolverWorker::DoWork()
 		FString workerMessage = FString::Printf(TEXT("Worker: (ID: %d): "), workerID);
 		UE_LOG(LogTemp, Log, TEXT("%sLatched!"), *workerMessage);
 
-		TArray<FLensSolverWorkUnit> workUnits;
+		TArray<FLensSolverTextureWorkUnit> workUnits;
 		FLatchData latchData;
 
 		{
@@ -520,6 +529,16 @@ bool FLensSolverWorker::ShouldExit()
 	shouldExit = flagToExit;
 	threadLock.Unlock();
 	return shouldExit;
+}
+
+void FLensSolverWorker::Lock()
+{
+	threadLock.Lock();
+}
+
+void FLensSolverWorker::Unlock()
+{
+	threadLock.Unlock();
 }
 
 void FLensSolverWorker::WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage)
