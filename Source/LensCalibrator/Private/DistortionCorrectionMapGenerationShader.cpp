@@ -43,7 +43,7 @@ FDistortionCorrectionMapGenerationPS::FDistortionCorrectionMapGenerationPS(const
 {
 	distortionCoefficientsParameter.Bind(Initializer.ParameterMap, TEXT("InDistortionCoefficients"));
 	normalizedPrincipalPointParameter.Bind(Initializer.ParameterMap, TEXT("InNormalizedPrincipalPoint"));
-	normalizedPrincipalPointParameter.Bind(Initializer.ParameterMap, TEXT("InGenerateInverseMap"));
+	generateInverseMapParameter.Bind(Initializer.ParameterMap, TEXT("InGenerateInverseMap"));
 }
 
 bool FDistortionCorrectionMapGenerationPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)

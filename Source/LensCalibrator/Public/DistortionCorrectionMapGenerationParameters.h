@@ -26,7 +26,10 @@ struct FDistortionCorrectionMapGenerationParameters
 	FIntPoint outputMapResolution;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString outputPath;
+	FString correctionOutputPath;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FString inverseCorrectionOutputPath;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	TArray<float> distortionCoefficients;

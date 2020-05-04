@@ -227,7 +227,7 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, bo
 
 	if (!FPaths::FileExists(absoluteTexturePath))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot find at path: \"%s\"."), *absoluteTexturePath);
+		UE_LOG(LogTemp, Error, TEXT("Cannot find texture at path: \"%s\"."), *absoluteTexturePath);
 		return false;
 	}
 

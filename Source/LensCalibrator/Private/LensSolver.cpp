@@ -488,10 +488,13 @@ void ULensSolver::DetectPointsRenderThread(
 void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	FRHICommandListImmediate& RHICmdList,
 	const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
-	const FString generatedOutputPath)
+	const FString correctionFilePath,
+	const FString inverseCorrectionFilePath)
 {
+	FIntRect rect = FIntRect(0, 0, distortionCorrectionMapGenerationParams.outputMapResolution.X, distortionCorrectionMapGenerationParams.outputMapResolution.Y);
 	int width = distortionCorrectionMapGenerationParams.outputMapResolution.X;
 	int height = distortionCorrectionMapGenerationParams.outputMapResolution.Y;
+
 	if (!distortionCorrectionRenderTextureAllocated)
 	{
 		FRHIResourceCreateInfo createInfo;
@@ -553,7 +556,19 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	}
 	RHICmdList.EndRenderPass();
 
-	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
+	FRHITexture2D * texture2D = distortionCorrectionRenderTexture->GetTexture2D();
+	TUniquePtr<TImagePixelData<FFloat16Color>> pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
+
+	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixelData->Pixels, (ECubeFace)0, 0, 0);
+	check(pixelData->IsDataWellFormed());
+
+	TArray<FFloat16Color> distortionCorrectionPixels = pixelData->Pixels;
+	if (!LensSolverUtilities::WriteTexture16(correctionFilePath, width, height, MoveTemp(pixelData)))
+		return;
+
+	UE_LOG(LogTemp, Log, TEXT("Wrote distortion correction map to path: \"%s\"."), *correctionFilePath);
+
+	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateInverseDistortionCorrectionMapPass"));
 	{
 		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
 		RHICmdList.SetViewport(0, 0, 0.0f, width, height, 1.0f);
@@ -563,29 +578,24 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	}
 	RHICmdList.EndRenderPass();
 
-	FIntRect rect = FIntRect(0, 0, distortionCorrectionMapGenerationParams.outputMapResolution.X, distortionCorrectionMapGenerationParams.outputMapResolution.Y);
-
-	FRHITexture2D * texture2D = distortionCorrectionRenderTexture->GetTexture2D();
-	TUniquePtr<TImagePixelData<FFloat16Color>> pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
+	texture2D = distortionCorrectionRenderTexture->GetTexture2D();
+	pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
 
 	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixelData->Pixels, (ECubeFace)0, 0, 0);
 	check(pixelData->IsDataWellFormed());
 
-	TArray<FFloat16Color> pixelDataCopy = pixelData->Pixels;
-	if (!LensSolverUtilities::WriteTexture16(generatedOutputPath, width, height, MoveTemp(pixelData)))
-		return
+	TArray<FFloat16Color> inverseDistortionCorrectionPixels = pixelData->Pixels;
+	if (!LensSolverUtilities::WriteTexture16(inverseCorrectionFilePath, width, height, MoveTemp(pixelData)))
+		return;
 
-	// uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
-	// FFileHelper::CreateBitmap(*generatedOutputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
-	// FFileHelper::CreateBitmap(*generatedOutputPath, texture2D->GetSizeX(), texture2D->GetSizeY(), surfaceData.GetData());
-	UE_LOG(LogTemp, Log, TEXT("Wrote distortion correction map to path: \"%s\"."), *generatedOutputPath);
+	UE_LOG(LogTemp, Log, TEXT("Wrote inverse distortion correction map to path: \"%s\"."), *inverseCorrectionFilePath);
 
 	if (!queuedDistortionCorrectionMapResults.IsValid())
 		return;
 
 	FDistortionCorrectionMapGenerationResults distortionCorrectionMapGenerationResults;
-
-	distortionCorrectionMapGenerationResults.pixels = pixelDataCopy;
+	distortionCorrectionMapGenerationResults.distortionCorrectionPixels = distortionCorrectionPixels;
+	distortionCorrectionMapGenerationResults.inverseDistortionCorrectionPixels = inverseDistortionCorrectionPixels;
 	distortionCorrectionMapGenerationResults.width = texture2D->GetSizeX();
 	distortionCorrectionMapGenerationResults.height = texture2D->GetSizeY();
 
@@ -915,7 +925,7 @@ void ULensSolver::PollDistortionCorrectionMapGenerationResults()
 
 
 		UTexture2D* output = nullptr;
-		if (!LensSolverUtilities::CreateTexture2D((void*)distortionCorrectionMapResult.pixels.GetData(), distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true, output, PF_FloatRGBA))
+		if (!LensSolverUtilities::CreateTexture2D((void*)distortionCorrectionMapResult.distortionCorrectionPixels.GetData(), distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true, output, PF_FloatRGBA))
 			return;
 		this->OnGeneratedDistortionMap(output);
 
@@ -1114,11 +1124,17 @@ void ULensSolver::GenerateDistortionCorrectionMap(
 	}
 
 	static const FString backupOutputPath = LensSolverUtilities::GenerateGenericOutputPath(FString("DistortionCorrectionMaps/"));
-	FString targetOutputPath = distortionCorrectionMapGenerationParams.outputPath;
-
-	if (!LensSolverUtilities::ValidatePath(targetOutputPath, backupOutputPath, FString("DistortionCorrectionMap"), FString("png"), FString("Distortion Correction: ")))
+	FString correctionOutputPath = distortionCorrectionMapGenerationParams.correctionOutputPath;
+	if (!LensSolverUtilities::ValidatePath(correctionOutputPath, backupOutputPath, FString("DistortionCorrectionMap"), FString("png"), FString("Distortion Correction: ")))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, unable to create folder path: \"%s\"."), *targetOutputPath);
+		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, unable to create folder path: \"%s\"."), *correctionOutputPath);
+		return;
+	}
+
+	FString inverseCorrectionOutputPath = distortionCorrectionMapGenerationParams.inverseCorrectionOutputPath;
+	if (!LensSolverUtilities::ValidatePath(inverseCorrectionOutputPath, backupOutputPath, FString("InverseDistortionCorrectionMap"), FString("png"), FString("Distortion Correction: ")))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot generate inverse distortion correction map, unable to create folder path: \"%s\"."), *inverseCorrectionOutputPath);
 		return;
 	}
 
@@ -1134,12 +1150,13 @@ void ULensSolver::GenerateDistortionCorrectionMap(
 
 	ENQUEUE_RENDER_COMMAND(GenerateDistortionCorrectionMap)
 	(
-		[lensSolver, temp, targetOutputPath](FRHICommandListImmediate& RHICmdList)
+		[lensSolver, temp, correctionOutputPath, inverseCorrectionOutputPath](FRHICommandListImmediate& RHICmdList)
 		{
 			lensSolver->GenerateDistortionCorrectionMapRenderThread(
 				RHICmdList,
 				temp,
-				targetOutputPath);
+				correctionOutputPath,
+				inverseCorrectionOutputPath);
 		}
 	);
 }

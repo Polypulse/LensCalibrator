@@ -131,7 +131,8 @@ private:
 	void GenerateDistortionCorrectionMapRenderThread(
 		FRHICommandListImmediate& RHICmdList,
 		const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
-		const FString generatedOutputPath);
+		const FString correctionFilePath,
+		const FString inverseCorrectionFilePath);
 
 	void UndistortImageRenderThread(
 		FRHICommandListImmediate& RHICmdList,

@@ -12,11 +12,9 @@ struct FDistortionCorrectionMapGenerationResults
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	int width;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	int height;
 
-	TArray<FFloat16Color> pixels;
+	TArray<FFloat16Color> distortionCorrectionPixels;
+	TArray<FFloat16Color> inverseDistortionCorrectionPixels;
 };

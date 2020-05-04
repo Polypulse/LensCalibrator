@@ -574,13 +574,13 @@ void FLensSolverWorker::WriteSolvedPointsToJSONFile(const FCalibrationResult& so
 	TArray<TSharedPtr<FJsonValue>> matVals;
 
 	for (int i = 0; i < 16; i++)
-			matVals.Add(MakeShareable(new FJsonValueNumber(solvePoints.perspectiveMatrix.M[i / 4][i % 4])));
+		matVals.Add(MakeShareable(new FJsonValueNumber(solvePoints.perspectiveMatrix.M[i / 4][i % 4])));
 
 	result->SetArrayField("perspectivematrix", matVals);
 
 	TArray<TSharedPtr<FJsonValue>> distortionCoefficients;
 	for (int i = 0; i < solvePoints.distortionCoefficients.Num(); i++)
-		distortionCoefficients.Add(MakeShareable(new FJsonValueNumber(solvePoints.distortionCoefficients[i])));
+		distortionCoefficients.Add(MakeShareable(new FJsonValueNumber(static_cast<float>(solvePoints.distortionCoefficients[i]))));
 
 	result->SetArrayField("distortioncoefficients", distortionCoefficients);
 	obj->SetObjectField("result", result);
