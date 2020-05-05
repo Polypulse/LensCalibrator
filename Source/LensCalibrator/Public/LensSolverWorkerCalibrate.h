@@ -14,11 +14,12 @@ public:
 	FLensSolverWorkerCalibrate(
 		FLensSolverWorkerParameters inputParameters,
 		QueueLatchInputDel * inputSignalLatch,
-		QueueCalibrationResultOutputDel inputOnSolvePointsDel
+		QueueCalibrationResultOutputDel * inputOnSolvePointsDel
 	);
 
 private:
-	QueueCalibrationResultOutputDel onSolvePointsDel;
+	QueueCalibrationResultOutputDel * onSolvePointsDel;
+
 	TQueue<TUniquePtr<FLatchData>> latchQueue;
 	FMatrix GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength);
 	FTransform GenerateTransformFromRAndTVecs(std::vector<cv::Mat>& rvecs, std::vector<cv::Mat>& tvecs);
@@ -27,8 +28,8 @@ private:
 
 	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
 	void QueueSolvedPoints(FCalibrationResult solvedPoints);
-	void QueueLatch(TUniquePtr<FLatchData> latchData);
-	void DequeueLatch(TUniquePtr<FLatchData>& latchData);
+	void QueueLatch(const FLatchData latchData);
+	void DequeueLatch(FLatchData& latchData);
 	bool LatchInqueue();
 
 protected:

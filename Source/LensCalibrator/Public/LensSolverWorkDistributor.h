@@ -10,28 +10,31 @@
 #include "Job.h"
 #include "LatchData.h"
 
-class LensSolverWorkDisttributor
+class LensSolverWorkDistributor
 {
 private:
 	mutable FCriticalSection threadLock;
 
-	TArray<FWorkerFindCornersInterfaceContainer> findCornersWorkers;
-	TArray<FWorkerCalibrateInterfaceContainer> calibrateWorkers;
+	TArray<TUniquePtr<FWorkerFindCornersInterfaceContainer>> findCornersWorkers;
+	TArray<TUniquePtr<FWorkerCalibrateInterfaceContainer>> calibrateWorkers;
 
 	TMap<FString, TUniquePtr<FFindCornerWorkerParameters>> jobFindCornerWorkerParameters;
 	TMap<FString, TUniquePtr<FCalibrationWorkerParameters>> jobCalibrationWorkerParameters;
 
+	TMap<FString, TQueue<TUniquePtr<FLensSolverCalibrateWorkUnit>>> exclusiveQueues;
 	TMap<FString, FJob> jobs;
-	void OnSolvedPoints(FCalibrationResult solvedPoints);
 
 protected:
 public:
 
-	void StartBackgroundWorkers(int findCornerWorkerCount, int calibrateWorkerCount, TSharedPtr<FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel> inputOnSolvedPointsDel);
+	void StartBackgroundWorkers(
+		int findCornerWorkerCount,
+		int calibrateWorkerCount,
+		FLensSolverWorkerParameters::QueueLogOutputDel* inputQueueLogOutputDel,
+		FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel * inputOnSolvedPointsDel);
+
 	void StopBackgroundWorkers();
 
 	FJobInfo RegisterJob (int latchedWorkUnitCount, UJobType jobType);
-
-	bool GetFindCornerWorkerParameters(TUniquePtr<FFindCornerWorkerParameters>& findCornerWorkerParameters);
-	bool GetCalibrationWorkerParameters(TUniquePtr<FCalibrationWorkerParameters>& calibrationWorkerParameters);
+	void QueueCalibrateWorkerUnit(TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnit);
 };

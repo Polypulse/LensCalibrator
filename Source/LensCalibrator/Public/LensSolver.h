@@ -13,9 +13,11 @@
 
 #include "SolvedPoints.h"
 #include "LensSolverWorker.h"
+#include "LensSolverWorkerCalibrate.h"
 #include "Job.h"
 #include "LatchData.h"
 #include "WorkerParameters.h"
+#include "LensSolverWorkDistributor.h"
 #include "OneTimeProcessParameters.h"
 
 #include "DistortionCorrectionMapGenerationParameters.h"
@@ -42,34 +44,25 @@ class LENSCALIBRATOR_API ULensSolver : public UActorComponent
 
 public:
 
-	/*
-	DECLARE_DELEGATE_OneParam(FSolvedPointsQueuedDel, bool)
-	DECLARE_DELEGATE_OneParam(FDequeueSolvedPointsDel, FCalibrationResult)
-	*/
-
 private:
 
 	FTexture2DRHIRef blitRenderTexture;
 	bool blitRenderTextureAllocated;
+
 	FTexture2DRHIRef distortionCorrectionRenderTexture;
 	bool distortionCorrectionRenderTextureAllocated;
+
 	FTexture2DRHIRef correctDistortedTextureRenderTexture;
 	bool correctDistortedTextureRenderTextureAllocated;
 
-	FLensSolverWorker::OnSolvePointsDel onSolvePointsDel;
+	FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel onSolvePointsDel;
+	FLensSolverWorkerParameters::QueueLogOutputDel queueLogOutputDel;
 
 	TSharedPtr<TQueue<FCalibrationResult>> queuedSolvedPointsPtr;
 	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;
 	TSharedPtr<TQueue<FCorrectedDistortedImageResults>> queuedCorrectedDistortedImageResults;
 
-	LensSolverWorkDisttributor workDistributor;
-	/**
-	TArray<FWorkerInterfaceContainer> workers;
-	int nextWorkerIndex;
-	TMap<FString, FJob> jobs;
-	*/
-
-	// int GetWorkerCount ();
+	LensSolverWorkDistributor workDistributor;
 
 	void RandomSortTArray(TArray<UTexture2D*>& arr);
 
@@ -78,14 +71,6 @@ private:
 		const FTextureZoomPair& inputTextureZoomPair,
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		const bool inputLatch);
-
-	/*
-	void BeginDetectPoints(
-		const FJobInfo inputJobInfo,
-		const UMediaTexture* inputMediaTexture,
-		const float inputZoomLevel,
-		FOneTimeProcessParameters oneTimeProcessParameters);
-	*/
 
 	void BeginDetectPoints(
 		const FJobInfo jobInfo,
@@ -101,14 +86,6 @@ private:
 		const FJobInfo jobInfo,
 		TArray<FTextureArrayZoomPair> & inputTextures,
 		FOneTimeProcessParameters oneTimeProcessParameters);
-
-	/*
-	void BeginDetectPoints(
-		const FJobInfo jobInfo,
-		TArray<UMediaTexture*> inputTextures,
-		TArray<float> inputZoomLevels,
-		FOneTimeProcessParameters oneTimeProcessParameters);
-	*/
 
 	void DetectPointsRenderThread(
 		FRHICommandListImmediate& RHICmdList,
@@ -129,16 +106,6 @@ private:
 		const FDistortTextureWithTextureParams distortionCorrectionParams,
 		const FString generatedOutputPath);
 
-	/*
-	void VisualizeCalibration(
-		FRHICommandListImmediate& RHICmdList, 
-		FSceneViewport* sceneViewport, 
-		UTexture2D * visualizationTexture, 
-		FCalibrationResult solvedPoints,
-		bool flipX,
-		bool flipY);
-	*/
-
 	bool ValidateZoom(const FJobInfo& jobInfo, const float zoomValue);
 	bool ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture, const int textureIndex, const FIntPoint targetResolution);
 	bool ValidateMediaTexture(const FJobInfo & jobInfo, const UMediaTexture* inputTexture);
@@ -148,6 +115,8 @@ private:
 	void PollCalibrationResults ();
 	void PollDistortionCorrectionMapGenerationResults ();
 	void PollCorrectedDistortedImageResults ();
+
+	void QueueLog(FString msg);
 
 protected:
 
@@ -175,28 +144,11 @@ public:
 	ULensSolver() 
 	{
 		onSolvePointsDel.BindUObject(this, ULensSolver::OnSolvedPoints);
+		queueLogOutputDel.BindUObject(this, ULensSolver::QueueLog);
 	}
-
-	/*
-	~ULensSolver() 
-	{
-	}
-	*/
-
-	// virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override {}
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
-
-
-	/*
-	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
-	void OneTimeProcessMediaTexture(
-		UMediaTexture* inputMediaTexture,
-		float normalizedZoomValue,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		FJobInfo & ouptutJobInfo);
-	*/
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void OneTimeProcessTextureZoomPair(
@@ -209,15 +161,6 @@ public:
 		TArray<FTextureZoomPair> textureZoomPairArray,
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
-
-	/*
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	void OneTimeProcessMediaTextureArray(
-		TArray<UMediaTexture*> inputTextures, 
-		TArray<float> normalizedZoomValues, 
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		FJobInfo & ouptutJobInfo);
-	*/
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void OneTimeProcessTextureArrayZoomPair(

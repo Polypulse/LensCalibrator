@@ -16,7 +16,7 @@ FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters inputParameters
 	inputParameters.inputQueueWorkUnitInputDel->BindRaw(this, &FLensSolverWorker::QueueWorkUnit);
 	inputParameters.inputGetWorkOutputLoadDel->BindRaw(this, &FLensSolverWorker::GetWorkLoad);
 	inputParameters.inputIsClosingOutputDel->BindRaw(this, &FLensSolverWorker::Exit);
-	inputParameters.inputQueueLogOutputDel->BindRaw(this, &FLensSolverWorker::Latch);
+	queueLogOutputDel = inputParameters.inputQueueLogOutputDel;
 
 	workerID = inputParameters.inputWorkerID;
 	workUnitCount = 0;

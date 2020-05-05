@@ -16,23 +16,22 @@ struct FWorkerInterfaceContainer
 {
 	GENERATED_BODY()
 
-	FAutoDeleteAsyncTask<FLensSolverWorker> * worker;
+	TUniquePtr<FAutoDeleteAsyncTask<FLensSolverWorker>> worker;
 
-	FLensSolverWorkerParameters::QueueLogOutputDel queueLogOutputDel;
 	FLensSolverWorkerParameters::GetWorkLoadOutputDel getWorkLoadDel;
 	FLensSolverWorkerParameters::QueueWorkUnitInputDel queueWorkUnitDel;
 	FLensSolverWorkerParameters::IsClosingOutputDel isClosingDel;
 };
 
 USTRUCT()
-struct FWorkerFindCornersInterfaceContainer
+struct FWorkerFindCornersInterfaceContainer : FWorkerInterfaceContainer
 {
 	GENERATED_BODY()
 	FLensSolverWorkerFindCorners::QueueFindCornerResultOutputDel queueFindCornerResultOutputDel;
 };
 
 USTRUCT()
-struct FWorkerCalibrateInterfaceContainer
+struct FWorkerCalibrateInterfaceContainer : FWorkerInterfaceContainer
 {
 	GENERATED_BODY()
 	FLensSolverWorkerCalibrate::QueueLatchInputDel signalLatch;

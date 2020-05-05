@@ -54,7 +54,7 @@ private:
 	TQueue<TUniquePtr<FLensSolverWorkUnit>> workQueue;
 	FCriticalSection threadLock;
 
-	QueueLogOutputDel* inputQueueLogOutputDel;
+	FLensSolverWorkerParameters::QueueLogOutputDel* queueLogOutputDel;
 
 	bool Exit ();
 

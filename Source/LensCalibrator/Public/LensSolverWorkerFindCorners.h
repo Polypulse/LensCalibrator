@@ -6,13 +6,14 @@
 class FLensSolverWorkerFindCorners : public FLensSolverWorker
 {
 public:
-	DECLARE_DELEGATE_OneParam(QueueFindCornerResultOutputDel, FLensSolverCalibrateWorkUnit)
+	DECLARE_DELEGATE_OneParam(QueueFindCornerResultOutputDel, TUniquePtr<FLensSolverCalibrateWorkUnit>)
 	FLensSolverWorkerFindCorners(
 		FLensSolverWorkerParameters inputParameters,
 		QueueFindCornerResultOutputDel * inputQueueFindCornerResultOutputDel
 	);
 
 private:
+	QueueFindCornerResultOutputDel* queueFindCornerResultOutputDel;
 	void WriteMatToFile(cv::Mat image, FString folder, FString fileName);
 
 protected:

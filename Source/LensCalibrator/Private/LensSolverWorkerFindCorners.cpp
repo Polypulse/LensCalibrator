@@ -1,5 +1,12 @@
 #include "LensSolverWorkerFindCorners.h"
 
+FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
+	FLensSolverWorkerParameters inputParameters,
+	QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel) : FLensSolverWorker(inputParameters)
+{
+	queueFindCornerResultOutputDel = inputQueueFindCornerResultOutputDel;
+}
+
 void FLensSolverWorkerFindCorners::Tick()
 {
 	FString workerMessage = FString::Printf(TEXT("Worker: (ID: %d): "), GetWorkerID());
@@ -151,12 +158,6 @@ bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixe
 
 	QueueLog(FString::Printf(TEXT("%Done copying pixel data, beginning calibration."), *workerMessage, pixels.Num(), resolution.X, resolution.Y));
 	return false;
-}
-
-FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
-	FLensSolverWorkerParameters inputParameters,
-	QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel) : FLensSolverWorker(inputParameters)
-{
 }
 
 void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString folder, FString fileName)

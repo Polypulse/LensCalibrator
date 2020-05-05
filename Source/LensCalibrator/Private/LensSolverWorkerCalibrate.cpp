@@ -4,8 +4,10 @@
 FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	FLensSolverWorkerParameters inputParameters,
 	QueueLatchInputDel* inputSignalLatch, 
-	QueueCalibrationResultOutputDel inputOnSolvePointsDel) : FLensSolverWorker(inputParameters)
+	QueueCalibrationResultOutputDel * inputOnSolvePointsDel) : FLensSolverWorker(inputParameters)
 {
+	inputSignalLatch->BindRaw(this, &FLensSolverWorkerCalibrate::QueueLatch);
+	onSolvePointsDel = inputOnSolvePointsDel;
 }
 
 FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength)
@@ -334,22 +336,20 @@ void FLensSolverWorkerCalibrate::QueueSolvedPointsError(FJobInfo jobInfo, float 
 	solvedPoints.zoomLevel = zoomLevel;
 	solvedPoints.success = false;
 
-	if (!onSolvePointsDel.IsBound())
+	if (!onSolvePointsDel->IsBound())
 		return;
-
-	onSolvePointsDel.Execute(solvedPoints);
+	onSolvePointsDel->Execute(solvedPoints);
 }
 
 void FLensSolverWorkerCalibrate::QueueSolvedPoints(FCalibrationResult solvedPoints)
 {
-	if (!onSolvePointsDel.IsBound())
+	if (!onSolvePointsDel->IsBound())
 		return;
-
-	onSolvePointsDel.Execute(solvedPoints);
+	onSolvePointsDel->Execute(solvedPoints);
 }
 
 
-void FLensSolverWorkerCalibrate::QueueLatch(TUniquePtr<FLatchData> latchData)
+void FLensSolverWorkerCalibrate::QueueLatch(const TUniquePtr<FLatchData> latchData)
 {
 	Lock();
 	Unlock();
