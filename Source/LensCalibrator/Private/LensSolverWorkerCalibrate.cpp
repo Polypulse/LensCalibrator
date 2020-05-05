@@ -97,18 +97,13 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (!LatchInqueue())
 		return;
 
-	TUniquePtr<FLatchData> latchData;
+	FLatchData latchData;
 	DequeueLatch(latchData);
-	if (!latchData.IsValid())
-	{
-		QueueLog(FString("(ERROR): NULL Latch in latch queue!"));
-		return;
-	}
 
 	std::vector<std::vector<cv::Point3f>> objectPoints;
 	std::vector<std::vector<cv::Point2f>> corners;
 
-	for (int i = 0; i < latchData->workUnitCount; i++)
+	for (int i = 0; i < latchData.workUnitCount; i++)
 	{
 		if (!WorkUnitInQueue())
 		{
@@ -141,17 +136,17 @@ void FLensSolverWorkerCalibrate::Tick()
 	std::vector<cv::Mat> rvecs, tvecs;
 	cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<float>::type);
 	cv::Mat distortionCoefficients = cv::Mat::zeros(5, 1, cv::DataType<float>::type);
-	cv::Size sourceImageSize(latchData->sourceResolution.X, latchData->sourceResolution.Y);
+	cv::Size sourceImageSize(latchData.sourceResolution.X, latchData.sourceResolution.Y);
 	cv::Point2d principalPoint = cv::Point2d(0.0, 0.0);
 	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
-	int sourcePixelWidth = latchData->sourceResolution.X;
-	int sourcePixelHeight = latchData->sourceResolution.Y;
+	int sourcePixelWidth = latchData.sourceResolution.X;
+	int sourcePixelHeight = latchData.sourceResolution.Y;
 
-	float sensorHeight = (latchData->sensorDiagonalMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
+	float sensorHeight = (latchData.sensorDiagonalMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
 	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
 
-	QueueLog(FString::Printf(TEXT("%sSensor size: (%f, %f) mm, diagonal: (%f) mm."), *workerMessage, sensorWidth, sensorHeight, latchData->sensorDiagonalMM));
+	QueueLog(FString::Printf(TEXT("%sSensor size: (%f, %f) mm, diagonal: (%f) mm."), *workerMessage, sensorWidth, sensorHeight, latchData.sensorDiagonalMM));
 
 	double fovX = 0.0f, fovY = 0.0f, focalLength = 0.0f;
 	double aspectRatio = 0.0f;
@@ -159,32 +154,32 @@ void FLensSolverWorkerCalibrate::Tick()
 	FMatrix perspectiveMatrix;
 
 	int flags = 0;
-	flags |= latchData->workerParameters.useInitialIntrinsicValues			?	cv::CALIB_USE_INTRINSIC_GUESS : 0;
-	flags |= latchData->workerParameters.keepPrincipalPixelPositionFixed	?	cv::CALIB_FIX_PRINCIPAL_POINT : 0;
-	flags |= latchData->workerParameters.keepAspectRatioFixed				?	cv::CALIB_FIX_ASPECT_RATIO : 0;
-	flags |= latchData->workerParameters.lensHasTangentalDistortion			?	cv::CALIB_ZERO_TANGENT_DIST : 0;
-	flags |= latchData->workerParameters.fixRadialDistortionCoefficientK1	?	cv::CALIB_FIX_K1 : 0;
-	flags |= latchData->workerParameters.fixRadialDistortionCoefficientK2	?	cv::CALIB_FIX_K2 : 0;
-	flags |= latchData->workerParameters.fixRadialDistortionCoefficientK3	?	cv::CALIB_FIX_K3 : 0;
-	flags |= latchData->workerParameters.fixRadialDistortionCoefficientK4	?	cv::CALIB_FIX_K4 : 0;
-	flags |= latchData->workerParameters.fixRadialDistortionCoefficientK5	?	cv::CALIB_FIX_K5 : 0;
-	flags |= latchData->workerParameters.fixRadialDistortionCoefficientK6	?	cv::CALIB_FIX_K6 : 0;
+	flags |= latchData.workerParameters.useInitialIntrinsicValues			?	cv::CALIB_USE_INTRINSIC_GUESS : 0;
+	flags |= latchData.workerParameters.keepPrincipalPixelPositionFixed		?	cv::CALIB_FIX_PRINCIPAL_POINT : 0;
+	flags |= latchData.workerParameters.keepAspectRatioFixed				?	cv::CALIB_FIX_ASPECT_RATIO : 0;
+	flags |= latchData.workerParameters.lensHasTangentalDistortion			?	cv::CALIB_ZERO_TANGENT_DIST : 0;
+	flags |= latchData.workerParameters.fixRadialDistortionCoefficientK1	?	cv::CALIB_FIX_K1 : 0;
+	flags |= latchData.workerParameters.fixRadialDistortionCoefficientK2	?	cv::CALIB_FIX_K2 : 0;
+	flags |= latchData.workerParameters.fixRadialDistortionCoefficientK3	?	cv::CALIB_FIX_K3 : 0;
+	flags |= latchData.workerParameters.fixRadialDistortionCoefficientK4	?	cv::CALIB_FIX_K4 : 0;
+	flags |= latchData.workerParameters.fixRadialDistortionCoefficientK5	?	cv::CALIB_FIX_K5 : 0;
+	flags |= latchData.workerParameters.fixRadialDistortionCoefficientK6	?	cv::CALIB_FIX_K6 : 0;
 
 	if (flags & cv::CALIB_USE_INTRINSIC_GUESS)
 	{
-		cameraMatrix.at<float>(0, 2) = latchData->initialPrincipalPointPixelPosition.X;
-		cameraMatrix.at<float>(1, 2) = latchData->initialPrincipalPointPixelPosition.Y;
+		cameraMatrix.at<float>(0, 2) = latchData.initialPrincipalPointPixelPosition.X;
+		cameraMatrix.at<float>(1, 2) = latchData.initialPrincipalPointPixelPosition.Y;
 		QueueLog(FString::Printf(TEXT("Setting initial principal point to: (%f, %f)"), 
-			latchData->initialPrincipalPointPixelPosition.X,
-			latchData->initialPrincipalPointPixelPosition.Y));
+			latchData.initialPrincipalPointPixelPosition.X,
+			latchData.initialPrincipalPointPixelPosition.Y));
 	}
 
 	else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 	{
-		cameraMatrix.at<float>(0, 0) = 1.0f / (latchData->sourceResolution.X * 0.5f);
-		cameraMatrix.at<float>(1, 1) = 1.0f / (latchData->sourceResolution.Y * 0.5f);
+		cameraMatrix.at<float>(0, 0) = 1.0f / (latchData.sourceResolution.X * 0.5f);
+		cameraMatrix.at<float>(1, 1) = 1.0f / (latchData.sourceResolution.Y * 0.5f);
 		QueueLog(FString::Printf(TEXT("%sKeeping aspect ratio at: %f"), 
-			(latchData->sourceResolution.X / (float)latchData->sourceResolution.Y)));
+			(latchData.sourceResolution.X / (float)latchData.sourceResolution.Y)));
 	}
 
 	double error = cv::calibrateCamera(
@@ -222,7 +217,7 @@ void FLensSolverWorkerCalibrate::Tick()
 		"\n\tAspect Ratio: %f\n)");
 
 	QueueLog(FString::Printf(*format,
-		latchData->zoomLevel,
+		latchData.zoomLevel,
 		error,
 		fovX,
 		fovY,
@@ -242,8 +237,8 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	FCalibrationResult solvedPoints;
 
-	solvedPoints.jobInfo = latchData->jobInfo;
-	solvedPoints.zoomLevel = latchData->zoomLevel;
+	solvedPoints.jobInfo = latchData.jobInfo;
+	solvedPoints.zoomLevel = latchData.zoomLevel;
 	solvedPoints.success = true;
 	solvedPoints.fovX = fovX;
 	solvedPoints.fovY = fovY;
@@ -251,12 +246,12 @@ void FLensSolverWorkerCalibrate::Tick()
 	solvedPoints.aspectRatio = aspectRatio;
 	solvedPoints.sensorSizeMM = FVector2D(sensorWidth, sensorHeight);
 	solvedPoints.principalPixelPoint = FVector2D(principalPoint.x, principalPoint.y);
-	solvedPoints.resolution = latchData->sourceResolution;
+	solvedPoints.resolution = latchData.sourceResolution;
 	solvedPoints.perspectiveMatrix = perspectiveMatrix;
 	solvedPoints.distortionCoefficients = outputDistortionCoefficients;
 
-	if (latchData->workerParameters.writeCalibrationResultsToFile)
-		WriteSolvedPointsToJSONFile(solvedPoints, latchData->workerParameters.calibrationResultsFolderPath, "result");
+	if (latchData.workerParameters.writeCalibrationResultsToFile)
+		WriteSolvedPointsToJSONFile(solvedPoints, latchData.workerParameters.calibrationResultsFolderPath, "result");
 
 	QueueLog(FString("Finished with work unit."));
 	QueueSolvedPoints(solvedPoints);
@@ -348,14 +343,12 @@ void FLensSolverWorkerCalibrate::QueueSolvedPoints(FCalibrationResult solvedPoin
 	onSolvePointsDel->Execute(solvedPoints);
 }
 
-
-void FLensSolverWorkerCalibrate::QueueLatch(const TUniquePtr<FLatchData> latchData)
+void FLensSolverWorkerCalibrate::QueueLatch(const FLatchData latchData)
 {
-	Lock();
-	Unlock();
+	latchQueue.Enqueue(latchData);
 }
 
-void FLensSolverWorkerCalibrate::DequeueLatch(TUniquePtr<FLatchData>& latchData)
+void FLensSolverWorkerCalibrate::DequeueLatch(FLatchData& latchData)
 {
 	latchQueue.Dequeue(latchData);
 }

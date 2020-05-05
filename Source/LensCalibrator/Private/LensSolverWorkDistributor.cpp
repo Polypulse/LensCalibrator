@@ -12,6 +12,7 @@ void LensSolverWorkDistributor::StartBackgroundWorkers(
 		return;
 	}
 
+	queueLogOutputDel = inputQueueLogOutputDel;
 	threadLock.Lock();
 
 	for (int i = 0; i < findCornerWorkerCount; i++)

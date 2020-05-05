@@ -48,6 +48,9 @@ void FLensSolverWorker::DequeueWorkUnit(TUniquePtr<FLensSolverWorkUnit>& workUni
 
 void FLensSolverWorker::QueueLog(FString log)
 {
+	if (!queueLogOutputDel->IsBound())
+		return;
+	queueLogOutputDel->Execute(log);
 }
 
 int FLensSolverWorker::GetWorkerID()

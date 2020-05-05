@@ -62,6 +62,8 @@ private:
 	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;
 	TSharedPtr<TQueue<FCorrectedDistortedImageResults>> queuedCorrectedDistortedImageResults;
 
+	TQueue<FString> logQueue;
+
 	LensSolverWorkDistributor workDistributor;
 
 	void RandomSortTArray(TArray<UTexture2D*>& arr);
@@ -112,6 +114,7 @@ private:
 	bool ValidateOneTimeProcessParameters(const FOneTimeProcessParameters& oneTimeProcessParameters);
 	void ReturnErrorSolvedPoints(FJobInfo jobInfo);
 
+	void PollLogs();
 	void PollCalibrationResults ();
 	void PollDistortionCorrectionMapGenerationResults ();
 	void PollCorrectedDistortedImageResults ();
@@ -197,7 +200,7 @@ public:
 		FDistortTextureWithCoefficientsParams distortionCorrectionParams);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	void StartBackgroundImageProcessors(int workerCount);
+	void StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StopBackgroundImageprocessors();

@@ -14,6 +14,7 @@ class LensSolverWorkDistributor
 {
 private:
 	mutable FCriticalSection threadLock;
+	FLensSolverWorkerParameters::QueueLogOutputDel* queueLogOutputDel;
 
 	TArray<TUniquePtr<FWorkerFindCornersInterfaceContainer>> findCornersWorkers;
 	TArray<TUniquePtr<FWorkerCalibrateInterfaceContainer>> calibrateWorkers;

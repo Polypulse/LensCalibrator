@@ -852,6 +852,16 @@ void ULensSolver::ReturnErrorSolvedPoints(FJobInfo jobInfo)
 	this->DequeueSolvedPoints(solvedPoints);
 }
 
+void ULensSolver::PollLogs()
+{
+	while (!logQueue.IsEmpty())
+	{
+		FString msg;
+		logQueue.Dequeue(msg);
+		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);
+	}
+}
+
 void ULensSolver::PollCalibrationResults()
 {
 	if (!queuedSolvedPointsPtr.IsValid())
@@ -958,6 +968,11 @@ void ULensSolver::PollCorrectedDistortedImageResults()
 
 		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
 	}
+}
+
+void ULensSolver::QueueLog(FString msg)
+{
+	logQueue.Enqueue(msg);
 }
 
 bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* mediaTexture, FString url)
@@ -1248,63 +1263,14 @@ void ULensSolver::OneTimeProcessMediaTextureArray(
 }
 */
 
-void ULensSolver::StartBackgroundImageProcessors(int workerCount)
+void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
 {
-	if (workerCount <= 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Start Background Image Processors was called with 0 requested workers."));
-		return;
-	}
-
-	threadLock.Lock();
-	onSolvePointsDel.BindUObject(this, &ULensSolver::OnSolvedPoints);
-	for (int i = 0; i < workerCount; i++)
-	{
-		FWorkerInterfaceContainer workerInterfaceContainer;
-
-		UE_LOG(LogTemp, Log, TEXT("Starting lens solver worker: %d"), i);
-
-		workerInterfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorker>(
-			&workerInterfaceContainer.isClosingDel,
-			&workerInterfaceContainer.getWorkLoadDel, 
-			&workerInterfaceContainer.queueWorkUnitDel,
-			&workerInterfaceContainer.signalLatch,
-			onSolvePointsDel,
-			i);
-
-		workerInterfaceContainer.worker->StartBackgroundTask();
-		workers.Add(workerInterfaceContainer);
-	}
-
-	threadLock.Unlock();
+	workDistributor.StartBackgroundWorkers(findCornersWorkerCount, calibrateWorkerCount, &queueLogOutputDel, &onSolvePointsDel);
 }
 
 void ULensSolver::StopBackgroundImageprocessors()
 {
-	threadLock.Lock();
-	if (workers.Num() > 0)
-	{
-		for (int i = 0; i < workers.Num(); i++)
-		{
-			if (workers[i].isClosingDel.IsBound())
-			{
-				workers[i].isClosingDel.Execute();
-				workers[i].isClosingDel.Unbind();
-			}
-
-			if (workers[i].getWorkLoadDel.IsBound())
-				workers[i].getWorkLoadDel.Unbind();
-
-			if (workers[i].queueWorkUnitDel.IsBound())
-				workers[i].queueWorkUnitDel.Unbind();
-		}
-
-		workers.Empty();
-	}
-
-	if (queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr->Empty();
-	threadLock.Unlock();
+	workDistributor.StopBackgroundWorkers();
 }
 
 /*

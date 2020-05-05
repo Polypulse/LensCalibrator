@@ -20,7 +20,7 @@ public:
 private:
 	QueueCalibrationResultOutputDel * onSolvePointsDel;
 
-	TQueue<TUniquePtr<FLatchData>> latchQueue;
+	TQueue<FLatchData> latchQueue;
 	FMatrix GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength);
 	FTransform GenerateTransformFromRAndTVecs(std::vector<cv::Mat>& rvecs, std::vector<cv::Mat>& tvecs);
 	void WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, const FString fileName);
