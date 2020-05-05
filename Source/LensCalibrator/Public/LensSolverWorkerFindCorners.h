@@ -1,13 +1,22 @@
 #pragma once
+#include "CoreMinimal.h"
+#include "CoreTypes.h"
 #include "LensSolverWorker.h"
 
 class FLensSolverWorkerFindCorners : public FLensSolverWorker
 {
+public:
+	DECLARE_DELEGATE_OneParam(QueueFindCornerResultOutputDel, FLensSolverCalibrateWorkUnit)
+	FLensSolverWorkerFindCorners(
+		FLensSolverWorkerParameters inputParameters,
+		QueueFindCornerResultOutputDel * inputQueueFindCornerResultOutputDel
+	);
+
 private:
+	void WriteMatToFile(cv::Mat image, FString folder, FString fileName);
+
 protected:
 	virtual void Tick() override;
-	virtual bool GetImage(cv::Mat& image) = 0;
-public:
-	// virtual void QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit) = 0;
-	// virtual bool WorkUnitInQueue() = 0;
+	bool GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution);
+	bool GetImageFromArray(const TArray<FColor> & pixels, const FIntPoint resolution, cv::Mat& image);
 };

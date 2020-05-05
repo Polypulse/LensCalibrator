@@ -3,7 +3,9 @@
 #include "CoreTypes.h"
 #include "CoreMinimal.h"
 
-#include "LenssolverWorker.h"
+#include "LensSolverWorker.h"
+#include "LensSolverWorkerCalibrate.h"
+#include "LensSolverWorkerFindcorners.h"
 #include "LatchData.h"
 #include "LensSolverWorkUnit.h"
 
@@ -16,20 +18,22 @@ struct FWorkerInterfaceContainer
 
 	FAutoDeleteAsyncTask<FLensSolverWorker> * worker;
 
-	FLensSolverWorker::GetWorkLoadDel getWorkLoadDel;
-	FLensSolverWorker::QueueWorkUnitDel queueWorkUnitDel;
-	FLensSolverWorker::IsClosingDel isClosingDel;
-	FLensSolverWorker::SignalLatchDel signalLatch;
+	FLensSolverWorkerParameters::QueueLogOutputDel queueLogOutputDel;
+	FLensSolverWorkerParameters::GetWorkLoadOutputDel getWorkLoadDel;
+	FLensSolverWorkerParameters::QueueWorkUnitInputDel queueWorkUnitDel;
+	FLensSolverWorkerParameters::IsClosingOutputDel isClosingDel;
 };
 
 USTRUCT()
 struct FWorkerFindCornersInterfaceContainer
 {
 	GENERATED_BODY()
+	FLensSolverWorkerFindCorners::QueueFindCornerResultOutputDel queueFindCornerResultOutputDel;
 };
 
 USTRUCT()
 struct FWorkerCalibrateInterfaceContainer
 {
 	GENERATED_BODY()
+	FLensSolverWorkerCalibrate::QueueLatchInputDel signalLatch;
 };

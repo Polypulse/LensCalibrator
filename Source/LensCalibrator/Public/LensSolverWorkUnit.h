@@ -14,24 +14,51 @@
 
 #include "LensSolverWorkUnit.generated.h"
 
+UENUM(BlueprintType)
+enum ELensSolverWorkUnitType
+{
+	PixelArray,
+	TextureFile,
+	Calibrate
+};
+
 USTRUCT(BlueprintType)
 struct FLensSolverWorkUnit
 {
 	FString jobID;
 	FString calibrationID;
 	FString friendlyName;
+
+	ELensSolverWorkUnitType workUnitType;
+
 	int index;
 };
 
-USTRUCT(BlueprintType)
 struct FLensSolverTextureWorkUnit : FLensSolverWorkUnit
 {
 	GENERATED_BODY()
+	float resizePercentage;
+	bool resize;
+
+	bool exhaustiveSearch;
+	bool writeDebugTextureToFile;
+
+	float checkerBoardSquareSizeMM;
+	FIntPoint checkerBoardCornerCount;
+
+	FString debugTextureFolderPath;
+};
+
+USTRUCT(BlueprintType)
+struct FLensSolverPixelArrayWorkUnit : FLensSolverTextureWorkUnit
+{
+	GENERATED_BODY()
+	FIntPoint sourceResolution;
 	TArray<FColor> pixels;
 };
 
 USTRUCT(BlueprintType)
-struct FLensSolverFileWorkUnit : FLensSolverWorkUnit
+struct FLensSolverTextureFileWorkUnit : FLensSolverTextureWorkUnit
 {
 	GENERATED_BODY()
 	FString absoluteFilePath;
@@ -42,6 +69,6 @@ struct FLensSolverCalibrateWorkUnit : FLensSolverWorkUnit
 {
 	GENERATED_BODY()
 
-	std::vector<std::vector<cv::Point2f>> corners;
-	std::vector<std::vector<cv::Point3f>> objectPoints;
+	std::vector<cv::Point2f> corners;
+	std::vector<cv::Point3f> objectPoints;
 };

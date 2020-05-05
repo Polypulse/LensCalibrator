@@ -56,18 +56,20 @@ private:
 	FTexture2DRHIRef correctDistortedTextureRenderTexture;
 	bool correctDistortedTextureRenderTextureAllocated;
 
+	FLensSolverWorker::OnSolvePointsDel onSolvePointsDel;
+
 	TSharedPtr<TQueue<FCalibrationResult>> queuedSolvedPointsPtr;
 	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;
 	TSharedPtr<TQueue<FCorrectedDistortedImageResults>> queuedCorrectedDistortedImageResults;
 
-	mutable FCriticalSection threadLock;
+	LensSolverWorkDisttributor workDistributor;
+	/**
 	TArray<FWorkerInterfaceContainer> workers;
 	int nextWorkerIndex;
 	TMap<FString, FJob> jobs;
+	*/
 
-	FJobInfo RegisterJob (int latchedWorkUnitCount, UJobType jobType);
-
-	int GetWorkerCount ();
+	// int GetWorkerCount ();
 
 	void RandomSortTArray(TArray<UTexture2D*>& arr);
 
@@ -170,13 +172,12 @@ protected:
 
 public:
 
-	FLensSolverWorker::OnSolvePointsDel onSolvePointsDel;
-
-	/*
 	ULensSolver() 
 	{
+		onSolvePointsDel.BindUObject(this, ULensSolver::OnSolvedPoints);
 	}
 
+	/*
 	~ULensSolver() 
 	{
 	}

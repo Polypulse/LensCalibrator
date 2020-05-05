@@ -1354,7 +1354,6 @@ void ULensSolver::Poll()
 	}
 	*/
 }
-
 void ULensSolver::OnSolvedPoints(FCalibrationResult solvedPoints)
 {
 	if (!queuedSolvedPointsPtr.IsValid())

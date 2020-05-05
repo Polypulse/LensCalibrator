@@ -3,7 +3,7 @@
 #include "CoreTypes.h"
 
 #include "JobInfo.h"
-#include "WorkerParameters.h"
+#include "CalibrationWorkerParameters.h"
 
 #include "LatchData.generated.h"
 
@@ -13,15 +13,19 @@ struct FLatchData
 	GENERATED_BODY()
 
 	FJobInfo jobInfo;
-	FWorkerParameters workerParameters;
-	int imageCount;
+	FCalibrationWorkerParameters workerParameters;
+	int workUnitCount;
+
 	float zoomLevel;
-	FIntPoint sourceResolution;
+
+	float sensorDiagonalMM;
+
 	bool resize;
 	float resizePercentage;
-	FIntPoint cornerCount;
-	float squareSizeMM;
-	float sensorDiagonalMM;
+
+	FIntPoint sourceResolution;
+	FIntPoint resizeResolution;
+
 	FIntPoint initialPrincipalPointPixelPosition;
 	// float initialVerticalFieldOfView;
 

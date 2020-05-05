@@ -19,61 +19,48 @@
 
 #include "JobInfo.h"
 #include "LatchData.h"
-#include "WorkerParameters.h"
+#include "LensSolverUtilities.h"
 #include "LensSolverWorkUnit.h"
 #include "LensSolverWorker.generated.h"
+
+USTRUCT(BlueprintType)
+struct FLensSolverWorkerParameters 
+{
+	GENERATED_BODY()
+
+	DECLARE_DELEGATE_OneParam(QueueLogOutputDel, FString)
+	DECLARE_DELEGATE_RetVal(int, GetWorkLoadOutputDel)
+	DECLARE_DELEGATE_RetVal(bool, IsClosingOutputDel)
+	DECLARE_DELEGATE_OneParam(QueueWorkUnitInputDel, TUniquePtr<FLensSolverWorkUnit>)
+
+	QueueLogOutputDel* inputQueueLogOutputDel;
+	IsClosingOutputDel* inputIsClosingOutputDel;
+	GetWorkLoadOutputDel* inputGetWorkOutputLoadDel;
+	QueueWorkUnitInputDel* inputQueueWorkUnitInputDel;
+	int inputWorkerID;
+};
 
 class FLensSolverWorker : public FNonAbandonableTask
 {
 	friend class FAutoDeleteAsyncTask<FLensSolverWorker>;
 
 public:
-	DECLARE_DELEGATE_OneParam(OnSolvePointsDel, FCalibrationResult)
-	DECLARE_DELEGATE_OneParam(QueueLogDel, FString)
-	DECLARE_DELEGATE_RetVal(int, GetWorkLoadDel)
-	DECLARE_DELEGATE_OneParam(QueueWorkUnitDel, FLensSolverTextureWorkUnit)
-	DECLARE_DELEGATE_OneParam(SignalLatchDel, const FLatchData)
-	DECLARE_DELEGATE_RetVal(bool, IsClosingDel)
 
 private:
-	FString calibrationVisualizationOutputPath;
-
-	OnSolvePointsDel onSolvePointsDel;
-	TQueue<FLensSolverWorkUnit> workQueue;
-	TQueue<FLatchData> latchQueue;
-
 	int workerID;
 	mutable int workUnitCount;
 	mutable bool flagToExit;
 
+	TQueue<TUniquePtr<FLensSolverWorkUnit>> workQueue;
 	FCriticalSection threadLock;
 
-	// static UTexture2D * CreateTexture2D(TArray<uint8> * rawData, int width, int height);
+	QueueLogOutputDel* inputQueueLogOutputDel;
 
-	void TransformVectorFromCVToUE4(FVector& v);
-	FMatrix GeneratePerspectiveMatrixFromFocalLength (cv::Size & imageSize, cv::Point2d principlePoint, float focalLength);
-	FTransform GenerateTransformFromRAndTVecs (std::vector<cv::Mat> & rvecs, std::vector<cv::Mat> & tvecs);
-	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
-	void QueueSolvedPoints(FCalibrationResult solvedPoints);
 	bool Exit ();
-	void WriteMatToFile(cv::Mat image, FString folder, FString fileName, const FString & workerMessage);
-	void WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, FString fileName, const FString workerMessage);
 
 public:
-	FLensSolverWorker(
-		IsClosingDel * inputIsClosingDel,
-		GetWorkLoadDel * inputGetWorkLoadDel,
-		QueueWorkUnitDel * inputQueueWorkUnitDel,
-		SignalLatchDel * inputSignalLatch,
-		OnSolvePointsDel inputOnSolvePointsDel,
-		int inputWorkerID);
-
-	~FLensSolverWorker() 
-	{
-		// workQueue.Empty();
-		// onSolvePointsDel.Unbind();
-		// exited = true;
-	}
+	FLensSolverWorker(FLensSolverWorkerParameters inputParameters);
+	~FLensSolverWorker() {}
 
 	FORCEINLINE TStatId GetStatId() const
 	{
@@ -83,18 +70,20 @@ public:
 	int GetWorkerID();
 
 protected:
+
+	const FString calibrationVisualizationOutputPath;
+	const FString workerMessage;
 	
 	void DoWork();
 	virtual void Tick() = 0;
-	bool ShouldExit();
 
+	bool ShouldExit();
 	void Lock();
 	void Unlock();
-
 	int GetWorkLoad ();
-	virtual void QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit) = 0;
-	virtual bool WorkUnitInQueue() = 0;
 	void QueueLog(FString log);
 
-	void Latch(const FLatchData inputLatchData);
+	virtual void QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit) = 0;
+	virtual bool WorkUnitInQueue() = 0;
+	void DequeueWorkUnit(TUniquePtr<FLensSolverWorkUnit>& workUnit);
 };
