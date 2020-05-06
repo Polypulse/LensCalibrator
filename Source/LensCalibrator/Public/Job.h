@@ -19,10 +19,7 @@ struct FJob
 	FJobInfo jobInfo;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	TMap<FString, int> expectedImageCount;
-
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	TMap<FString, int> currentImageCount;
+	TMap<FString, TPair<int, int>> expectedAndCurrentImageCounts;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	int expectedResultCount;

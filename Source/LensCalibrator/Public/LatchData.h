@@ -12,7 +12,7 @@ struct FLatchData
 {
 	GENERATED_BODY()
 
-	FJobInfo jobInfo;
+	FString jobID;
 	FString calibrationID;
 
 	FCalibrationWorkerParameters workerParameters;

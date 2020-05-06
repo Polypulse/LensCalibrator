@@ -81,20 +81,18 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 }
 
 FJobInfo LensSolverWorkDistributor::RegisterJob(
-	TArray<int> expectedImageCounts,
-	int expectedResultCount,
-	UJobType jobType)
+	const TArray<int> & expectedImageCounts,
+	const int expectedResultCount,
+	const UJobType jobType)
 {
 	TArray<FString> calibrationIDs;
-	TMap<FString, int> mapOfExpectedImageCounts;
-	TMap<FString, int> mapOfCurrentImageCounts;
+	TMap<FString, TPair<int, int>> mapOfExpectedAndCurrentImageCounts;
 
 	calibrationIDs.SetNum(expectedImageCounts.Num());
 	for (int i = 0; i < calibrationIDs.Num(); i++)
 	{
 		calibrationIDs[i] = FGuid::NewGuid().ToString();
-		mapOfExpectedImageCounts.Add(calibrationIDs[i], expectedResultCount[i]);
-		mapOfCurrentImageCounts.Add(calibrationIDs[i], 0);
+		mapOfExpectedAndCurrentImageCounts.Add(calibrationIDs[i], TPair<int, int>(expectedImageCounts[i], 0));
 	}
 
 	FJobInfo jobInfo;
@@ -107,13 +105,14 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 	FJob job;
 	{
 		job.jobInfo = jobInfo;
-		job.expectedImageCount = mapOfExpectedImageCounts;
-		job.currentImageCount = mapOfCurrentImageCounts;
+		job.expectedAndCurrentImageCounts = mapOfExpectedAndCurrentImageCounts;
 		job.expectedResultCount = expectedResultCount;
 		job.currentResultCount = 0;
 	}
 
+	threadLock.Lock();
 	jobs.Add(jobInfo.jobID, job);
+	threadLock.Unlock();
 
 	return jobInfo;
 }
@@ -198,6 +197,14 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(TUniquePtr<FLensSolverCal
 	}
 	
 	interfaceContainerPtr->queueWorkUnitDel.Execute(MoveTemp(calibrateWorkUnit));
+	if (IterateImageCount(calibrateWorkUnit->jobID, calibrateWorkUnit->jobID))
+	{
+		FLatchData latchData;
+		latchData.jobID = calibrateWorkUnit->jobID;
+		latchData.calibrationID = calibrateWorkUnit->calibrationID;
+
+		LatchCalibrateWorker(latchData);
+	}
 }
 
 void LensSolverWorkDistributor::LatchCalibrateWorker(const FLatchData& latchData)
@@ -287,6 +294,27 @@ bool LensSolverWorkDistributor::GetCalibrateWorkerInterfaceContainerPtr(
 	}
 
 	return true;
+}
+
+bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const FString& calibrationID)
+{
+	threadLock.Lock();
+	FJob* job = jobs.Find(jobID);
+	if (job == nullptr)
+	{
+		QueueLogAsync(FString::Printf(TEXT("Cannot iterate image count, no job with ID: \"%s\" registered."), *jobID));
+		return false;
+	}
+
+	TPair<int, int>* expectedAndCurrentImageCount = job->expectedAndCurrentImageCounts.Find(calibrationID);
+	expectedAndCurrentImageCount->Value++;
+
+	if (expectedAndCurrentImageCount->Key <= expectedAndCurrentImageCount->Value)
+		return true;
+
+	threadLock.Unlock();
+
+	return false;
 }
 
 void LensSolverWorkDistributor::SortFindCornersWorkersByWorkLoad()

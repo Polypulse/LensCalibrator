@@ -1096,7 +1096,11 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		return;
 	}
 
-	FJobInfo jobInfo = workDistributor.RegisterJob(inputTextures.Num(), OneTime);
+	TArray<TArray<FString>> imageFiles;
+	TArray<int> expectedImageCounts;
+
+	imageFiles.SetNum(inputTextures.Num());
+	expectedImageCounts.SetNum(inputTextures.Num());
 
 	for (int ti = 0; ti < inputTextures.Num(); ti++)
 	{
@@ -1106,19 +1110,19 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		if (!inputTextures[ti].use)
 			continue;
 
-		if (!LensSolverUtilities::GetFilesInFolder(inputTextures[ti].absoluteFolderPath, imagesInDirectory))
+		if (!LensSolverUtilities::GetFilesInFolder(inputTextures[ti].absoluteFolderPath, imageFiles[ti]))
 			return;
 
-		if (imagesInDirectory.Num() == 0)
+		if (imageFiles[ti].Num() == 0)
 		{
 			UE_LOG(LogTemp, Error, TEXT("No textures in directory: \"%s\", canceled job."), *inputTextures[ti].absoluteFolderPath);
 			return;
 		}
 
-		for (int i = 0; i < imagesInDirectory.Num(); i++)
-		{
-		}
+		expectedImageCounts[ti] = imageFiles[ti].Num();
 	}
+
+	FJobInfo jobInfo = workDistributor.RegisterJob(expectedImageCounts, inputTextures.Num(), OneTime);
 
 	/*
 	TArray<FTextureArrayZoomPair> textureArrayZoomPairs;

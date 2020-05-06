@@ -39,6 +39,9 @@ private:
 	bool GetCalibrateWorkerInterfaceContainerPtr(
 		const FString& calibrationID,
 		TUniquePtr<FWorkerCalibrateInterfaceContainer> *& interfaceContainerUniquePtr);
+
+	bool IterateImageCount(const FString & jobID, const FString& calibrationID);
+
 	void SortFindCornersWorkersByWorkLoad();
 	void SortCalibrateWorkersByWorkLoad();
 
@@ -67,7 +70,7 @@ public:
 	int GetCalibrateCount();
 
 	FJobInfo RegisterJob (
-		TArray<int> expectedImageCounts,
-		int expectedResultCount,
-		UJobType jobType);
+		const TArray<int> & expectedImageCounts,
+		const int expectedResultCount,
+		const UJobType jobType);
 };
