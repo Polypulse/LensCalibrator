@@ -21,7 +21,7 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 		workerParameters.inputGetWorkOutputLoadDel	= &interfaceContianer->getWorkLoadDel;
 		workerParameters.inputQueueWorkUnitInputDel = &interfaceContianer->queueWorkUnitDel;
 
-		interfaceContianer->queueFindCornerResultOutputDel.BindRaw(this, LensSolverWorkDistributor::QueueCalibrateWorkUnit);
+		interfaceContianer->queueFindCornerResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
 
 		FString guid = FGuid::NewGuid().ToString();
 		interfaceContianer->workerID = guid;
@@ -144,7 +144,7 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 		return;
 	}
 
-	interfaceContainer->queueWorkUnitDel.Execute(MoveTemp(pixelArrayWorkUnit));
+	interfaceContainer->queueWorkUnitDel.Execute(&pixelArrayWorkUnit);
 }
 
 void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, TUniquePtr<FLensSolverTextureFileWorkUnit> textureFileWorkUnit)
@@ -174,19 +174,13 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 		return;
 	}
 
-	interfaceContainer->queueWorkUnitDel.Execute(MoveTemp(textureFileWorkUnit));
+	interfaceContainer->queueWorkUnitDel.Execute(&textureFileWorkUnit);
 }
 
-void LensSolverWorkDistributor::QueueCalibrateWorkUnit(TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnit)
+void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit)
 {
-	if (!calibrateWorkUnit.IsValid())
-	{
-		QueueLogAsync("(ERROR): Received NULL LensSolverCalibrateWorkUnit from FindCornerWorker!");
-		return;
-	}
-
 	TUniquePtr<FWorkerCalibrateInterfaceContainer>* interfaceContainerUniquePtr;
-	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit->calibrationID, interfaceContainerUniquePtr))
+	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseUnit.calibrationID, interfaceContainerUniquePtr))
 		return;
 	FWorkerCalibrateInterfaceContainer* interfaceContainerPtr = interfaceContainerUniquePtr->Get();
 
@@ -196,12 +190,11 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(TUniquePtr<FLensSolverCal
 		return;
 	}
 	
-	interfaceContainerPtr->queueWorkUnitDel.Execute(MoveTemp(calibrateWorkUnit));
-	if (IterateImageCount(calibrateWorkUnit->jobID, calibrateWorkUnit->jobID))
+	if (IterateImageCount(calibrateWorkUnit.baseUnit.jobID, calibrateWorkUnit.baseUnit.jobID))
 	{
 		FLatchData latchData;
-		latchData.jobID = calibrateWorkUnit->jobID;
-		latchData.calibrationID = calibrateWorkUnit->calibrationID;
+		latchData.jobID = calibrateWorkUnit.baseUnit.jobID;
+		latchData.calibrationID = calibrateWorkUnit.baseUnit.calibrationID;
 
 		LatchCalibrateWorker(latchData);
 	}

@@ -3,11 +3,12 @@
 
 FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	FLensSolverWorkerParameters inputParameters,
-	QueueLatchInputDel* inputSignalLatch, 
-	QueueCalibrationResultOutputDel * inputOnSolvePointsDel) : FLensSolverWorker(inputParameters)
+	const QueueLatchInputDel* inputSignalLatch, 
+	const QueueCalibrationResultOutputDel * inputOnSolvePointsDel) : 
+	onSolvePointsDel(inputOnSolvePointsDel),
+	FLensSolverWorker(inputParameters)
 {
 	inputSignalLatch->BindRaw(this, &FLensSolverWorkerCalibrate::QueueLatch);
-	onSolvePointsDel = inputOnSolvePointsDel;
 }
 
 FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength)
@@ -119,15 +120,13 @@ void FLensSolverWorkerCalibrate::Tick()
 	int sourcePixelWidth = latchData.sourceResolution.X;
 	int sourcePixelHeight = latchData.sourceResolution.Y;
 
-	float sensorHeight = (latchData.sensorDiagonalMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
+	float sensorHeight = (latchData.workerParameters.sensorDiagonalSizeMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
 	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
 
-	QueueLog(FString::Printf(TEXT("%sSensor size: (%f, %f) mm, diagonal: (%f) mm."), *workerMessage, sensorWidth, sensorHeight, latchData.sensorDiagonalMM));
+	QueueLog(FString::Printf(TEXT("%sSensor size: (%f, %f) mm, diagonal: (%f) mm."), *workerMessage, sensorWidth, sensorHeight, latchData.workerParameters.sensorDiagonalSizeMM));
 
 	double fovX = 0.0f, fovY = 0.0f, focalLength = 0.0f;
 	double aspectRatio = 0.0f;
-
-	FMatrix perspectiveMatrix;
 
 	int flags = 0;
 	flags |= latchData.workerParameters.useInitialIntrinsicValues			?	cv::CALIB_USE_INTRINSIC_GUESS : 0;
@@ -143,11 +142,11 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	if (flags & cv::CALIB_USE_INTRINSIC_GUESS)
 	{
-		cameraMatrix.at<float>(0, 2) = latchData.initialPrincipalPointPixelPosition.X;
-		cameraMatrix.at<float>(1, 2) = latchData.initialPrincipalPointPixelPosition.Y;
+		cameraMatrix.at<float>(0, 2) = latchData.workerParameters.initialPrincipalPointPixelPosition.X;
+		cameraMatrix.at<float>(1, 2) = latchData.workerParameters.initialPrincipalPointPixelPosition.Y;
 		QueueLog(FString::Printf(TEXT("Setting initial principal point to: (%f, %f)"), 
-			latchData.initialPrincipalPointPixelPosition.X,
-			latchData.initialPrincipalPointPixelPosition.Y));
+			latchData.workerParameters.initialPrincipalPointPixelPosition.X,
+			latchData.workerParameters.initialPrincipalPointPixelPosition.Y));
 	}
 
 	else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
@@ -213,7 +212,8 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	FCalibrationResult solvedPoints;
 
-	solvedPoints.jobInfo = latchData.jobInfo;
+	solvedPoints.jobID = latchData.jobID;
+	solvedPoints.calibrationID = latchData.calibrationID;
 	solvedPoints.zoomLevel = latchData.zoomLevel;
 	solvedPoints.success = true;
 	solvedPoints.fovX = fovX;
@@ -242,18 +242,17 @@ int FLensSolverWorkerCalibrate::GetWorkLoad()
 	return count;
 }
 
-void FLensSolverWorkerCalibrate::QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit)
+void FLensSolverWorkerCalibrate::QueueWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit)
 {
 	Lock();
-	TQueue<TUniquePtr<FLensSolverCalibrateWorkUnit>> * queue = workQueue.Find(workUnit->calibrationID);
+	TQueue<FLensSolverCalibrateWorkUnit> * queue = workQueue.Find(calibrateWorkUnit.baseUnit.calibrationID);
 	if (queue == nullptr)
 	{
-		workQueue.Add(workUnit->calibrationID, TQueue<TUniquePtr<FLensSolverCalibrateWorkUnit>>());
-		queue = workQueue.Find(workUnit->calibrationID);
+		workQueue.Add(calibrateWorkUnit.baseUnit.calibrationID, TQueue<FLensSolverCalibrateWorkUnit>());
+		queue = workQueue.Find(calibrateWorkUnit.baseUnit.calibrationID);
 	}
 
-	TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnit = static_cast<TUniquePtr<FLensSolverCalibrateWorkUnit>>(MoveTemp(workUnit));
-	queue->Enqueue(MoveTemp(calibrateWorkUnit));
+	queue->Enqueue(calibrateWorkUnit);
 	Unlock();
 }
 
@@ -264,7 +263,7 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 {
 	Lock();
 
-	TQueue<TUniquePtr<FLensSolverCalibrateWorkUnit>> * queue = workQueue.Find(calibrationID);
+	TQueue<FLensSolverCalibrateWorkUnit> * queue = workQueue.Find(calibrationID);
 	if (queue == nullptr)
 	{
 		QueueLog(FString::Printf(TEXT("No work units in calibration queue with ID: \"%s\"."), *calibrationID));
@@ -273,17 +272,17 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 
 	while (!queue->IsEmpty())
 	{
-		TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnit;
+		FLensSolverCalibrateWorkUnit calibrateWorkUnit;
 		queue->Dequeue(calibrateWorkUnit);
 
-		if (calibrateWorkUnit->corners.size() == 0 || calibrateWorkUnit->objectPoints.size() == 0)
+		if (calibrateWorkUnit.corners.size() == 0 || calibrateWorkUnit.objectPoints.size() == 0)
 		{
 			QueueLog(FString("(ERROR): NULL calibrate worker work unit contained an invalid number of corners or object points!"));
 			continue;
 		}
 
-		corners.push_back(calibrateWorkUnit->corners);
-		objectPoints.push_back(calibrateWorkUnit->objectPoints);
+		corners.push_back(calibrateWorkUnit.corners);
+		objectPoints.push_back(calibrateWorkUnit.objectPoints);
 	}
 
 	Unlock();
@@ -298,7 +297,7 @@ void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationR
 
 	TSharedPtr<FJsonObject> obj = MakeShareable(new FJsonObject);
 	TSharedPtr<FJsonObject> result = MakeShareable(new FJsonObject);
-	result->SetStringField("jobid", solvePoints.jobInfo.jobID);
+	result->SetStringField("jobid", solvePoints.jobID);
 	result->SetNumberField("zoomlevel", solvePoints.zoomLevel);
 	result->SetNumberField("width", solvePoints.resolution.X);
 	result->SetNumberField("height", solvePoints.resolution.Y);
@@ -349,12 +348,12 @@ void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationR
 	UE_LOG(LogTemp, Log, TEXT("%sCalibration result written to file at path: \"%s\"."), *workerMessage, *outputPath);
 }
 
-void FLensSolverWorkerCalibrate::QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel)
+void FLensSolverWorkerCalibrate::QueueSolvedPointsError(const FString & jobID, const float zoomLevel)
 {
 	TArray<FVector2D> emptyPoints;
 
 	FCalibrationResult solvedPoints;
-	solvedPoints.jobInfo = jobInfo;
+	solvedPoints.jobID = jobID;
 	solvedPoints.zoomLevel = zoomLevel;
 	solvedPoints.success = false;
 

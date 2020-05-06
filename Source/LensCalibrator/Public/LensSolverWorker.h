@@ -33,12 +33,10 @@ struct FLensSolverWorkerParameters
 	DECLARE_DELEGATE_OneParam(QueueLogOutputDel, FString)
 	DECLARE_DELEGATE_RetVal(int, GetWorkLoadOutputDel)
 	DECLARE_DELEGATE_RetVal(bool, IsClosingOutputDel)
-	DECLARE_DELEGATE_OneParam(QueueWorkUnitInputDel, TUniquePtr<FLensSolverWorkUnit>)
 
 	QueueLogOutputDel * inputQueueLogOutputDel;
 	IsClosingOutputDel * inputIsClosingOutputDel;
 	GetWorkLoadOutputDel * inputGetWorkOutputLoadDel;
-	QueueWorkUnitInputDel * inputQueueWorkUnitInputDel;
 
 	FString inputWorkerID;
 };
@@ -60,7 +58,7 @@ private:
 
 public:
 	FLensSolverWorker(FLensSolverWorkerParameters inputParameters);
-	~FLensSolverWorker() {}
+	virtual ~FLensSolverWorker() {};
 
 	FORCEINLINE TStatId GetStatId() const
 	{
@@ -75,14 +73,13 @@ protected:
 	const FString workerMessage;
 	
 	void DoWork();
-	virtual void Tick() = 0;
+	virtual void Tick() {};
 
 	bool ShouldExit();
 	void Lock();
 	void Unlock();
 	void QueueLog(FString log);
 
-	virtual int GetWorkLoad() = 0;
-	virtual bool WorkUnitInQueue() = 0;
-	virtual void QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit) = 0;
+	virtual int GetWorkLoad() { return 0; };
+	virtual bool WorkUnitInQueue() { return false; };
 };

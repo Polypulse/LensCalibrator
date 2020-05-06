@@ -11,26 +11,15 @@
 
 FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters inputParameters) :
 	workerID(inputParameters.inputWorkerID),
-	workerMessage(FString::Printf("Worker (%d): "), inputParameters.inputWorkerID),
-	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%d/"), workerID)))
+	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%d/"), workerID))),
+	workerMessage(FString::Printf(TEXT("Worker (%s): "), inputParameters.inputWorkerID))
 {
 	inputParameters.inputQueueWorkUnitInputDel->BindRaw(this, &FLensSolverWorker::QueueWorkUnit);
 	inputParameters.inputGetWorkOutputLoadDel->BindRaw(this, &FLensSolverWorker::GetWorkLoad);
 	inputParameters.inputIsClosingOutputDel->BindRaw(this, &FLensSolverWorker::Exit);
 	queueLogOutputDel = inputParameters.inputQueueLogOutputDel;
 
-	workUnitCount = 0;
 	flagToExit = false;
-}
-
-int FLensSolverWorker::GetWorkLoad () 
-{ 
-	int count = 0;
-	threadLock.Lock();
-	count = workUnitCount;
-	threadLock.Unlock();
-
-	return count; 
 }
 
 void FLensSolverWorker::QueueLog(FString log)
@@ -42,7 +31,11 @@ void FLensSolverWorker::QueueLog(FString log)
 
 FString const& FLensSolverWorker::GetWorkerID()
 {
-	return workerID;
+	FString copyOfWorkerID;
+	Lock();
+	copyOfWorkerID = workerID;
+	Unlock();
+	return copyOfWorkerID;
 }
 
 void FLensSolverWorker::DoWork()
@@ -58,7 +51,6 @@ void FLensSolverWorker::DoWork()
 		Tick();
 	}
 
-	workQueue.Empty();
 	flagToExit = true;
 }
 

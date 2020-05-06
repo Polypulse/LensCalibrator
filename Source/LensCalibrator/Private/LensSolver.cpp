@@ -808,6 +808,7 @@ bool ULensSolver::ValidateMediaTexture(const FJobInfo& jobInfo, const UMediaText
 
 bool ULensSolver::ValidateOneTimeProcessParameters(const FOneTimeProcessParameters& oneTimeProcessParameters)
 {
+	/*
 	static FString validationHeader("Incorrect OneTimeProcessParameter member values:");
 	FString outputMessage;
 
@@ -834,10 +835,13 @@ bool ULensSolver::ValidateOneTimeProcessParameters(const FOneTimeProcessParamete
 		UE_LOG(LogTemp, Error, TEXT("%s"), *outputMessage);
 
 	return valid;
+	*/
+	return true;
 }
 
 void ULensSolver::ReturnErrorSolvedPoints(FJobInfo jobInfo)
 {
+	/*
 	FCalibrationResult solvedPoints;
 	solvedPoints.jobInfo = jobInfo;
 	solvedPoints.success = false;
@@ -851,6 +855,7 @@ void ULensSolver::ReturnErrorSolvedPoints(FJobInfo jobInfo)
 	solvedPoints.zoomLevel = 0;
 
 	this->DequeueSolvedPoints(solvedPoints);
+	*/
 }
 
 void ULensSolver::PollLogs()
@@ -1085,13 +1090,19 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	FOneTimeProcessParameters oneTimeProcessParameters, 
 	FJobInfo& ouptutJobInfo)
 {
+	if (!workDistributor.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("The work distributor has not been initialized, make sure you've called StartBackgroundImageProcessors first."));
+		return;
+	}
+
 	if (inputTextures.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No input texture folders."));
 		return;
 	}
 
-	if (workDistributor.GetFindCornerWorkerCount() <= 0 || workDistributor.GetCalibrateCount() <= 0)
+	if (workDistributor->GetFindCornerWorkerCount() <= 0 || workDistributor->GetCalibrateCount() <= 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No workers available, make sure you start both background \"FindCorner\" & \"Calibrate\" workers."));
 		return;
@@ -1123,17 +1134,17 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		expectedImageCounts[ti] = imageFiles[ti].Num();
 	}
 
-	FJobInfo jobInfo = workDistributor.RegisterJob(expectedImageCounts, inputTextures.Num(), OneTime);
+	FJobInfo jobInfo = workDistributor->RegisterJob(expectedImageCounts, inputTextures.Num(), OneTime);
 	for (int ci = 0; ci < imageFiles.Num(); ci++)
 	{
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
 		{
-			TUniquePtr<FLensSolverTextureFileWorkUnit> workUnit = MakeUnique<FLensSolverTextureFileWorkUnit>();
+			FLensSolverTextureFileWorkUnit workUnit;
 			workUnit->jobID = jobInfo.jobID;
 			workUnit->calibrationID = jobInfo.calibrationIDs[ci];
 			workUnit->absoluteFilePath = imageFiles[ci][ii];
 
-			workDistributor.QueueTextureFileWorkUnit(jobInfo.jobID, MoveTemp(workUnit));
+			workDistributor->QueueTextureFileWorkUnit(jobInfo.jobID, workUnit);
 		}
 	}
 
@@ -1303,13 +1314,24 @@ void ULensSolver::DistortTextureWithCoefficients(FDistortTextureWithCoefficients
 
 void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
 {
-	workDistributor.StartFindCornerWorkers(findCornersWorkerCount);
-	workDistributor.StartCalibrateWorkers(calibrateWorkerCount, &onSolvePointsDel);
+	if (!onSolvePointsDel.IsBound())
+		onSolvePointsDel.BindUObject(this, &ULensSolver::OnSolvedPoints);
+	if (!queueLogOutputDel.IsBound())
+		queueLogOutputDel.BindUObject(this, &ULensSolver::QueueLog);
+
+	if (!workDistributor.IsValid())
+		workDistributor = MakeUnique<LensSolverWorkDistributor>();
+
+	workDistributor->StartFindCornerWorkers(findCornersWorkerCount);
+	workDistributor->StartCalibrateWorkers(calibrateWorkerCount, &onSolvePointsDel);
 }
 
 void ULensSolver::StopBackgroundImageprocessors()
 {
-	workDistributor.StopBackgroundWorkers();
+	if (!workDistributor.IsValid())
+		return;
+
+	workDistributor->StopBackgroundWorkers();
 }
 
 void ULensSolver::Poll()
@@ -1319,7 +1341,7 @@ void ULensSolver::Poll()
 	PollCorrectedDistortedImageResults();
 }
 
-void ULensSolver::OnSolvedPoints(FCalibrationResult solvedPoints)
+void ULensSolver::OnSolvedPoints(FCalibrationResult solvedPointsPtr)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		return;

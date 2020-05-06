@@ -23,18 +23,22 @@ struct FWorkerInterfaceContainer
 	FLensSolverWorkerParameters::GetWorkLoadOutputDel getWorkLoadDel;
 	FLensSolverWorkerParameters::QueueWorkUnitInputDel queueWorkUnitDel;
 	FLensSolverWorkerParameters::IsClosingOutputDel isClosingDel;
+
+	virtual ~FWorkerInterfaceContainer () {}
 };
 
 USTRUCT()
-struct FWorkerFindCornersInterfaceContainer : FWorkerInterfaceContainer
+struct FWorkerFindCornersInterfaceContainer : public FWorkerInterfaceContainer
 {
 	GENERATED_BODY()
 	FLensSolverWorkerFindCorners::QueueFindCornerResultOutputDel queueFindCornerResultOutputDel;
+	~FWorkerFindCornersInterfaceContainer () {}
 };
 
 USTRUCT()
-struct FWorkerCalibrateInterfaceContainer : FWorkerInterfaceContainer
+struct FWorkerCalibrateInterfaceContainer : public FWorkerInterfaceContainer
 {
 	GENERATED_BODY()
 	FLensSolverWorkerCalibrate::QueueLatchInputDel signalLatch;
+	~FWorkerCalibrateInterfaceContainer () {}
 };

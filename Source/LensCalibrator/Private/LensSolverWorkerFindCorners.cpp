@@ -2,9 +2,14 @@
 
 FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	FLensSolverWorkerParameters inputParameters,
-	QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel) : FLensSolverWorker(inputParameters)
+	const QueueTextureFileWorkUnitInputDel * inputQueueTextureFileWorkUnitInputDel,
+	const QueuePixelArrayWorkUnitInputDel * inputQueuePixelArrayWorkUnitInputDel,
+	const QueueFindCornerResultOutputDel * inputQueueFindCornerResultOutputDel) :
+	queueTextureFileWorkUnitInputDel(inputQueueTextureFileWorkUnitInputDel),
+	queuePixelArrayWorkUnitInputDel(inputQueuePixelArrayWorkUnitInputDel),
+	queueFindCornerResultOutputDel(inputQueueFindCornerResultOutputDel),
+	FLensSolverWorker(inputParameters)
 {
-	queueFindCornerResultOutputDel = inputQueueFindCornerResultOutputDel;
 }
 
 int FLensSolverWorkerFindCorners::GetWorkLoad()
@@ -16,17 +21,33 @@ int FLensSolverWorkerFindCorners::GetWorkLoad()
 	return count;
 }
 
-void FLensSolverWorkerFindCorners::QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit)
+void FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit workUnit)
 {
-	workQueue.Enqueue(workUnit);
+	textureFileWorkQueue.Enqueue(workUnit);
 	Lock();
 	workUnitCount++;
 	Unlock();
 }
 
-void FLensSolverWorkerFindCorners::DequeueWorkUnit(TUniquePtr<FLensSolverWorkUnit>& workUnit)
+void FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit(FLensSolverPixelArrayWorkUnit workUnit)
 {
-	workQueue.Dequeue(workUnit);
+	pixelArrayWorkQueue.Enqueue(workUnit);
+	Lock();
+	workUnitCount++;
+	Unlock();
+}
+
+void FLensSolverWorkerFindCorners::DequeueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit& workUnit)
+{
+	textureFileWorkQueue.Dequeue(workUnit);
+	Lock();
+	workUnitCount--;
+	Unlock();
+}
+
+void FLensSolverWorkerFindCorners::DequeuePixelArrayWorkUnit(FLensSolverPixelArrayWorkUnit & workUnit)
+{
+	pixelArrayWorkQueue.Dequeue(workUnit);
 	Lock();
 	workUnitCount--;
 	Unlock();
@@ -34,62 +55,38 @@ void FLensSolverWorkerFindCorners::DequeueWorkUnit(TUniquePtr<FLensSolverWorkUni
 
 void FLensSolverWorkerFindCorners::Tick()
 {
-	FString workerMessage = FString::Printf(TEXT("Worker: (ID: %d): "), GetWorkerID());
-
-	TUniquePtr<FLensSolverWorkUnit> workUnitPtr;
-	DequeueWorkUnit(workUnitPtr);
-
-	if (!workUnitPtr.IsValid())
-	{
-		QueueLog(FString("(ERROR): NULL work unit in latch queue!"));
-		return;
-	}
-
-	cv::Mat image;
-
-	const FLensSolverTextureWorkUnit* textureWorkUnit = static_cast<FLensSolverTextureWorkUnit*>(workUnitPtr.Get());
-	float resizePercentage = textureWorkUnit->resizePercentage;
-	bool resize = textureWorkUnit->resize;
-
-	float checkerBoardSquareSizeMM = textureWorkUnit->checkerBoardSquareSizeMM;
-	FIntPoint checkerBoardCornerCount = textureWorkUnit->checkerBoardCornerCount;
+	FLensSolverTextureWorkUnit textureWorkUnit;
 
 	FIntPoint sourceResolution;
 	FIntPoint resizeResolution;
 
-	switch (workUnitPtr->workUnitType)
+	cv::Mat image;
+
+	if (!textureFileWorkQueue.IsEmpty())
 	{
-	case ELensSolverWorkUnitType::PixelArray:
+		FLensSolverTextureFileWorkUnit textureFileWorkUnit;
+		DequeueTextureFileWorkUnit(textureFileWorkUnit);
+		textureWorkUnit = textureFileWorkUnit.textureUnit;
 
-		{
-			const FLensSolverPixelArrayWorkUnit* pixelArrayWorkUnit = static_cast<FLensSolverPixelArrayWorkUnit*>(workUnitPtr.Get());
-			if (!GetImageFromArray(pixelArrayWorkUnit->pixels, pixelArrayWorkUnit->sourceResolution, image))
-				return;
-
-			sourceResolution = pixelArrayWorkUnit->sourceResolution;
-		}
-
-		break;
-
-	case ELensSolverWorkUnitType::TextureFile:
-
-		{
-			const FLensSolverTextureFileWorkUnit* textureFileWorkUnit = static_cast<FLensSolverTextureFileWorkUnit*>(workUnitPtr.Get());
-			if (!GetImageFromFile(textureFileWorkUnit->absoluteFilePath, image, sourceResolution))
-				return;
-		}
-
-		break;
-
-	case ELensSolverWorkUnitType::Calibrate:
-		QueueLog(FString("(ERROR): FLensSolverWorkerFindCorners received calibrate work unit!"));
-		return;
-
-	default:
-		QueueLog(FString("(ERROR): Un-handeled work unit type!"));
-		return;
+		if (!GetImageFromFile(textureFileWorkUnit.absoluteFilePath, image, sourceResolution))
+			return;
 	}
 
+	else
+	{
+		FLensSolverPixelArrayWorkUnit texturePixelArrayUnit;
+		DequeuePixelArrayWorkUnit(texturePixelArrayUnit);
+		textureWorkUnit = texturePixelArrayUnit.textureUnit;
+
+		if (!GetImageFromArray(texturePixelArrayUnit.pixels, texturePixelArrayUnit.sourceResolution, image))
+			return;
+	}
+
+	float resizePercentage = textureWorkUnit.resizePercentage;
+	bool resize = textureWorkUnit.resize;
+
+	float checkerBoardSquareSizeMM = textureWorkUnit.checkerBoardSquareSizeMM;
+	FIntPoint checkerBoardCornerCount = textureWorkUnit.checkerBoardCornerCount;
 	resizeResolution = sourceResolution * resizePercentage;
 
 	QueueLog(FString::Printf(TEXT("%sPrepared image of size: (%d, %d!"), *workerMessage, image.cols, image.rows));
@@ -128,18 +125,18 @@ void FLensSolverWorkerFindCorners::Tick()
 	int findFlags = cv::CALIB_CB_NORMALIZE_IMAGE;
 	findFlags |= cv::CALIB_CB_ADAPTIVE_THRESH;
 
-	if (textureWorkUnit->exhaustiveSearch)
+	if (textureWorkUnit.exhaustiveSearch)
 		findFlags |= cv::CALIB_CB_EXHAUSTIVE;
 
 	patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
 
 	if (!patternFound)
 	{
-		QueueLog(FString::Printf(("No pattern found in image, moving onto the next image.")));
+		QueueLog("No pattern found in image, moving onto the next image.");
 		return;
 	}
 
-	QueueLog(FString::Printf(TEXT("Found pattern in image.")));
+	QueueLog("Found pattern in image.");
 
 	cv::TermCriteria cornerSubPixCriteria(
 		cv::TermCriteria::MAX_ITER + cv::TermCriteria::EPS,
@@ -149,10 +146,10 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	cv::cornerSubPix(image, imageCorners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
 
-	if (textureWorkUnit->writeDebugTextureToFile)
+	if (textureWorkUnit.writeDebugTextureToFile)
 	{
 		cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
-		WriteMatToFile(image, textureWorkUnit->debugTextureFolderPath, "CheckerboardVisualization");
+		WriteMatToFile(image, textureWorkUnit.debugTextureFolderPath, "CheckerboardVisualization");
 	}
 
 	for (int y = 0; y < checkerBoardCornerCount.Y; y++)
@@ -165,21 +162,21 @@ void FLensSolverWorkerFindCorners::Tick()
 		imageCorners[ci].y = imageCorners[ci].y * inverseResizeRatio;
 	}
 
-	if (queueFindCornerResultOutputDel->IsBound())
+	if (!queueFindCornerResultOutputDel->IsBound())
 		return;
 
-	TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnitPtr = MakeUnique<FLensSolverCalibrateWorkUnit>();
+	FLensSolverCalibrateWorkUnit calibrateWorkUnitPtr;
 
-	calibrateWorkUnitPtr->jobID = workUnitPtr->jobID;
-	calibrateWorkUnitPtr->calibrationID = workUnitPtr->calibrationID;
-	calibrateWorkUnitPtr->friendlyName = workUnitPtr->friendlyName;
+	calibrateWorkUnitPtr.baseUnit.jobID = textureWorkUnit.baseUnit.jobID;
+	calibrateWorkUnitPtr.baseUnit.calibrationID = textureWorkUnit.baseUnit.calibrationID;
+	calibrateWorkUnitPtr.baseUnit.friendlyName = textureWorkUnit.baseUnit.friendlyName;
 
-	calibrateWorkUnitPtr->workUnitType = ELensSolverWorkUnitType::Calibrate;
+	calibrateWorkUnitPtr.baseUnit.workUnitType = ELensSolverWorkUnitType::Calibrate;
 
-	calibrateWorkUnitPtr->corners = imageCorners;
-	calibrateWorkUnitPtr->objectPoints = imageObjectPoints;
+	calibrateWorkUnitPtr.corners = imageCorners;
+	calibrateWorkUnitPtr.objectPoints = imageObjectPoints;
 
-	queueFindCornerResultOutputDel->Execute(MoveTemp(calibrateWorkUnitPtr));
+	queueFindCornerResultOutputDel->Execute(calibrateWorkUnitPtr);
 }
 
 bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution)

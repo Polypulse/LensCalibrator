@@ -33,7 +33,7 @@ private:
 
 	bool GetFindCornersContainerInterfacePtr(const FString & workerID, FWorkerFindCornersInterfaceContainer *& interfaceContainer);
 
-	void QueueCalibrateWorkUnit(TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnit);
+	void QueueCalibrateWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit);
 	void LatchCalibrateWorker(const FLatchData& latchData);
 
 	bool GetCalibrateWorkerInterfaceContainerPtr(

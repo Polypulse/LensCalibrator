@@ -15,8 +15,6 @@
 #include "LensSolverWorker.h"
 #include "LensSolverWorkerCalibrate.h"
 #include "Job.h"
-#include "LatchData.h"
-#include "WorkerParameters.h"
 #include "LensSolverWorkDistributor.h"
 #include "OneTimeProcessParameters.h"
 
@@ -64,7 +62,7 @@ private:
 
 	TQueue<FString> logQueue;
 
-	LensSolverWorkDistributor workDistributor;
+	TUniquePtr<LensSolverWorkDistributor> workDistributor;
 
 	void RandomSortTArray(TArray<UTexture2D*>& arr);
 
@@ -144,11 +142,7 @@ protected:
 
 public:
 
-	ULensSolver() 
-	{
-		onSolvePointsDel.BindUObject(this, ULensSolver::OnSolvedPoints);
-		queueLogOutputDel.BindUObject(this, ULensSolver::QueueLog);
-	}
+	// ULensSolver() {}
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
@@ -208,6 +202,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void Poll ();
 
-	void OnSolvedPoints(FCalibrationResult solvedPoints);
+	void OnSolvedPoints(const TUniquePtr<FCalibrationResult>* solvedPoints);
 };
 

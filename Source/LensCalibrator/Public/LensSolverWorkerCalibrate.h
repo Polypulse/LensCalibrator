@@ -13,14 +13,16 @@ public:
 
 	FLensSolverWorkerCalibrate(
 		FLensSolverWorkerParameters inputParameters,
-		QueueLatchInputDel * inputSignalLatch,
-		QueueCalibrationResultOutputDel * inputOnSolvePointsDel
+		const QueueLatchInputDel * inputSignalLatch,
+		const QueueCalibrationResultOutputDel * inputOnSolvePointsDel
 	);
 
-private:
-	QueueCalibrationResultOutputDel * onSolvePointsDel;
+	~FLensSolverWorkerCalibrate() {}
 
-	TMap<FString, TQueue<TUniquePtr<FLensSolverCalibrateWorkUnit>>> workQueue;
+private:
+	const QueueCalibrationResultOutputDel * onSolvePointsDel;
+
+	TMap<FString, TQueue<FLensSolverCalibrateWorkUnit>> workQueue;
 	TQueue<FLatchData> latchQueue;
 
 	FMatrix GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength);
@@ -28,7 +30,7 @@ private:
 	void WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, const FString fileName);
 	void TransformVectorFromCVToUE4(FVector& v);
 
-	void QueueSolvedPointsError(FJobInfo jobInfo, float zoomLevel);
+	void QueueSolvedPointsError(const FString& jobID, const float zoomLevel);
 	void QueueSolvedPoints(FCalibrationResult solvedPoints);
 
 	void QueueLatch(const FLatchData latchData);
@@ -41,8 +43,9 @@ private:
 
 	bool LatchInQueue();
 
+	void QueueWorkUnit(FLensSolverCalibrateWorkUnit workUnit);
+
 protected:
 	virtual void Tick() override;
 	virtual int GetWorkLoad() override;
-	virtual void QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit) override;
 };

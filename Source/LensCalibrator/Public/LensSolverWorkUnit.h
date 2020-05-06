@@ -41,9 +41,10 @@ struct FLensSolverWorkUnit
 };
 
 USTRUCT(BlueprintType)
-struct FLensSolverTextureWorkUnit : public FLensSolverWorkUnit
+struct FLensSolverTextureWorkUnit
 {
 	GENERATED_BODY()
+	FLensSolverWorkUnit baseUnit;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float resizePercentage;
@@ -68,9 +69,12 @@ struct FLensSolverTextureWorkUnit : public FLensSolverWorkUnit
 };
 
 USTRUCT(BlueprintType)
-struct FLensSolverPixelArrayWorkUnit : public FLensSolverTextureWorkUnit
+struct FLensSolverPixelArrayWorkUnit
 {
 	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FLensSolverTextureWorkUnit textureUnit;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FIntPoint sourceResolution;
@@ -80,18 +84,22 @@ struct FLensSolverPixelArrayWorkUnit : public FLensSolverTextureWorkUnit
 };
 
 USTRUCT(BlueprintType)
-struct FLensSolverTextureFileWorkUnit : public FLensSolverTextureWorkUnit
+struct FLensSolverTextureFileWorkUnit
 {
 	GENERATED_BODY()
+	FLensSolverTextureWorkUnit textureUnit;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString absoluteFilePath;
 };
 
 USTRUCT(BlueprintType)
-struct FLensSolverCalibrateWorkUnit : public FLensSolverWorkUnit
+struct FLensSolverCalibrateWorkUnit
 {
 	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FLensSolverWorkUnit baseUnit;
 
 	std::vector<cv::Point2f> corners;
 	std::vector<cv::Point3f> objectPoints;
