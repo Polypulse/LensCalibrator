@@ -94,7 +94,7 @@ FTransform FLensSolverWorkerCalibrate::GenerateTransformFromRAndTVecs(std::vecto
 
 void FLensSolverWorkerCalibrate::Tick()
 {
-	if (!LatchInqueue())
+	if (!LatchInQueue())
 		return;
 
 	FLatchData latchData;
@@ -103,32 +103,8 @@ void FLensSolverWorkerCalibrate::Tick()
 	std::vector<std::vector<cv::Point3f>> objectPoints;
 	std::vector<std::vector<cv::Point2f>> corners;
 
-	for (int i = 0; i < latchData.workUnitCount; i++)
-	{
-		if (!WorkUnitInQueue())
-		{
-			QueueLog(FString("(ERROR): Latch was received by calibration worker. However, there are not enough work units in the queue!"));
-			return;
-		}
-
-		TUniquePtr<FLensSolverWorkUnit> workUnit;
-		DequeueWorkUnit(workUnit);
-		if (!workUnit.IsValid())
-		{
-			QueueLog(FString("(ERROR): NULL work unit in calibrate worker work unit queue!"));
-			return;
-		}
-
-		FLensSolverCalibrateWorkUnit* calibrateWorkUnit = static_cast<FLensSolverCalibrateWorkUnit*>(workUnit.Get());
-		if (calibrateWorkUnit->corners.size() == 0 || calibrateWorkUnit->objectPoints.size() == 0)
-		{
-			QueueLog(FString("(ERROR): NULL calibrate worker work unit contained an invalid number of corners or object points!"));
-			continue;
-		}
-
-		corners.push_back(calibrateWorkUnit->corners);
-		objectPoints.push_back(calibrateWorkUnit->objectPoints);
-	}
+	if (!DequeueAllWorkUnits(latchData.calibrationID, corners, objectPoints))
+		return;
 
 	if (ShouldExit())
 		return;
@@ -257,9 +233,60 @@ void FLensSolverWorkerCalibrate::Tick()
 	QueueSolvedPoints(solvedPoints);
 }
 
-bool FLensSolverWorkerCalibrate::WorkUnitInQueue() 
+int FLensSolverWorkerCalibrate::GetWorkLoad()
 {
-	return false;
+	int count = 0;
+	Lock();
+	count = workQueue.Num();
+	Unlock();
+	return count;
+}
+
+void FLensSolverWorkerCalibrate::QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit)
+{
+	Lock();
+	TQueue<TUniquePtr<FLensSolverCalibrateWorkUnit>> * queue = workQueue.Find(workUnit->calibrationID);
+	if (queue == nullptr)
+	{
+		workQueue.Add(workUnit->calibrationID, TQueue<TUniquePtr<FLensSolverCalibrateWorkUnit>>());
+		queue = workQueue.Find(workUnit->calibrationID);
+	}
+
+	TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnit = static_cast<TUniquePtr<FLensSolverCalibrateWorkUnit>>(MoveTemp(workUnit));
+	queue->Enqueue(MoveTemp(calibrateWorkUnit));
+	Unlock();
+}
+
+bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
+	const FString calibrationID, 
+	std::vector<std::vector<cv::Point2f>> & corners,
+	std::vector<std::vector<cv::Point3f>> & objectPoints)
+{
+	Lock();
+
+	TQueue<TUniquePtr<FLensSolverCalibrateWorkUnit>> * queue = workQueue.Find(calibrationID);
+	if (queue == nullptr)
+	{
+		QueueLog(FString::Printf(TEXT("No work units in calibration queue with ID: \"%s\"."), *calibrationID));
+		return false;
+	}
+
+	while (!queue->IsEmpty())
+	{
+		TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnit;
+		queue->Dequeue(calibrateWorkUnit);
+
+		if (calibrateWorkUnit->corners.size() == 0 || calibrateWorkUnit->objectPoints.size() == 0)
+		{
+			QueueLog(FString("(ERROR): NULL calibrate worker work unit contained an invalid number of corners or object points!"));
+			continue;
+		}
+
+		corners.push_back(calibrateWorkUnit->corners);
+		objectPoints.push_back(calibrateWorkUnit->objectPoints);
+	}
+
+	Unlock();
 }
 
 void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, const FString fileName)
@@ -348,12 +375,12 @@ void FLensSolverWorkerCalibrate::QueueLatch(const FLatchData latchData)
 	latchQueue.Enqueue(latchData);
 }
 
-void FLensSolverWorkerCalibrate::DequeueLatch(FLatchData& latchData)
+void FLensSolverWorkerCalibrate::DequeueLatch(FLatchData & latchData)
 {
 	latchQueue.Dequeue(latchData);
 }
 
-bool FLensSolverWorkerCalibrate::LatchInqueue()
+bool FLensSolverWorkerCalibrate::LatchInQueue()
 {
 	return latchQueue.IsEmpty() == false;
 }

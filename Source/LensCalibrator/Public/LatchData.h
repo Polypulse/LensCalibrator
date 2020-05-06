@@ -13,6 +13,8 @@ struct FLatchData
 	GENERATED_BODY()
 
 	FJobInfo jobInfo;
+	FString calibrationID;
+
 	FCalibrationWorkerParameters workerParameters;
 	int workUnitCount;
 

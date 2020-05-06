@@ -18,5 +18,8 @@ struct FJob
 	FJobInfo jobInfo;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	int completedWorkUnits;
+	int expectedResultCount;
+
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	int currentResultCount;
 };

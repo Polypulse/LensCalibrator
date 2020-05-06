@@ -10,6 +10,7 @@
 #include "Engine/Texture2D.h"
 
 FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters inputParameters) :
+	workerID(inputParameters.inputWorkerID),
 	workerMessage(FString::Printf("Worker (%d): "), inputParameters.inputWorkerID),
 	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%d/"), workerID)))
 {
@@ -18,7 +19,6 @@ FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters inputParameters
 	inputParameters.inputIsClosingOutputDel->BindRaw(this, &FLensSolverWorker::Exit);
 	queueLogOutputDel = inputParameters.inputQueueLogOutputDel;
 
-	workerID = inputParameters.inputWorkerID;
 	workUnitCount = 0;
 	flagToExit = false;
 }
@@ -33,19 +33,6 @@ int FLensSolverWorker::GetWorkLoad ()
 	return count; 
 }
 
-void FLensSolverWorker::QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit)
-{
-	workQueue.Enqueue(workUnit);
-	threadLock.Lock();
-	workUnitCount++;
-	threadLock.Unlock();
-}
-
-void FLensSolverWorker::DequeueWorkUnit(TUniquePtr<FLensSolverWorkUnit>& workUnit)
-{
-	workQueue.Dequeue(workUnit);
-}
-
 void FLensSolverWorker::QueueLog(FString log)
 {
 	if (!queueLogOutputDel->IsBound())
@@ -53,7 +40,7 @@ void FLensSolverWorker::QueueLog(FString log)
 	queueLogOutputDel->Execute(log);
 }
 
-int FLensSolverWorker::GetWorkerID()
+FString const& FLensSolverWorker::GetWorkerID()
 {
 	return workerID;
 }

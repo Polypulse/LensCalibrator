@@ -5,6 +5,7 @@
 
 #include "CoreTypes.h"
 #include "CoreMinimal.h"
+#include "Engine.h"
 #include "Async/AsyncWork.h"
 #include "SolvedPoints.h"
 
@@ -16,6 +17,7 @@
 #include "opencv2/core/mat.hpp"
 #include "opencv2/imgproc/types_c.h"
 #pragma pop_macro("check")
+#include <vector>
 
 #include "JobInfo.h"
 #include "LatchData.h"
@@ -33,11 +35,12 @@ struct FLensSolverWorkerParameters
 	DECLARE_DELEGATE_RetVal(bool, IsClosingOutputDel)
 	DECLARE_DELEGATE_OneParam(QueueWorkUnitInputDel, TUniquePtr<FLensSolverWorkUnit>)
 
-	QueueLogOutputDel* inputQueueLogOutputDel;
-	IsClosingOutputDel* inputIsClosingOutputDel;
-	GetWorkLoadOutputDel* inputGetWorkOutputLoadDel;
-	QueueWorkUnitInputDel* inputQueueWorkUnitInputDel;
-	int inputWorkerID;
+	QueueLogOutputDel * inputQueueLogOutputDel;
+	IsClosingOutputDel * inputIsClosingOutputDel;
+	GetWorkLoadOutputDel * inputGetWorkOutputLoadDel;
+	QueueWorkUnitInputDel * inputQueueWorkUnitInputDel;
+
+	FString inputWorkerID;
 };
 
 class FLensSolverWorker : public FNonAbandonableTask
@@ -47,14 +50,11 @@ class FLensSolverWorker : public FNonAbandonableTask
 public:
 
 private:
-	int workerID;
-	mutable int workUnitCount;
+	const FString workerID;
 	mutable bool flagToExit;
 
-	TQueue<TUniquePtr<FLensSolverWorkUnit>> workQueue;
-	FCriticalSection threadLock;
-
 	FLensSolverWorkerParameters::QueueLogOutputDel* queueLogOutputDel;
+	FCriticalSection threadLock;
 
 	bool Exit ();
 
@@ -67,7 +67,7 @@ public:
 		RETURN_QUICK_DECLARE_CYCLE_STAT(FLensSolverWorker, STATGROUP_ThreadPoolAsyncTasks);
 	}
 
-	int GetWorkerID();
+	FString const& GetWorkerID();
 
 protected:
 
@@ -80,10 +80,9 @@ protected:
 	bool ShouldExit();
 	void Lock();
 	void Unlock();
-	int GetWorkLoad ();
 	void QueueLog(FString log);
 
-	virtual void QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit) = 0;
+	virtual int GetWorkLoad() = 0;
 	virtual bool WorkUnitInQueue() = 0;
-	void DequeueWorkUnit(TUniquePtr<FLensSolverWorkUnit>& workUnit);
+	virtual void QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit) = 0;
 };

@@ -19,7 +19,4 @@ struct FJobInfo
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	FString jobID;
-
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	int workUnitCount;
 };

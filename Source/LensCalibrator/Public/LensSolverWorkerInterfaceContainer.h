@@ -2,10 +2,11 @@
 
 #include "CoreTypes.h"
 #include "CoreMinimal.h"
+#include "Engine.h"
 
 #include "LensSolverWorker.h"
 #include "LensSolverWorkerCalibrate.h"
-#include "LensSolverWorkerFindcorners.h"
+#include "LensSolverWorkerFindCorners.h"
 #include "LatchData.h"
 #include "LensSolverWorkUnit.h"
 
@@ -17,6 +18,7 @@ struct FWorkerInterfaceContainer
 	GENERATED_BODY()
 
 	TUniquePtr<FAutoDeleteAsyncTask<FLensSolverWorker>> worker;
+	FString workerID;
 
 	FLensSolverWorkerParameters::GetWorkLoadOutputDel getWorkLoadDel;
 	FLensSolverWorkerParameters::QueueWorkUnitInputDel queueWorkUnitDel;

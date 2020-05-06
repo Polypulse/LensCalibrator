@@ -7,6 +7,31 @@ FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	queueFindCornerResultOutputDel = inputQueueFindCornerResultOutputDel;
 }
 
+int FLensSolverWorkerFindCorners::GetWorkLoad()
+{
+	int count = 0;
+	Lock();
+	count = workUnitCount;
+	Unlock();
+	return count;
+}
+
+void FLensSolverWorkerFindCorners::QueueWorkUnit(TUniquePtr<FLensSolverWorkUnit> workUnit)
+{
+	workQueue.Enqueue(workUnit);
+	Lock();
+	workUnitCount++;
+	Unlock();
+}
+
+void FLensSolverWorkerFindCorners::DequeueWorkUnit(TUniquePtr<FLensSolverWorkUnit>& workUnit)
+{
+	workQueue.Dequeue(workUnit);
+	Lock();
+	workUnitCount--;
+	Unlock();
+}
+
 void FLensSolverWorkerFindCorners::Tick()
 {
 	FString workerMessage = FString::Printf(TEXT("Worker: (ID: %d): "), GetWorkerID());

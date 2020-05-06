@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine.h"
 #include "LensSolverWorker.h"
 #include "LensSolverWorkerFindCorners.h"
 #include "LensSolverWorkerCalibrate.h"
@@ -14,34 +15,45 @@ class LensSolverWorkDistributor
 {
 private:
 	mutable FCriticalSection threadLock;
-	FLensSolverWorkerParameters::QueueLogOutputDel* queueLogOutputDel;
+	FLensSolverWorkerParameters::QueueLogOutputDel * queueLogOutputDel;
 
-	TArray<TUniquePtr<FWorkerFindCornersInterfaceContainer>> findCornersWorkers;
-	TArray<TUniquePtr<FWorkerCalibrateInterfaceContainer>> calibrateWorkers;
+	TMap<FString, TUniquePtr<FWorkerFindCornersInterfaceContainer>> findCornersWorkers;
+	TMap<FString, TUniquePtr<FWorkerCalibrateInterfaceContainer>> calibrateWorkers;
+
+	TArray<FString> workLoadSortedFindCornerWorkers;
+	TArray<FString> workLoadSortedCalibrateWorkers;
+
+	TMap<FString, FString> workerCalibrationIDLUT;
 
 	TMap<FString, TUniquePtr<FFindCornerWorkerParameters>> jobFindCornerWorkerParameters;
 	TMap<FString, TUniquePtr<FCalibrationWorkerParameters>> jobCalibrationWorkerParameters;
-
-	TMap<FString, TQueue<TWeakPtr<FLensSolverWorkerParameters::QueueWorkUnitInputDel>>> exclusiveQueues;
 	TMap<FString, FJob> jobs;
 
 	void QueueLogAsync(const FString msg);
 
-	void SetupExclusiveCalibrateWorker(const int workerID, const FString jobID, const FString calibrationID);
-	void LatchCalibrateWorker(TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnit);
+	bool GetFindCornersContainerInterfacePtr(const FString & workerID, FWorkerFindCornersInterfaceContainer *& interfaceContainer);
 
+	void QueueCalibrateWorkUnit(TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnit);
+	void LatchCalibrateWorker(const FLatchData& latchData);
+
+	bool GetCalibrateWorkerInterfaceContainerPtr(
+		const FString& calibrationID,
+		TUniquePtr<FWorkerCalibrateInterfaceContainer> *& interfaceContainerUniquePtr);
 	void SortFindCornersWorkersByWorkLoad();
+	void SortCalibrateWorkersByWorkLoad();
 
 protected:
 public:
 
+	LensSolverWorkDistributor(FLensSolverWorkerParameters::QueueLogOutputDel * inputQueueLogOutputDel) : 
+		queueLogOutputDel(inputQueueLogOutputDel) 
+	{}
+
 	void StartFindCornerWorkers(
-		int findCornerWorkerCount,
-		FLensSolverWorkerParameters::QueueLogOutputDel* inputQueueLogOutputDel);
+		int findCornerWorkerCount);
 
 	void StartCalibrateWorkers(
 		int calibrateWorkerCount,
-		FLensSolverWorkerParameters::QueueLogOutputDel* inputQueueLogOutputDel,
 		FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel * inputOnSolvedPointsDel);
 
 	void StopFindCornerWorkers();
@@ -53,6 +65,6 @@ public:
 
 	FJobInfo RegisterJob (int latchedWorkUnitCount, UJobType jobType);
 
-	void QueueTextureArrayWorkUnit(TUniquePtr<FLensSolverPixelArrayWorkUnit> pixelArrayWorkUnit);
-	void QueueTextureFileWorkUnit(TUniquePtr<FLensSolverTextureFileWorkUnit> textureFileWorkUnit);
+	void QueueTextureArrayWorkUnit(const FString & jobID, TUniquePtr<FLensSolverPixelArrayWorkUnit> pixelArrayWorkUnit);
+	void QueueTextureFileWorkUnit(const FString & jobID, TUniquePtr<FLensSolverTextureFileWorkUnit> textureFileWorkUnit);
 };
