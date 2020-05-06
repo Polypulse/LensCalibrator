@@ -35,6 +35,7 @@ void ULensSolver::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+/*
 FJobInfo ULensSolver::RegisterJob(int workUnitCount, UJobType jobType)
 {
 	FJobInfo jobInfo;
@@ -52,7 +53,9 @@ FJobInfo ULensSolver::RegisterJob(int workUnitCount, UJobType jobType)
 
 	return jobInfo;
 }
+*/
 
+/*
 int ULensSolver::GetWorkerCount()
 {
 	threadLock.Lock();
@@ -62,6 +65,7 @@ int ULensSolver::GetWorkerCount()
 	return workercount;
 ;
 }
+*/
 
 void ULensSolver::BeginDetectPoints(
 	const FJobInfo inputJobInfo,
@@ -69,6 +73,7 @@ void ULensSolver::BeginDetectPoints(
 	FOneTimeProcessParameters oneTimeProcessParameters,
 	const bool inputLatch)
 {
+	/*
 	if (!ValidateTexture(inputJobInfo, inputTextureZoomPair.texture, 0, FIntPoint(inputTextureZoomPair.texture->GetSizeX(), inputTextureZoomPair.texture->GetSizeY())))
 	{
 		ReturnErrorSolvedPoints(inputJobInfo);
@@ -118,6 +123,7 @@ void ULensSolver::BeginDetectPoints(
 				
 		}
 	);
+	*/
 }
 
 /*
@@ -218,6 +224,7 @@ void ULensSolver::BeginDetectPoints(
 	FTextureArrayZoomPair& inputTextures,
 	FOneTimeProcessParameters inputOneTimeProcessParameters)
 {
+	/*
 	if (!ValidateZoom(inputJobInfo, inputTextures.zoomLevel))
 	{
 		ReturnErrorSolvedPoints(inputJobInfo);
@@ -287,6 +294,7 @@ void ULensSolver::BeginDetectPoints(
 			}
 		);
 	}
+	*/
 }
 
 void ULensSolver::BeginDetectPoints(
@@ -294,6 +302,7 @@ void ULensSolver::BeginDetectPoints(
 	TArray<FTextureArrayZoomPair>& inputTextures,
 	FOneTimeProcessParameters oneTimeProcessParameters)
 {
+	/*
 	if (inputTextures.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No textures to process."))
@@ -328,6 +337,7 @@ void ULensSolver::BeginDetectPoints(
 				oneTimeProcessParameters);
 		}
 	}
+	*/
 }
 
 /*
@@ -365,6 +375,7 @@ void ULensSolver::DetectPointsRenderThread(
 	const bool latch)
 
 {
+	/*
 	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.X * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.X;
 	int height = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.Y * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.Y;
 	if (!blitRenderTextureAllocated)
@@ -426,12 +437,6 @@ void ULensSolver::DetectPointsRenderThread(
 	// UE_LOG(LogTemp, Log, TEXT("Reading pixels from rect: (%d, %d, %d, %d)."), 0, 0, width, height);
 	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), surfaceData, ReadDataFlags);
 
-	/*
-	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
-	FString outputPath = FString("D:/output.bmp");
-	FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
-	*/
-
 	threadLock.Lock();
 	if (workers.Num() == 0)
 	{
@@ -471,11 +476,6 @@ void ULensSolver::DetectPointsRenderThread(
 		UE_LOG(LogTemp, Log, TEXT("Latching worker."))
 		workers[nextWorkerIndex].signalLatch.Execute(latchData);
 
-		/*
-		workers.Sort([](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) {
-			return workerA.getWorkLoadDel.Execute() > workerB.getWorkLoadDel.Execute();
-		});
-		*/
 
 		nextWorkerIndex++;
 		if (nextWorkerIndex > workers.Num() - 1)
@@ -483,6 +483,7 @@ void ULensSolver::DetectPointsRenderThread(
 	}
 
 	threadLock.Unlock();
+	*/
 }
 
 void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
@@ -864,6 +865,7 @@ void ULensSolver::PollLogs()
 
 void ULensSolver::PollCalibrationResults()
 {
+	/*
 	if (!queuedSolvedPointsPtr.IsValid())
 		return;
 
@@ -893,12 +895,10 @@ void ULensSolver::PollCalibrationResults()
 			UE_LOG(LogTemp, Fatal, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
 			return;
 		}
-		*/
 
 		/*
 		if (this == nullptr)
 			return;
-		*/
 
 		this->DequeueSolvedPoints(lastSolvedPoints);
 		isQueued = queuedSolvedPointsPtr->IsEmpty() == false;
@@ -913,6 +913,7 @@ void ULensSolver::PollCalibrationResults()
 			jobs.Remove(lastSolvedPoints.jobInfo.jobID);
 		}
 	}
+	*/
 }
 
 void ULensSolver::PollDistortionCorrectionMapGenerationResults()
@@ -1123,6 +1124,18 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	}
 
 	FJobInfo jobInfo = workDistributor.RegisterJob(expectedImageCounts, inputTextures.Num(), OneTime);
+	for (int ci = 0; ci < imageFiles.Num(); ci++)
+	{
+		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
+		{
+			TUniquePtr<FLensSolverTextureFileWorkUnit> workUnit = MakeUnique<FLensSolverTextureFileWorkUnit>();
+			workUnit->jobID = jobInfo.jobID;
+			workUnit->calibrationID = jobInfo.calibrationIDs[ci];
+			workUnit->absoluteFilePath = imageFiles[ci][ii];
+
+			workDistributor.QueueTextureFileWorkUnit(jobInfo.jobID, MoveTemp(workUnit));
+		}
+	}
 
 	/*
 	TArray<FTextureArrayZoomPair> textureArrayZoomPairs;
@@ -1290,8 +1303,8 @@ void ULensSolver::DistortTextureWithCoefficients(FDistortTextureWithCoefficients
 
 void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
 {
-	workDistributor.StartFindCornerWorkers(findCornersWorkerCount, &queueLogOutputDel);
-	workDistributor.StartCalibrateWorkers(calibrateWorkerCount, &queueLogOutputDel, &onSolvePointsDel);
+	workDistributor.StartFindCornerWorkers(findCornersWorkerCount);
+	workDistributor.StartCalibrateWorkers(calibrateWorkerCount, &onSolvePointsDel);
 }
 
 void ULensSolver::StopBackgroundImageprocessors()

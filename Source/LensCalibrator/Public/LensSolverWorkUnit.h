@@ -15,7 +15,7 @@
 #include "LensSolverWorkUnit.generated.h"
 
 UENUM(BlueprintType)
-enum ELensSolverWorkUnitType
+enum class ELensSolverWorkUnitType : uint8
 {
 	PixelArray,
 	TextureFile,
@@ -25,47 +25,71 @@ enum ELensSolverWorkUnitType
 USTRUCT(BlueprintType)
 struct FLensSolverWorkUnit
 {
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString jobID;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString calibrationID;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString friendlyName;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	ELensSolverWorkUnitType workUnitType;
-
-	int index;
 };
 
-struct FLensSolverTextureWorkUnit : FLensSolverWorkUnit
+USTRUCT(BlueprintType)
+struct FLensSolverTextureWorkUnit : public FLensSolverWorkUnit
 {
 	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float resizePercentage;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool resize;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool exhaustiveSearch;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool writeDebugTextureToFile;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float checkerBoardSquareSizeMM;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FIntPoint checkerBoardCornerCount;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString debugTextureFolderPath;
 };
 
 USTRUCT(BlueprintType)
-struct FLensSolverPixelArrayWorkUnit : FLensSolverTextureWorkUnit
+struct FLensSolverPixelArrayWorkUnit : public FLensSolverTextureWorkUnit
 {
 	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FIntPoint sourceResolution;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	TArray<FColor> pixels;
 };
 
 USTRUCT(BlueprintType)
-struct FLensSolverTextureFileWorkUnit : FLensSolverTextureWorkUnit
+struct FLensSolverTextureFileWorkUnit : public FLensSolverTextureWorkUnit
 {
 	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString absoluteFilePath;
 };
 
 USTRUCT(BlueprintType)
-struct FLensSolverCalibrateWorkUnit : FLensSolverWorkUnit
+struct FLensSolverCalibrateWorkUnit : public FLensSolverWorkUnit
 {
 	GENERATED_BODY()
 

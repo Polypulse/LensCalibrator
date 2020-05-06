@@ -86,13 +86,13 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 	const UJobType jobType)
 {
 	TArray<FString> calibrationIDs;
-	TMap<FString, TPair<int, int>> mapOfExpectedAndCurrentImageCounts;
+	TMap<FString, FExpectedAndCurrentImageCount> mapOfExpectedAndCurrentImageCounts;
 
 	calibrationIDs.SetNum(expectedImageCounts.Num());
 	for (int i = 0; i < calibrationIDs.Num(); i++)
 	{
 		calibrationIDs[i] = FGuid::NewGuid().ToString();
-		mapOfExpectedAndCurrentImageCounts.Add(calibrationIDs[i], TPair<int, int>(expectedImageCounts[i], 0));
+		mapOfExpectedAndCurrentImageCounts.Add(calibrationIDs[i], FExpectedAndCurrentImageCount(expectedImageCounts[i], 0));
 	}
 
 	FJobInfo jobInfo;
@@ -306,10 +306,10 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 		return false;
 	}
 
-	TPair<int, int>* expectedAndCurrentImageCount = job->expectedAndCurrentImageCounts.Find(calibrationID);
-	expectedAndCurrentImageCount->Value++;
+	FExpectedAndCurrentImageCount* expectedAndCurrentImageCount = job->expectedAndCurrentImageCounts.Find(calibrationID);
+	expectedAndCurrentImageCount->currentImageCount++;
 
-	if (expectedAndCurrentImageCount->Key <= expectedAndCurrentImageCount->Value)
+	if (expectedAndCurrentImageCount->expectedImageCount <= expectedAndCurrentImageCount->currentImageCount)
 		return true;
 
 	threadLock.Unlock();
