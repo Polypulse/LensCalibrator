@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
+#include "Engine.h"
 
 #include "JobInfo.h"
 #include "Job.generated.h"
@@ -16,6 +17,12 @@ struct FJob
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	FJobInfo jobInfo;
+
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	TMap<FString, int> expectedImageCount;
+
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	TMap<FString, int> currentImageCount;
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	int expectedResultCount;

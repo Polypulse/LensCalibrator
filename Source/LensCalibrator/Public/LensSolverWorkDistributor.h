@@ -42,6 +42,9 @@ private:
 	void SortFindCornersWorkersByWorkLoad();
 	void SortCalibrateWorkersByWorkLoad();
 
+	void QueueTextureArrayWorkUnit(const FString & jobID, TUniquePtr<FLensSolverPixelArrayWorkUnit> pixelArrayWorkUnit);
+	void QueueTextureFileWorkUnit(const FString & jobID, TUniquePtr<FLensSolverTextureFileWorkUnit> textureFileWorkUnit);
+
 protected:
 public:
 
@@ -63,8 +66,8 @@ public:
 	int GetFindCornerWorkerCount();
 	int GetCalibrateCount();
 
-	FJobInfo RegisterJob (int latchedWorkUnitCount, UJobType jobType);
-
-	void QueueTextureArrayWorkUnit(const FString & jobID, TUniquePtr<FLensSolverPixelArrayWorkUnit> pixelArrayWorkUnit);
-	void QueueTextureFileWorkUnit(const FString & jobID, TUniquePtr<FLensSolverTextureFileWorkUnit> textureFileWorkUnit);
+	FJobInfo RegisterJob (
+		TArray<int> expectedImageCounts,
+		int expectedResultCount,
+		UJobType jobType);
 };

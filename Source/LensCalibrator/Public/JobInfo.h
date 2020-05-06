@@ -19,4 +19,7 @@ struct FJobInfo
 
 	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
 	FString jobID;
+
+	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
+	TArray<FString> calibrationIDs;
 };
