@@ -1004,6 +1004,7 @@ void ULensSolver::OneTimeProcessTextureZoomPair(
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo)
 {
+	/*
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
 
@@ -1014,6 +1015,7 @@ void ULensSolver::OneTimeProcessTextureZoomPair(
 		textureZoomPair, 
 		oneTimeProcessParameters,
 		true);
+	*/
 }
 
 void ULensSolver::OneTimeProcessArrayOfTextureZoomPairs(
@@ -1021,6 +1023,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureZoomPairs(
 	FOneTimeProcessParameters oneTimeProcessParameters,
 	FJobInfo & ouptutJobInfo)
 {
+	/*
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
 
@@ -1029,6 +1032,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureZoomPairs(
 		ouptutJobInfo,
 		textureZoomPairArray,
 		oneTimeProcessParameters);
+	*/
 }
 
 void ULensSolver::OneTimeProcessTextureArrayZoomPair(
@@ -1036,6 +1040,7 @@ void ULensSolver::OneTimeProcessTextureArrayZoomPair(
 	FOneTimeProcessParameters oneTimeProcessParameters,
 	FJobInfo& ouptutJobInfo)
 {
+	/*
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
 
@@ -1045,6 +1050,7 @@ void ULensSolver::OneTimeProcessTextureArrayZoomPair(
 		inputTextures,
 		oneTimeProcessParameters
 	);
+	*/
 }
 
 void ULensSolver::OneTimeProcessArrayOfTextureArrayZoomPairs(
@@ -1052,6 +1058,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureArrayZoomPairs(
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo)
 {
+	/*
 	if (!queuedSolvedPointsPtr.IsValid())
 		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
 
@@ -1069,6 +1076,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureArrayZoomPairs(
 		inputTextures,
 		oneTimeProcessParameters
 	);
+	*/
 }
 
 void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
@@ -1082,6 +1090,13 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		return;
 	}
 
+	if (workDistributor.GetFindCornerWorkerCount() <= 0 || workDistributor.GetCalibrateCount() <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No workers available, make sure you start both background \"FindCorner\" & \"Calibrate\" workers."));
+		return;
+	}
+
+	/*
 	TArray<FTextureArrayZoomPair> textureArrayZoomPairs;
 	for (int ti = 0; ti < inputTextures.Num(); ti++)
 	{
@@ -1121,6 +1136,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	}
 
 	OneTimeProcessArrayOfTextureArrayZoomPairs(textureArrayZoomPairs, oneTimeProcessParameters, ouptutJobInfo);
+	*/
 }
 
 void ULensSolver::GenerateDistortionCorrectionMap(
@@ -1244,28 +1260,10 @@ void ULensSolver::DistortTextureWithCoefficients(FDistortTextureWithCoefficients
 {
 }
 
-/*
-void ULensSolver::OneTimeProcessMediaTextureArray(
-		TArray<UMediaTexture*> inputTextures, 
-		TArray<float> normalizedZoomValues, 
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		FJobInfo & ouptutJobInfo)
-{
-	if (!queuedSolvedPointsPtr.IsValid())
-		queuedSolvedPointsPtr = MakeShareable(new TQueue<FCalibrationResult>);
-
-	ouptutJobInfo = RegisterJob(inputTextures.Num(), UJobType::OneTime);
-	BeginDetectPoints(
-		ouptutJobInfo,
-		inputTextures,
-		normalizedZoomValues,
-		oneTimeProcessParameters);
-}
-*/
-
 void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
 {
-	workDistributor.StartBackgroundWorkers(findCornersWorkerCount, calibrateWorkerCount, &queueLogOutputDel, &onSolvePointsDel);
+	workDistributor.StartFindCornerWorkers(findCornersWorkerCount, &queueLogOutputDel);
+	workDistributor.StartCalibrateWorkers(calibrateWorkerCount, &queueLogOutputDel, &onSolvePointsDel);
 }
 
 void ULensSolver::StopBackgroundImageprocessors()
@@ -1273,53 +1271,13 @@ void ULensSolver::StopBackgroundImageprocessors()
 	workDistributor.StopBackgroundWorkers();
 }
 
-/*
-void ULensSolver::SolvedPointsQueued_Implemenation (bool& isQueued)
-{
-}
-
-void ULensSolver::DequeueSolvedPoints_Implemenation (FCalibrationResult& solvedPoints)
-{
-}
-*/
-
 void ULensSolver::Poll()
 {
 	PollCalibrationResults();
 	PollDistortionCorrectionMapGenerationResults();
 	PollCorrectedDistortedImageResults();
-
-	/*
-	if (this == nullptr)
-		return;
-	*/
-	/*
-	if (dequeued)
-	{
-		if (GEngine != nullptr && GEngine->GameViewport != nullptr)
-		{
-			FSceneViewport * sceneViewport = GEngine->GameViewport->GetGameViewport();
-			GEngine->GameViewport->bDisableWorldRendering = 1;
-			sceneViewport->SetGameRenderingEnabled(false);
-
-			UTexture2D * texture = CreateTexture2D(&lastSolvedPoints.visualizationData, lastSolvedPoints.width, lastSolvedPoints.height);
-			lastSolvedPoints.visualizationData.Empty();
-
-			if (sceneViewport != nullptr)
-			{
-				ULensSolver * lensSolver = this;
-				ENQUEUE_RENDER_COMMAND(VisualizeCalibration)
-				(
-					[lensSolver, sceneViewport, texture, lastSolvedPoints](FRHICommandListImmediate& RHICmdList)
-					{
-						lensSolver->VisualizeCalibration(RHICmdList, sceneViewport, texture, lastSolvedPoints);
-					}
-				);
-			}
-		}
-	}
-	*/
 }
+
 void ULensSolver::OnSolvedPoints(FCalibrationResult solvedPoints)
 {
 	if (!queuedSolvedPointsPtr.IsValid())

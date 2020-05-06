@@ -1,0 +1,44 @@
+{
+   "DesktopUI" : {
+      "controllerbinding_desktop" : "0,23,1920,1057,0",
+      "pairing" : "568,271,800,600,0",
+      "settings_desktop" : "405,376,800,600,0"
+   },
+   "GpuSpeed" : {
+      "gpuSpeed0" : 475,
+      "gpuSpeedCount" : 1,
+      "gpuSpeedDriver" : "Unknown",
+      "gpuSpeedHorsepower" : 475,
+      "gpuSpeedRenderTargetScale" : 1.0399999618530273,
+      "gpuSpeedVendor" : "NVIDIA GeForce GTX 1070",
+      "gpuSpeedVersion" : 2
+   },
+   "LastKnown" : {
+      "HMDModel" : "Null Model Number"
+   },
+   "application.generated.ue.filmcalibrator-11590370.ue4editor.exe" : {
+      "vive_controller_250820_AutosaveURL_steamvrinput" : "vr-input-workshop://2076258801",
+      "vive_controller_250820_CurrentURL_steamvrinput" : "vr-input-workshop://2076485615",
+      "vive_controller_250820_NeedToUpdateAutosave_steamvrinput" : false,
+      "vive_controller_250820_PreviousURL_steamvrinput" : "vr-input-workshop://2076258801"
+   },
+   "steamvr" : {
+      "activateMultipleDrivers" : true,
+      "allowAsyncReprojection" : false,
+      "allowInterleavedReprojection" : false,
+      "allowSupersampleFiltering" : false,
+      "enableHomeApp" : false,
+      "forcedDriver" : "null",
+      "installID" : "11414266317970539961",
+      "lastVersionNotice" : "1.11.11",
+      "lastVersionNoticeDate" : "1587179453",
+      "mirrorViewGeometry" : "1387 675 2272 1270",
+      "showAdvancedSettings" : true,
+      "showMirrorView" : false
+   },
+   "system.generated.ue4editor.exe" : {
+      "vive_controller_250820_AutosaveURL_legacy" : "vr-input-workshop://2076489510",
+      "vive_controller_250820_NeedToUpdateAutosave_legacy" : false,
+      "vive_controller_250820_PreviousURL_legacy" : "vr-input-workshop://2076489510"
+   }
+}

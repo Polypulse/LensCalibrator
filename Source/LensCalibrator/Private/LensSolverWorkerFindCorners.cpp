@@ -127,7 +127,7 @@ void FLensSolverWorkerFindCorners::Tick()
 	if (textureWorkUnit->writeDebugTextureToFile)
 	{
 		cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
-		WriteMatToFile(image, textureWorkUnit->debugTextureFolderPath);
+		WriteMatToFile(image, textureWorkUnit->debugTextureFolderPath, "CheckerboardVisualization");
 	}
 
 	for (int y = 0; y < checkerBoardCornerCount.Y; y++)
@@ -139,13 +139,33 @@ void FLensSolverWorkerFindCorners::Tick()
 		imageCorners[ci].x = imageCorners[ci].x * inverseResizeRatio;
 		imageCorners[ci].y = imageCorners[ci].y * inverseResizeRatio;
 	}
+
+	if (queueFindCornerResultOutputDel->IsBound())
+		return;
+
+	TUniquePtr<FLensSolverCalibrateWorkUnit> calibrateWorkUnitPtr = MakeUnique<FLensSolverCalibrateWorkUnit>();
+
+	calibrateWorkUnitPtr->jobID = workUnitPtr->jobID;
+	calibrateWorkUnitPtr->calibrationID = workUnitPtr->calibrationID;
+	calibrateWorkUnitPtr->friendlyName = workUnitPtr->friendlyName;
+
+	calibrateWorkUnitPtr->workUnitType = ELensSolverWorkUnitType::Calibrate;
+
+	calibrateWorkUnitPtr->corners = imageCorners;
+	calibrateWorkUnitPtr->objectPoints = imageObjectPoints;
+
+	queueFindCornerResultOutputDel->Execute(MoveTemp(calibrateWorkUnitPtr));
 }
 
 bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution)
 {
-	Lock();
-	Unlock();
-	return false;
+	cv::String cvPath(TCHAR_TO_UTF8(*absoluteFilePath));
+	image = cv::imread(cvPath);
+
+	if (image.data == NULL)
+		return false;
+
+	return true;
 }
 
 bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixels, const FIntPoint resolution, cv::Mat& image)
