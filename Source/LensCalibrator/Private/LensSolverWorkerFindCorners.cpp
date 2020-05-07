@@ -1,4 +1,5 @@
 #include "LensSolverWorkerFindCorners.h"
+#include "GenericPlatform/GenericPlatformProcess.h"
 
 FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	const FLensSolverWorkerParameters & inputParameters,
@@ -10,6 +11,7 @@ FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 {
 	inputQueueTextureFileWorkUnitInputDel->BindRaw(this, &FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit);
 	inputQueuePixelArrayWorkUnitInputDel->BindRaw(this, &FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit);
+	workUnitCount = 0;
 }
 
 int FLensSolverWorkerFindCorners::GetWorkLoad()
@@ -71,6 +73,9 @@ void FLensSolverWorkerFindCorners::DequeuePixelArrayWorkUnit(FLensSolverPixelArr
 
 void FLensSolverWorkerFindCorners::Tick()
 {
+	if (GetWorkLoad() == 0)
+		FPlatformProcess::Sleep(0.5f);
+
 	FBaseParameters baseParameters;
 	FTextureSearchParameters textureSearchParameters;
 	FResizeParameters resizeParameters;
@@ -125,12 +130,12 @@ void FLensSolverWorkerFindCorners::Tick()
 	if (resize && resizePercentage != 1.0f)
 	{
 		if (debug)
-			QueueLog(FString::Printf(TEXT("(INFO): %s:  image from: (%d, %d) to: (%d, %d)."),
+			QueueLog(FString::Printf(TEXT("(INFO): %s: Resizing image from: (%d, %d) to: (%d, %d)."),
 				*JobDataToString(baseParameters),
 				resizeParameters.sourceResolution.X,
 				resizeParameters.sourceResolution.Y,
 				resizeParameters.resizeResolution.X,
-				resizeParameters.resizeResolution.X));
+				resizeParameters.resizeResolution.Y));
 
 		cv::resize(image, image, resizedImageSize, 0.0f, 0.0f, cv::INTER_LINEAR);
 	}
@@ -228,6 +233,7 @@ bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFile
 		return false;
 	}
 
+	cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
 	sourceResolution = FIntPoint(image.cols, image.rows);
 
 	if (debug)

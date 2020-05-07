@@ -45,8 +45,18 @@ FString FLensSolverWorker::GetWorkerID()
 void FLensSolverWorker::DoWork()
 {
 	FLensSolverWorker* baseWorker = this;
-	while (!ShouldExit())
+
+	while (1)
+	{
+		if (ShouldExit())
+		{
+			if (debug)
+				QueueLog("Exiting DoWork loop.");
+			break;
+		}
+
 		baseWorker->Tick();
+	}
 
 	flagToExit = true;
 }
@@ -56,6 +66,8 @@ bool FLensSolverWorker::Exit()
 	threadLock.Lock();
 	flagToExit = true;
 	threadLock.Unlock();
+	if (debug)
+		QueueLog("Exiting worker.");
 	return true;
 }
 

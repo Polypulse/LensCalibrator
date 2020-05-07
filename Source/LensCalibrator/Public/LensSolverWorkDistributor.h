@@ -16,6 +16,7 @@ class LensSolverWorkDistributor
 private:
 	mutable FCriticalSection threadLock;
 	QueueCalibrationResultOutputDel queueCalibrationResultOutputDel;
+	QueueCalibrateWorkUnitInputDel queueCalibrateWorkUnitInputDel;
 	const QueueFinishedJobOutputDel* queueFinishedJobOutputDel;
 	const QueueLogOutputDel * queueLogOutputDel;
 	const bool debug;

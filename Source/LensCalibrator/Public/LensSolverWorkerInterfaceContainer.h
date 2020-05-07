@@ -25,7 +25,6 @@ struct FWorkerFindCornersInterfaceContainer
 	FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners> * worker;
 	FWorkerInterfaceContainer baseContainer;
 
-	QueueFindCornerResultOutputDel queueFindCornerResultOutputDel;
 	QueuePixelArrayWorkUnitInputDel queuePixelArrayWorkUnitInputDel;
 	QueueTextureFileWorkUnitInputDel queueTextureFileWorkUnitInputDel;
 };

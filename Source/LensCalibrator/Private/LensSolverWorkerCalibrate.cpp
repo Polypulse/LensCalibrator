@@ -1,5 +1,6 @@
 #include "LensSolverWorkerCalibrate.h"
 #include "JsonUtilities.h"
+#include "GenericPlatform/GenericPlatformProcess.h"
 
 FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	const FLensSolverWorkerParameters & inputParameters,
@@ -97,6 +98,9 @@ FTransform FLensSolverWorkerCalibrate::GenerateTransformFromRAndTVecs(std::vecto
 
 void FLensSolverWorkerCalibrate::Tick()
 {
+	if (GetWorkLoad() == 0)
+		FPlatformProcess::Sleep(0.5f);
+
 	if (!LatchInQueue())
 		return;
 
@@ -132,10 +136,10 @@ void FLensSolverWorkerCalibrate::Tick()
 	double aspectRatio = 0.0f;
 
 	int flags = 0;
-	flags |= latchData.calibrationParameters.useInitialIntrinsicValues			?	cv::CALIB_USE_INTRINSIC_GUESS : 0;
+	flags |= latchData.calibrationParameters.useInitialIntrinsicValues				?	cv::CALIB_USE_INTRINSIC_GUESS : 0;
 	flags |= latchData.calibrationParameters.keepPrincipalPixelPositionFixed		?	cv::CALIB_FIX_PRINCIPAL_POINT : 0;
 	flags |= latchData.calibrationParameters.keepAspectRatioFixed					?	cv::CALIB_FIX_ASPECT_RATIO : 0;
-	flags |= latchData.calibrationParameters.lensHasTangentalDistortion			?	cv::CALIB_ZERO_TANGENT_DIST : 0;
+	flags |= latchData.calibrationParameters.lensHasTangentalDistortion				?	cv::CALIB_ZERO_TANGENT_DIST : 0;
 	flags |= latchData.calibrationParameters.fixRadialDistortionCoefficientK1		?	cv::CALIB_FIX_K1 : 0;
 	flags |= latchData.calibrationParameters.fixRadialDistortionCoefficientK2		?	cv::CALIB_FIX_K2 : 0;
 	flags |= latchData.calibrationParameters.fixRadialDistortionCoefficientK3		?	cv::CALIB_FIX_K3 : 0;

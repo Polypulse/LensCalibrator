@@ -147,6 +147,8 @@ protected:
 public:
 
 	// ULensSolver() {}
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	bool debug;
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);

@@ -1372,7 +1372,7 @@ void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int
 		queueFinishedJobOutputDel.BindUObject(this, &ULensSolver::QueueFinishedJob);
 
 	if (!workDistributor.IsValid())
-		workDistributor = MakeUnique<LensSolverWorkDistributor>(&queueLogOutputDel, &queueFinishedJobOutputDel);
+		workDistributor = MakeUnique<LensSolverWorkDistributor>(&queueLogOutputDel, &queueFinishedJobOutputDel, debug);
 
 	workDistributor->StartFindCornerWorkers(findCornersWorkerCount);
 	workDistributor->StartCalibrateWorkers(calibrateWorkerCount);
@@ -1388,6 +1388,7 @@ void ULensSolver::StopBackgroundImageprocessors()
 
 void ULensSolver::Poll()
 {
+	PollLogs();
 	PollCalibrationResults();
 	PollFinishedJobs();
 	PollDistortionCorrectionMapGenerationResults();
