@@ -37,13 +37,13 @@ struct FLensSolverWorkerParameters
 	const FString inputWorkerID;
 	FLensSolverWorkerParameters(
 		const QueueLogOutputDel* inQueueLogOutputDel,
-		IsClosingOutputDel* insClosingOutputDel,
+		IsClosingOutputDel* inIsClosingOutputDel,
 		GetWorkLoadOutputDel* inGetWorkOutputLoadDel,
 		const FString inWorkerID) :
 		inputQueueLogOutputDel(inQueueLogOutputDel),
-		inputIsClosingOutputDel(inputIsClosingOutputDel),
+		inputIsClosingOutputDel(inIsClosingOutputDel),
 		inputGetWorkOutputLoadDel(inGetWorkOutputLoadDel),
-		inputWorkerID(inputWorkerID)
+		inputWorkerID(inWorkerID)
 	{
 
 	}
@@ -65,7 +65,7 @@ private:
 	bool Exit ();
 
 public:
-	FLensSolverWorker(FLensSolverWorkerParameters inputParameters);
+	FLensSolverWorker(const FLensSolverWorkerParameters & inputParameters);
 	virtual ~FLensSolverWorker() {};
 
 	FORCEINLINE TStatId GetStatId() const
@@ -82,13 +82,11 @@ protected:
 	const FString calibrationVisualizationOutputPath;
 	const FString workerMessage;
 	
-	virtual void Tick() {};
-
 	bool ShouldExit();
 	void Lock();
 	void Unlock();
 	void QueueLog(FString log);
 
+	virtual void Tick() {};
 	virtual int GetWorkLoad() { return 0; };
-	virtual bool WorkUnitInQueue() { return false; };
 };

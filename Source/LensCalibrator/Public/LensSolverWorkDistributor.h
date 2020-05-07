@@ -32,11 +32,11 @@ private:
 	void QueueLogAsync(const FString msg);
 
 	bool GetFindCornersContainerInterfacePtr(
-		const FString& workerID,
+		const FString workerID,
 		FWorkerFindCornersInterfaceContainer*& outputInterfaceContainerPtr);
 
 	bool GetCalibrateWorkerInterfaceContainerPtr(
-		const FString& calibrationID,
+		const FString calibrationID,
 		FWorkerCalibrateInterfaceContainer *& outputInterfaceContainerPtr);
 
 	void QueueCalibrateWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit);

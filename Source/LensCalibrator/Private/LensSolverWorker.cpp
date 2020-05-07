@@ -9,11 +9,11 @@
 #include "RenderUtils.h"
 #include "Engine/Texture2D.h"
 
-FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters inputParameters) :
+FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters & inputParameters) :
 	workerID(inputParameters.inputWorkerID),
 	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%s/"), *workerID))),
-	workerMessage(FString::Printf(TEXT("Worker (%s): "), *inputParameters.inputWorkerID)),
-	queueLogOutputDel(inputParameters.inputQueueLogOutputDel)
+	queueLogOutputDel(inputParameters.inputQueueLogOutputDel),
+	workerMessage(FString::Printf(TEXT("Worker (%s): "), *inputParameters.inputWorkerID))
 {
 	inputParameters.inputGetWorkOutputLoadDel->BindRaw(this, &FLensSolverWorker::GetWorkLoad);
 	inputParameters.inputIsClosingOutputDel->BindRaw(this, &FLensSolverWorker::Exit);
@@ -39,16 +39,9 @@ FString FLensSolverWorker::GetWorkerID()
 
 void FLensSolverWorker::DoWork()
 {
+	FLensSolverWorker* baseWorker = this;
 	while (!ShouldExit())
-	{
-		while (!WorkUnitInQueue() && !ShouldExit())
-			continue;
-
-		if (ShouldExit())
-			break;
-
-		Tick();
-	}
+		baseWorker->Tick();
 
 	flagToExit = true;
 }

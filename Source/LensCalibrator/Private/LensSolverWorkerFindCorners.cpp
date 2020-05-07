@@ -1,7 +1,7 @@
 #include "LensSolverWorkerFindCorners.h"
 
 FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
-	FLensSolverWorkerParameters inputParameters,
+	const FLensSolverWorkerParameters & inputParameters,
 	QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
 	QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
 	const QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel) :

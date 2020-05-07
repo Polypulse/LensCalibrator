@@ -1108,21 +1108,29 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		return;
 	}
 
+	int useCount = 0, useIndex = 0, offset = 0;
+	for (int ti = 0; ti < inputTextures.Num(); ti++)
+		useCount += inputTextures[ti].use;
+
 	TArray<TArray<FString>> imageFiles;
 	TArray<int> expectedImageCounts;
 
-	imageFiles.SetNum(inputTextures.Num());
-	expectedImageCounts.SetNum(inputTextures.Num());
+	imageFiles.SetNum(useCount);
+	expectedImageCounts.SetNum(useCount);
 
 	for (int ti = 0; ti < inputTextures.Num(); ti++)
 	{
+		useIndex = ti - offset;
 		TArray<FString> imagesInDirectory;
 		TArray<UTexture2D*> textures;
 
 		if (!inputTextures[ti].use)
+		{
+			offset++;
 			continue;
+		}
 
-		if (!LensSolverUtilities::GetFilesInFolder(inputTextures[ti].absoluteFolderPath, imageFiles[ti]))
+		if (!LensSolverUtilities::GetFilesInFolder(inputTextures[ti].absoluteFolderPath, imageFiles[useIndex]))
 			return;
 
 		if (imageFiles[ti].Num() == 0)
@@ -1131,11 +1139,11 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			return;
 		}
 
-		expectedImageCounts[ti] = imageFiles[ti].Num();
+		expectedImageCounts[useIndex] = imageFiles[ti].Num();
 	}
 
-	FJobInfo jobInfo = workDistributor->RegisterJob(expectedImageCounts, inputTextures.Num(), OneTime);
-	for (int ci = 0; ci < imageFiles.Num(); ci++)
+	FJobInfo jobInfo = workDistributor->RegisterJob(expectedImageCounts, useCount, OneTime);
+	for (int ci = 0; ci < useCount; ci++)
 	{
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
 		{

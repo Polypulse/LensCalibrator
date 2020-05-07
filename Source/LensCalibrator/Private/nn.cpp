@@ -2,7 +2,7 @@
 #include "JsonUtilities.h"
 
 FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
-	FLensSolverWorkerParameters inputParameters,
+	const FLensSolverWorkerParameters & inputParameters,
 	QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
 	QueueLatchInputDel* inputSignalLatch,
 	const QueueCalibrationResultOutputDel* inputOnSolvePointsDel) :

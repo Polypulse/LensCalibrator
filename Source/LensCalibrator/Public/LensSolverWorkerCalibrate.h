@@ -14,7 +14,7 @@ class FLensSolverWorkerCalibrate : public FLensSolverWorker
 public:
 
 	FLensSolverWorkerCalibrate(
-		FLensSolverWorkerParameters inputParameters,
+		const FLensSolverWorkerParameters & inputParameters,
 		QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
 		QueueLatchInputDel* inputSignalLatch,
 		const QueueCalibrationResultOutputDel* inputOnSolvePointsDel);

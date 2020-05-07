@@ -11,7 +11,7 @@ class FLensSolverWorkerFindCorners : public FLensSolverWorker
 {
 public:
 	FLensSolverWorkerFindCorners(
-		FLensSolverWorkerParameters inputParameters,
+		const FLensSolverWorkerParameters & inputParameters,
 		QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
 		QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
 		const QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel);
@@ -38,9 +38,9 @@ private:
 	void QueuePixelArrayWorkUnit(FLensSolverPixelArrayWorkUnit workUnit);
 
 protected:
-	virtual void Tick() override;
 	bool GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution);
 	bool GetImageFromArray(const TArray<FColor> & pixels, const FIntPoint resolution, cv::Mat& image);
 
+	virtual void Tick() override;
 	virtual int GetWorkLoad() override;
 };

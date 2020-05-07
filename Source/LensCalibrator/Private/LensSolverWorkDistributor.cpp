@@ -13,9 +13,8 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 
 	for (int i = 0; i < findCornerWorkerCount; i++)
 	{
-		FWorkerFindCornersInterfaceContainer interfaceContainer;
-
 		FString guid = FGuid::NewGuid().ToString();
+		FWorkerFindCornersInterfaceContainer & interfaceContainer = findCornersWorkers.Add(guid, FWorkerFindCornersInterfaceContainer());
 
 		FLensSolverWorkerParameters workerParameters(
 			queueLogOutputDel,
@@ -36,7 +35,7 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 			&interfaceContainer.queueFindCornerResultOutputDel);
 
 		interfaceContainer.worker->StartBackgroundTask();
-		findCornersWorkers.Add(guid, MoveTemp(interfaceContainer));
+		workLoadSortedFindCornerWorkers.Add(guid);
 	}
 
 	threadLock.Unlock();
@@ -77,6 +76,7 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 
 		interfaceContainer.worker->StartBackgroundTask();
 		calibrateWorkers.Add(guid, MoveTemp(interfaceContainer));
+		workLoadSortedCalibrateWorkers.Add(guid);
 	}
 
 	threadLock.Unlock();
@@ -136,7 +136,7 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 		return;
 	}
 
-	FWorkerFindCornersInterfaceContainer* interfaceContainer;
+	FWorkerFindCornersInterfaceContainer* interfaceContainer =nullptr;
 	if (!GetFindCornersContainerInterfacePtr(workerID, interfaceContainer))
 		return;
 
@@ -151,7 +151,7 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 
 void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit)
 {
-	if (workLoadSortedCalibrateWorkers.Num() == 0)
+	if (workLoadSortedFindCornerWorkers.Num() == 0)
 	{
 		QueueLogAsync("(ERROR): The work load sorted CalibrateWorker array is empty!");
 		return;
@@ -159,14 +159,14 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 
 	SortCalibrateWorkersByWorkLoad();
 
-	const FString workerID = workLoadSortedCalibrateWorkers[0];
+	const FString workerID = workLoadSortedFindCornerWorkers[0];
 	if (workerID.IsEmpty())
 	{
 		QueueLogAsync("(ERROR): A worker ID in the work load sorted CalibrateWorker array is empty!");
 		return;
 	}
 
-	FWorkerFindCornersInterfaceContainer* interfaceContainer;
+	FWorkerFindCornersInterfaceContainer* interfaceContainer = nullptr;
 	if (!GetFindCornersContainerInterfacePtr(workerID, interfaceContainer))
 		return;
 
@@ -232,29 +232,24 @@ void LensSolverWorkDistributor::QueueLogAsync(const FString msg)
 }
 
 bool LensSolverWorkDistributor::GetFindCornersContainerInterfacePtr(
-	const FString& workerID,
+	const FString workerID,
 	FWorkerFindCornersInterfaceContainer *& outputInterfaceContainerPtr)
 {
-	outputInterfaceContainerPtr = nullptr;
-	FWorkerFindCornersInterfaceContainer * interfaceContainerPtr = findCornersWorkers.Find(workerID);
+	outputInterfaceContainerPtr = findCornersWorkers.Find(workerID);
 
-	if (interfaceContainerPtr == nullptr)
+	if (outputInterfaceContainerPtr == nullptr)
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): There is no FWorkerCalibrateInterfaceContainer registered for worker ID: \"%s\"!"), *workerID));
 		return false;
 	}
 
-	outputInterfaceContainerPtr = interfaceContainerPtr;
-
 	return true;
 }
 
 bool LensSolverWorkDistributor::GetCalibrateWorkerInterfaceContainerPtr(
-	const FString& calibrationID,
+	const FString calibrationID,
 	FWorkerCalibrateInterfaceContainer *& outputInterfaceContainerPtr)
 {
-	outputInterfaceContainerPtr = nullptr;
-
 	if (calibrationID.IsEmpty())
 	{
 		QueueLogAsync("(ERROR): Received NULL LensSolverCalibrateWorkUnit with empty calibrationID FString member!");
@@ -273,14 +268,12 @@ bool LensSolverWorkDistributor::GetCalibrateWorkerInterfaceContainerPtr(
 
 	else workerID = *workerIDPtr;
 
-	FWorkerCalibrateInterfaceContainer * interfaceContainerPtr = calibrateWorkers.Find(workerID);
-	if (interfaceContainerPtr == nullptr)
+	outputInterfaceContainerPtr = calibrateWorkers.Find(workerID);
+	if (outputInterfaceContainerPtr == nullptr)
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): We the worker ID: \"%s\". However, no CalibrateWorkerInterfaceContainer is registered with that ID!"), *workerID));
 		return false;
 	}
-
-	outputInterfaceContainerPtr = interfaceContainerPtr;
 
 	return true;
 }
