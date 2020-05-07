@@ -16,6 +16,9 @@ struct FBaseParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString friendlyName;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float zoomLevel;
+
 	FBaseParameters () 
 	{
 		jobID = "";
@@ -29,8 +32,6 @@ struct FCalibrationParameters
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	float zoomLevel;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float sensorDiagonalSizeMM;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
@@ -62,12 +63,8 @@ struct FCalibrationParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString calibrationResultsFolderPath;
 
-	FIntPoint sourceResolution;
-	FIntPoint resizeResolution;
-
 	FCalibrationParameters()
 	{
-		zoomLevel = 0.0f;
 		sensorDiagonalSizeMM = 9.960784f;
 		initialPrincipalPointPixelPosition = FIntPoint(0, 0);
 
@@ -84,9 +81,6 @@ struct FCalibrationParameters
 
 		writeCalibrationResultsToFile = false;
 		calibrationResultsFolderPath = "";
-
-		sourceResolution = FIntPoint(0, 0);
-		resizeResolution = FIntPoint(0, 0);
 	}
 };
 

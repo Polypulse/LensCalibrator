@@ -1114,9 +1114,11 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 
 	TArray<TArray<FString>> imageFiles;
 	TArray<int> expectedImageCounts;
+	TArray<float> zoomLevels;
 
 	imageFiles.SetNum(useCount);
 	expectedImageCounts.SetNum(useCount);
+	zoomLevels.SetNum(useCount);
 
 	for (int ti = 0; ti < inputTextures.Num(); ti++)
 	{
@@ -1140,6 +1142,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		}
 
 		expectedImageCounts[useIndex] = imageFiles[ti].Num();
+		zoomLevels[useIndex] = inputTextures[ti].zoomLevel;
 	}
 
 	FJobInfo jobInfo = workDistributor->RegisterJob(expectedImageCounts, useCount, OneTime);
@@ -1148,10 +1151,11 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
 		{
 			FLensSolverTextureFileWorkUnit workUnit;
-			workUnit.baseParameters.jobID				= jobInfo.jobID;
-			workUnit.baseParameters.calibrationID		= jobInfo.calibrationIDs[ci];
-			workUnit.textureSearchParameters = oneTimeProcessParameters.textureSearchParameters;
-			workUnit.textureFileParameters.absoluteFilePath = imageFiles[ci][ii];
+			workUnit.baseParameters.jobID						= jobInfo.jobID;
+			workUnit.baseParameters.calibrationID				= jobInfo.calibrationIDs[ci];
+			workUnit.baseParameters.zoomLevel					= zoomLevels[ci];
+			workUnit.textureSearchParameters					= oneTimeProcessParameters.textureSearchParameters;
+			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
 			workDistributor->QueueTextureFileWorkUnit(jobInfo.jobID, workUnit);
 		}

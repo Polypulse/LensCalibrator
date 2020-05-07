@@ -32,7 +32,7 @@ private:
 	void WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, const FString fileName);
 	void TransformVectorFromCVToUE4(FVector& v);
 
-	void QueueSolvedPointsError(const FString & jobID, const FString & calibrationID, const float zoomLevel);
+	void QueueSolvedPointsError(const FBaseParameters & baseParameters);
 	void QueueSolvedPoints(FCalibrationResult solvedPoints);
 
 	void QueueLatch(const FCalibrateLatch latchData);

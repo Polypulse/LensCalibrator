@@ -19,9 +19,6 @@ struct FCalibrationResult
 	bool success;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	float zoomLevel;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float fovX;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
@@ -51,7 +48,6 @@ struct FCalibrationResult
 	FCalibrationResult()
 	{
 		success = false;
-		zoomLevel = 0.0f;
 		fovX = 0.0f;
 		fovY = 0.0f;
 		focalLengthMM = 0.0f;

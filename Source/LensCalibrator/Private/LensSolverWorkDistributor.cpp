@@ -201,11 +201,8 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 	if (IterateImageCount(calibrateWorkUnit.baseParameters.jobID, calibrateWorkUnit.baseParameters.jobID))
 	{
 		FCalibrateLatch latchData;
-		latchData.baseParameters.jobID = calibrateWorkUnit.baseParameters.jobID;
-		latchData.baseParameters.calibrationID = calibrateWorkUnit.baseParameters.calibrationID;
-		latchData.baseParameters.friendlyName = calibrateWorkUnit.baseParameters.friendlyName;
-
-		latchData.calibrationParameters = cachedCalibrationParameters;
+		latchData.baseParameters		= calibrateWorkUnit.baseParameters;
+		latchData.calibrationParameters	= cachedCalibrationParameters;
 
 		LatchCalibrateWorker(latchData);
 	}

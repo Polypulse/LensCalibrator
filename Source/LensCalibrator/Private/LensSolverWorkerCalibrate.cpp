@@ -115,12 +115,12 @@ void FLensSolverWorkerCalibrate::Tick()
 	std::vector<cv::Mat> rvecs, tvecs;
 	cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<float>::type);
 	cv::Mat distortionCoefficients = cv::Mat::zeros(5, 1, cv::DataType<float>::type);
-	cv::Size sourceImageSize(latchData.calibrationParameters.sourceResolution.X, latchData.calibrationParameters.sourceResolution.Y);
+	cv::Size sourceImageSize(latchData.resizeParameters.sourceResolution.X, latchData.resizeParameters.sourceResolution.Y);
 	cv::Point2d principalPoint = cv::Point2d(0.0, 0.0);
 	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
-	int sourcePixelWidth = latchData.calibrationParameters.sourceResolution.X;
-	int sourcePixelHeight = latchData.calibrationParameters.sourceResolution.Y;
+	int sourcePixelWidth = latchData.resizeParameters.sourceResolution.X;
+	int sourcePixelHeight = latchData.resizeParameters.sourceResolution.Y;
 
 	float sensorHeight = (latchData.calibrationParameters.sensorDiagonalSizeMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
 	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
@@ -153,10 +153,10 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 	{
-		cameraMatrix.at<float>(0, 0) = 1.0f / (latchData.calibrationParameters.sourceResolution.X * 0.5f);
-		cameraMatrix.at<float>(1, 1) = 1.0f / (latchData.calibrationParameters.sourceResolution.Y * 0.5f);
+		cameraMatrix.at<float>(0, 0) = 1.0f / (latchData.resizeParameters.sourceResolution.X * 0.5f);
+		cameraMatrix.at<float>(1, 1) = 1.0f / (latchData.resizeParameters.sourceResolution.Y * 0.5f);
 		QueueLog(FString::Printf(TEXT("%sKeeping aspect ratio at: %f"), 
-			(latchData.calibrationParameters.sourceResolution.X / (float)latchData.calibrationParameters.sourceResolution.Y)));
+			(latchData.resizeParameters.sourceResolution.X / (float)latchData.resizeParameters.sourceResolution.Y)));
 	}
 
 	double error = cv::calibrateCamera(
@@ -194,7 +194,7 @@ void FLensSolverWorkerCalibrate::Tick()
 		"\n\tAspect Ratio: %f\n)");
 
 	QueueLog(FString::Printf(*format,
-		latchData.calibrationParameters.zoomLevel,
+		latchData.baseParameters.zoomLevel,
 		error,
 		fovX,
 		fovY,
@@ -215,7 +215,6 @@ void FLensSolverWorkerCalibrate::Tick()
 	FCalibrationResult solvedPoints;
 
 	solvedPoints.baseParameters = latchData.baseParameters;
-	solvedPoints.zoomLevel = latchData.calibrationParameters.zoomLevel;
 	solvedPoints.success = true;
 	solvedPoints.fovX = fovX;
 	solvedPoints.fovY = fovY;
@@ -223,7 +222,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	solvedPoints.aspectRatio = aspectRatio;
 	solvedPoints.sensorSizeMM = FVector2D(sensorWidth, sensorHeight);
 	solvedPoints.principalPixelPoint = FVector2D(principalPoint.x, principalPoint.y);
-	solvedPoints.resolution = latchData.calibrationParameters.sourceResolution;
+	solvedPoints.resolution = latchData.resizeParameters.sourceResolution;
 	solvedPoints.perspectiveMatrix = perspectiveMatrix;
 	solvedPoints.distortionCoefficients = outputDistortionCoefficients;
 
@@ -305,7 +304,7 @@ void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationR
 	result->SetStringField("jobid", solvePoints.baseParameters.jobID);
 	result->SetStringField("calibrationid", solvePoints.baseParameters.calibrationID);
 	result->SetStringField("friendlyname", solvePoints.baseParameters.friendlyName);
-	result->SetNumberField("zoomlevel", solvePoints.zoomLevel);
+	result->SetNumberField("zoomlevel", solvePoints.baseParameters.zoomLevel);
 	result->SetNumberField("width", solvePoints.resolution.X);
 	result->SetNumberField("height", solvePoints.resolution.Y);
 	result->SetNumberField("fovx", solvePoints.fovX);
@@ -355,14 +354,12 @@ void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationR
 	UE_LOG(LogTemp, Log, TEXT("%sCalibration result written to file at path: \"%s\"."), *workerMessage, *outputPath);
 }
 
-void FLensSolverWorkerCalibrate::QueueSolvedPointsError(const FString & jobID, const FString & calibrationID, const float zoomLevel)
+void FLensSolverWorkerCalibrate::QueueSolvedPointsError(const FBaseParameters & baseParameters)
 {
 	TArray<FVector2D> emptyPoints;
 
 	FCalibrationResult solvedPoints;
-	solvedPoints.baseParameters.jobID = jobID;
-	solvedPoints.baseParameters.calibrationID = calibrationID;
-	solvedPoints.zoomLevel = zoomLevel;
+	solvedPoints.baseParameters = baseParameters;
 	solvedPoints.success = false;
 
 	if (!onSolvePointsDel->IsBound())

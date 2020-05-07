@@ -57,9 +57,7 @@ void FLensSolverWorkerFindCorners::Tick()
 {
 	FBaseParameters baseParameters;
 	FTextureSearchParameters textureSearchParameters;
-
-	FIntPoint sourceResolution;
-	FIntPoint resizeResolution;
+	FResizeParameters resizeParameters;
 
 	cv::Mat image;
 
@@ -70,7 +68,7 @@ void FLensSolverWorkerFindCorners::Tick()
 		baseParameters = textureFileWorkUnit.baseParameters;
 		textureSearchParameters = textureFileWorkUnit.textureSearchParameters;
 
-		if (!GetImageFromFile(textureFileWorkUnit.textureFileParameters.absoluteFilePath, image, sourceResolution))
+		if (!GetImageFromFile(textureFileWorkUnit.textureFileParameters.absoluteFilePath, image, resizeParameters.sourceResolution))
 			return;
 	}
 
@@ -80,6 +78,7 @@ void FLensSolverWorkerFindCorners::Tick()
 		DequeuePixelArrayWorkUnit(texturePixelArrayUnit);
 		baseParameters = texturePixelArrayUnit.baseParameters;
 		textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
+		resizeParameters.sourceResolution = texturePixelArrayUnit.pixelArrayParameters.sourceResolution;
 
 		if (!GetImageFromArray(texturePixelArrayUnit.pixelArrayParameters.pixels, texturePixelArrayUnit.pixelArrayParameters.sourceResolution, image))
 			return;
@@ -92,14 +91,14 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	float checkerBoardSquareSizeMM = textureSearchParameters.checkerBoardSquareSizeMM;
 	FIntPoint checkerBoardCornerCount = textureSearchParameters.checkerBoardCornerCount;
-	resizeResolution = sourceResolution * resizePercentage;
+	resizeParameters.resizeResolution = resizeParameters.sourceResolution * resizePercentage;
 
 	QueueLog(FString::Printf(TEXT("%sPrepared image of size: (%d, %d!"), *workerMessage, image.cols, image.rows));
 
-	int resizedPixelWidth = FMath::FloorToInt(sourceResolution.X * (resize ? resizePercentage : 1.0f));
-	int resizedPixelHeight = FMath::FloorToInt(sourceResolution.Y * (resize ? resizePercentage : 1.0f));
+	int resizedPixelWidth = FMath::FloorToInt(resizeParameters.sourceResolution.X * (resize ? resizePercentage : 1.0f));
+	int resizedPixelHeight = FMath::FloorToInt(resizeParameters.sourceResolution.Y * (resize ? resizePercentage : 1.0f));
 
-	cv::Size sourceImageSize(sourceResolution.X, sourceResolution.Y);
+	cv::Size sourceImageSize(resizeParameters.sourceResolution.X, resizeParameters.sourceResolution.Y);
 	cv::Size resizedImageSize(resizedPixelWidth, resizedPixelHeight);
 
 	float inverseResizeRatio = resize ? 1.0f / resizePercentage : 1.0f;
@@ -114,8 +113,8 @@ void FLensSolverWorkerFindCorners::Tick()
 		*workerMessage,
 		resizedPixelWidth,
 		resizedPixelHeight,
-		sourceResolution.X,
-		sourceResolution.Y,
+		resizeParameters.sourceResolution.X,
+		resizeParameters.sourceResolution.Y,
 		1.0f / inverseResizeRatio);
 
 	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
@@ -172,9 +171,10 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	FLensSolverCalibrationPointsWorkUnit calibrateWorkUnitPtr;
 
-	calibrateWorkUnitPtr.baseParameters = baseParameters;
-	calibrateWorkUnitPtr.calibrationPointParameters.corners = imageCorners;
-	calibrateWorkUnitPtr.calibrationPointParameters.objectPoints = imageObjectPoints;
+	calibrateWorkUnitPtr.baseParameters								= baseParameters;
+	calibrateWorkUnitPtr.calibrationPointParameters.corners			= imageCorners;
+	calibrateWorkUnitPtr.calibrationPointParameters.objectPoints	= imageObjectPoints;
+	calibrateWorkUnitPtr.resizeParameters							= resizeParameters;
 
 	queueFindCornerResultOutputDel->Execute(calibrateWorkUnitPtr);
 }

@@ -60,17 +60,24 @@ struct FLensSolverTextureFileWorkUnit
 {
 	FBaseParameters baseParameters;
 	FTextureSearchParameters textureSearchParameters;
-
 	FTextureFileParameters textureFileParameters;
+
 	FLensSolverTextureFileWorkUnit() 
 	{
 	}
+};
+
+struct FResizeParameters
+{
+	FIntPoint sourceResolution;
+	FIntPoint resizeResolution;
 };
 
 struct FCalibrationPointParameters
 {
 	std::vector<cv::Point2f> corners;
 	std::vector<cv::Point3f> objectPoints;
+
 	FCalibrationPointParameters()
 	{
 	}
@@ -80,6 +87,7 @@ struct FLensSolverCalibrationPointsWorkUnit
 {
 	FBaseParameters baseParameters;
 	FCalibrationPointParameters calibrationPointParameters;
+	FResizeParameters resizeParameters;
 
 	FLensSolverCalibrationPointsWorkUnit() {}
 };
@@ -88,6 +96,7 @@ struct FCalibrateLatch
 {
 	FBaseParameters baseParameters;
 	FCalibrationParameters calibrationParameters;
+	FResizeParameters resizeParameters;
 
 	FCalibrateLatch()
 	{
