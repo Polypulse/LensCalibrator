@@ -13,29 +13,30 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 
 	for (int i = 0; i < findCornerWorkerCount; i++)
 	{
-		FWorkerFindCornersInterfaceContainer interfaceContianer;
-		FLensSolverWorkerParameters workerParameters;
-
-		workerParameters.inputQueueLogOutputDel		= queueLogOutputDel;
-		workerParameters.inputIsClosingOutputDel	= &interfaceContianer.baseContainer.isClosingDel;
-		workerParameters.inputGetWorkOutputLoadDel	= &interfaceContianer.baseContainer.getWorkLoadDel;
-
-		interfaceContianer.queueFindCornerResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
+		FWorkerFindCornersInterfaceContainer interfaceContainer;
 
 		FString guid = FGuid::NewGuid().ToString();
-		interfaceContianer.baseContainer.workerID = guid;
-		workerParameters.inputWorkerID = guid;
+
+		FLensSolverWorkerParameters workerParameters(
+			queueLogOutputDel,
+			&interfaceContainer.baseContainer.isClosingDel,
+			&interfaceContainer.baseContainer.getWorkLoadDel,
+			guid
+		);
+
+		interfaceContainer.queueFindCornerResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
+		interfaceContainer.baseContainer.workerID = guid;
 
 		UE_LOG(LogTemp, Log, TEXT("Starting lens solver worker: %d"), i);
 
-		interfaceContianer.baseContainer.worker = MakeUnique<FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners>>(
+		interfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners>(
 			workerParameters,
-			interfaceContianer.queueTextureFileWorkUnitInputDel,
-			&interfaceContianer.queuePixelArrayWorkUnitInputDel,
-			&interfaceContianer.queueFindCornerResultOutputDel);
+			&interfaceContainer.queueTextureFileWorkUnitInputDel,
+			&interfaceContainer.queuePixelArrayWorkUnitInputDel,
+			&interfaceContainer.queueFindCornerResultOutputDel);
 
-		interfaceContianer.baseContainer.worker->StartBackgroundTask();
-		findCornersWorkers.Add(guid, MoveTemp(interfaceContianer));
+		interfaceContainer.worker->StartBackgroundTask();
+		findCornersWorkers.Add(guid, MoveTemp(interfaceContainer));
 	}
 
 	threadLock.Unlock();
@@ -43,7 +44,7 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 
 void LensSolverWorkDistributor::StartCalibrateWorkers(
 	int calibrateWorkerCount,
-	FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel * inputOnSolvedPointsDel)
+	QueueCalibrationResultOutputDel * inputOnSolvedPointsDel)
 {
 	if (calibrateWorkerCount <= 0)
 	{
@@ -56,25 +57,25 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 	for (int i = 0; i < calibrateWorkerCount; i++)
 	{
 		FWorkerCalibrateInterfaceContainer interfaceContainer;
-		FLensSolverWorkerParameters workerParameters;
-
-		workerParameters.inputQueueLogOutputDel		= queueLogOutputDel;
-		workerParameters.inputIsClosingOutputDel	= &interfaceContainer.baseContainer.isClosingDel;
-		workerParameters.inputGetWorkOutputLoadDel	= &interfaceContainer.baseContainer.getWorkLoadDel;
 
 		FString guid = FGuid::NewGuid().ToString();
-		workerParameters.inputWorkerID = guid;
-		interfaceContainer.baseContainer.workerID = guid;
+		FLensSolverWorkerParameters workerParameters(
+			queueLogOutputDel,
+			&interfaceContainer.baseContainer.isClosingDel,
+			&interfaceContainer.baseContainer.getWorkLoadDel,
+			guid
+		);
 
+		interfaceContainer.baseContainer.workerID = guid;
 		QueueLogAsync(FString::Printf(TEXT("Starting lens solver worker: %d"), i));
 
-		interfaceContainer.baseContainer.worker = MakeUnique<FAutoDeleteAsyncTask<FLensSolverWorkerCalibrate>>(
+		interfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorkerCalibrate>(
 			workerParameters,
 			&interfaceContainer.queueCalibrateWorkUnitDel,
 			&interfaceContainer.signalLatch,
 			inputOnSolvedPointsDel);
 
-		interfaceContainer.baseContainer.worker->StartBackgroundTask();
+		interfaceContainer.worker->StartBackgroundTask();
 		calibrateWorkers.Add(guid, MoveTemp(interfaceContainer));
 	}
 
@@ -308,10 +309,10 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 void LensSolverWorkDistributor::SortFindCornersWorkersByWorkLoad()
 {
 	LensSolverWorkDistributor* workDistributor = this;
-	workLoadSortedFindCornerWorkers.Sort([workDistributor](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) 
+	workLoadSortedFindCornerWorkers.Sort([workDistributor](const FString& workerAID, const FString& workerBID) 
 	{
-		FWorkerFindCornersInterfaceContainer * interfaceContainerA = workDistributor->findCornersWorkers.Find(workerA.workerID);
-		FWorkerFindCornersInterfaceContainer * interfaceContainerB = workDistributor->findCornersWorkers.Find(workerB.workerID);
+		FWorkerFindCornersInterfaceContainer * interfaceContainerA = workDistributor->findCornersWorkers.Find(workerAID);
+		FWorkerFindCornersInterfaceContainer * interfaceContainerB = workDistributor->findCornersWorkers.Find(workerBID);
 
 		if (interfaceContainerA == nullptr || 
 			interfaceContainerB == nullptr ||
@@ -326,10 +327,10 @@ void LensSolverWorkDistributor::SortFindCornersWorkersByWorkLoad()
 void LensSolverWorkDistributor::SortCalibrateWorkersByWorkLoad()
 {
 	LensSolverWorkDistributor* workDistributor = this;
-	workLoadSortedCalibrateWorkers.Sort([workDistributor](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) 
+	workLoadSortedCalibrateWorkers.Sort([workDistributor](const FString & workerAID, const FString & workerBID) 
 	{
-		FWorkerCalibrateInterfaceContainer * interfaceContainerA = workDistributor->calibrateWorkers.Find(workerA.workerID);
-		FWorkerCalibrateInterfaceContainer * interfaceContainerB = workDistributor->calibrateWorkers.Find(workerB.workerID);
+		FWorkerCalibrateInterfaceContainer * interfaceContainerA = workDistributor->calibrateWorkers.Find(workerAID);
+		FWorkerCalibrateInterfaceContainer * interfaceContainerB = workDistributor->calibrateWorkers.Find(workerBID);
 		if (interfaceContainerA == nullptr || 
 			interfaceContainerB == nullptr ||
 			!interfaceContainerA->baseContainer.getWorkLoadDel.IsBound() ||

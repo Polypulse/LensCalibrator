@@ -53,8 +53,8 @@ private:
 	FTexture2DRHIRef correctDistortedTextureRenderTexture;
 	bool correctDistortedTextureRenderTextureAllocated;
 
-	FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel onSolvePointsDel;
-	FLensSolverWorkerParameters::QueueLogOutputDel queueLogOutputDel;
+	QueueCalibrationResultOutputDel onSolvePointsDel;
+	QueueLogOutputDel queueLogOutputDel;
 
 	TSharedPtr<TQueue<FCalibrationResult>> queuedSolvedPointsPtr;
 	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;

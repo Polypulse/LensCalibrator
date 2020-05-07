@@ -1320,7 +1320,7 @@ void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int
 		queueLogOutputDel.BindUObject(this, &ULensSolver::QueueLog);
 
 	if (!workDistributor.IsValid())
-		workDistributor = MakeUnique<LensSolverWorkDistributor>();
+		workDistributor = MakeUnique<LensSolverWorkDistributor>(&queueLogOutputDel);
 
 	workDistributor->StartFindCornerWorkers(findCornersWorkerCount);
 	workDistributor->StartCalibrateWorkers(calibrateWorkerCount, &onSolvePointsDel);

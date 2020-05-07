@@ -2,9 +2,9 @@
 
 FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	FLensSolverWorkerParameters inputParameters,
-	const FLensSolverWorkerFindCorners::QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
-	const FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
-	const FLensSolverWorkerFindCorners::QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel) :
+	QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
+	QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
+	const QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel) :
 	FLensSolverWorker(inputParameters),
 	queueFindCornerResultOutputDel(inputQueueFindCornerResultOutputDel)
 {

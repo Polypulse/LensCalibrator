@@ -23,22 +23,30 @@
 #include "LatchData.h"
 #include "LensSolverUtilities.h"
 #include "LensSolverWorkUnit.h"
-#include "LensSolverWorker.generated.h"
 
-USTRUCT(BlueprintType)
+DECLARE_DELEGATE_OneParam(QueueLogOutputDel, FString)
+DECLARE_DELEGATE_RetVal(int, GetWorkLoadOutputDel)
+DECLARE_DELEGATE_RetVal(bool, IsClosingOutputDel)
+
 struct FLensSolverWorkerParameters 
 {
-	GENERATED_BODY()
-
-	DECLARE_DELEGATE_OneParam(QueueLogOutputDel, FString)
-	DECLARE_DELEGATE_RetVal(int, GetWorkLoadOutputDel)
-	DECLARE_DELEGATE_RetVal(bool, IsClosingOutputDel)
-
-	QueueLogOutputDel * inputQueueLogOutputDel;
+	const QueueLogOutputDel * inputQueueLogOutputDel;
 	IsClosingOutputDel * inputIsClosingOutputDel;
 	GetWorkLoadOutputDel * inputGetWorkOutputLoadDel;
 
-	FString inputWorkerID;
+	const FString inputWorkerID;
+	FLensSolverWorkerParameters(
+		const QueueLogOutputDel* inQueueLogOutputDel,
+		IsClosingOutputDel* insClosingOutputDel,
+		GetWorkLoadOutputDel* inGetWorkOutputLoadDel,
+		const FString inWorkerID) :
+		inputQueueLogOutputDel(inQueueLogOutputDel),
+		inputIsClosingOutputDel(inputIsClosingOutputDel),
+		inputGetWorkOutputLoadDel(inGetWorkOutputLoadDel),
+		inputWorkerID(inputWorkerID)
+	{
+
+	}
 };
 
 class FLensSolverWorker : public FNonAbandonableTask
@@ -51,7 +59,7 @@ private:
 	const FString workerID;
 	mutable bool flagToExit;
 
-	FLensSolverWorkerParameters::QueueLogOutputDel* queueLogOutputDel;
+	const QueueLogOutputDel* queueLogOutputDel;
 	FCriticalSection threadLock;
 
 	bool Exit ();
@@ -65,14 +73,15 @@ public:
 		RETURN_QUICK_DECLARE_CYCLE_STAT(FLensSolverWorker, STATGROUP_ThreadPoolAsyncTasks);
 	}
 
-	FString const& GetWorkerID();
+	FString GetWorkerID();
+
+	void DoWork();
 
 protected:
 
 	const FString calibrationVisualizationOutputPath;
 	const FString workerMessage;
 	
-	void DoWork();
 	virtual void Tick() {};
 
 	bool ShouldExit();

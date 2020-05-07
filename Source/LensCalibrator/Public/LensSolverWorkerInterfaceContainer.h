@@ -10,37 +10,31 @@
 #include "LatchData.h"
 #include "LensSolverWorkUnit.h"
 
-#include "LensSolverWorkerInterfaceContainer.generated.h"
+// #include "LensSolverWorkerInterfaceContainer.generated.h"
 
-USTRUCT()
 struct FWorkerInterfaceContainer
 {
-	GENERATED_BODY()
-
-	TUniquePtr<FAutoDeleteAsyncTask<FLensSolverWorker>> worker;
 	FString workerID;
 
-	FLensSolverWorkerParameters::GetWorkLoadOutputDel getWorkLoadDel;
-	FLensSolverWorkerParameters::IsClosingOutputDel isClosingDel;
+	GetWorkLoadOutputDel getWorkLoadDel;
+	IsClosingOutputDel isClosingDel;
 };
 
-USTRUCT()
 struct FWorkerFindCornersInterfaceContainer
 {
-	GENERATED_BODY()
+	FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners> * worker;
 	FWorkerInterfaceContainer baseContainer;
 
-	FLensSolverWorkerFindCorners::QueueFindCornerResultOutputDel queueFindCornerResultOutputDel;
-	FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnitInputDel queuePixelArrayWorkUnitInputDel;
-	FLensSolverWorkerFindCorners::QueueTextureFileWorkUnitInputDel queueTextureFileWorkUnitInputDel;
+	QueueFindCornerResultOutputDel queueFindCornerResultOutputDel;
+	QueuePixelArrayWorkUnitInputDel queuePixelArrayWorkUnitInputDel;
+	QueueTextureFileWorkUnitInputDel queueTextureFileWorkUnitInputDel;
 };
 
-USTRUCT()
 struct FWorkerCalibrateInterfaceContainer
 {
-	GENERATED_BODY()
+	FAutoDeleteAsyncTask<FLensSolverWorkerCalibrate> * worker;
 	FWorkerInterfaceContainer baseContainer;
 
-	FLensSolverWorkerCalibrate::QueueLatchInputDel signalLatch;
-	FLensSolverWorkerCalibrate::QueueCalibrateWorkUnitInputDel queueCalibrateWorkUnitDel;
+	QueueLatchInputDel signalLatch;
+	QueueCalibrateWorkUnitInputDel queueCalibrateWorkUnitDel;
 };

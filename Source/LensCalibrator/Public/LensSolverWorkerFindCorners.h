@@ -3,17 +3,18 @@
 #include "CoreTypes.h"
 #include "LensSolverWorker.h"
 
+DECLARE_DELEGATE_OneParam(QueueTextureFileWorkUnitInputDel, FLensSolverTextureFileWorkUnit)
+DECLARE_DELEGATE_OneParam(QueuePixelArrayWorkUnitInputDel, FLensSolverPixelArrayWorkUnit)
+DECLARE_DELEGATE_OneParam(QueueFindCornerResultOutputDel, FLensSolverCalibrateWorkUnit)
+
 class FLensSolverWorkerFindCorners : public FLensSolverWorker
 {
 public:
-	DECLARE_DELEGATE_OneParam(QueueTextureFileWorkUnitInputDel, FLensSolverTextureFileWorkUnit)
-	DECLARE_DELEGATE_OneParam(QueuePixelArrayWorkUnitInputDel, FLensSolverPixelArrayWorkUnit)
-	DECLARE_DELEGATE_OneParam(QueueFindCornerResultOutputDel, FLensSolverCalibrateWorkUnit)
 	FLensSolverWorkerFindCorners(
 		FLensSolverWorkerParameters inputParameters,
-		const FLensSolverWorkerFindCorners::QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
-		const FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
-		const FLensSolverWorkerFindCorners::QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel);
+		QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
+		QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
+		const QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel);
 
 	~FLensSolverWorkerFindCorners() {}
 

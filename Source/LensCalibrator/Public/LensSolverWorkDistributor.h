@@ -15,7 +15,7 @@ class LensSolverWorkDistributor
 {
 private:
 	mutable FCriticalSection threadLock;
-	FLensSolverWorkerParameters::QueueLogOutputDel * queueLogOutputDel;
+	const QueueLogOutputDel * queueLogOutputDel;
 
 	TMap<FString, FWorkerFindCornersInterfaceContainer> findCornersWorkers;
 	TMap<FString, FWorkerCalibrateInterfaceContainer> calibrateWorkers;
@@ -50,16 +50,17 @@ private:
 protected:
 public:
 
-	LensSolverWorkDistributor(FLensSolverWorkerParameters::QueueLogOutputDel * inputQueueLogOutputDel) : 
-		queueLogOutputDel(inputQueueLogOutputDel) 
-	{}
+	LensSolverWorkDistributor(const QueueLogOutputDel * inputQueueLogOutputDel) :
+		queueLogOutputDel(inputQueueLogOutputDel)
+	{
+	}
 
 	void StartFindCornerWorkers(
 		int findCornerWorkerCount);
 
 	void StartCalibrateWorkers(
 		int calibrateWorkerCount,
-		FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel * inputOnSolvedPointsDel);
+		QueueCalibrationResultOutputDel * inputOnSolvedPointsDel);
 
 	void StopFindCornerWorkers();
 	void StopCalibrationWorkers();

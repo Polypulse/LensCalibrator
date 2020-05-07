@@ -3,9 +3,9 @@
 
 FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	FLensSolverWorkerParameters inputParameters,
-	const FLensSolverWorkerCalibrate::QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
-	const FLensSolverWorkerCalibrate::QueueLatchInputDel* inputSignalLatch,
-	const FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel* inputOnSolvePointsDel) :
+	QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
+	QueueLatchInputDel* inputSignalLatch,
+	const QueueCalibrationResultOutputDel* inputOnSolvePointsDel) :
 	FLensSolverWorker(inputParameters),
 	onSolvePointsDel(inputOnSolvePointsDel)
 {
@@ -247,12 +247,13 @@ int FLensSolverWorkerCalibrate::GetWorkLoad()
 void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrateWorkUnit calibrateWorkUnit)
 {
 	Lock();
-	TQueue<FLensSolverCalibrateWorkUnit> * queue = workQueue.Find(calibrateWorkUnit.baseUnit.calibrationID);
-	if (queue == nullptr)
+	TQueue<FLensSolverCalibrateWorkUnit> ** queuePtr = workQueue.Find(calibrateWorkUnit.baseUnit.calibrationID);
+	if (queuePtr == nullptr)
 	{
-		workQueue.Add(calibrateWorkUnit.baseUnit.calibrationID, TQueue<FLensSolverCalibrateWorkUnit>());
-		queue = workQueue.Find(calibrateWorkUnit.baseUnit.calibrationID);
+		workQueue.Add(calibrateWorkUnit.baseUnit.calibrationID, new TQueue<FLensSolverCalibrateWorkUnit>());
+		queuePtr = workQueue.Find(calibrateWorkUnit.baseUnit.calibrationID);
 	}
+	TQueue<FLensSolverCalibrateWorkUnit>* queue = *queuePtr;
 
 	queue->Enqueue(calibrateWorkUnit);
 	Unlock();
@@ -265,12 +266,14 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 {
 	Lock();
 
-	TQueue<FLensSolverCalibrateWorkUnit> * queue = workQueue.Find(calibrationID);
-	if (queue == nullptr)
+	TQueue<FLensSolverCalibrateWorkUnit> ** queuePtr = workQueue.Find(calibrationID);
+	if (queuePtr == nullptr)
 	{
 		QueueLog(FString::Printf(TEXT("No work units in calibration queue with ID: \"%s\"."), *calibrationID));
 		return false;
 	}
+
+	TQueue<FLensSolverCalibrateWorkUnit>* queue = *queuePtr; 
 
 	while (!queue->IsEmpty())
 	{
@@ -288,6 +291,7 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 	}
 
 	Unlock();
+	return true;
 }
 
 void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, const FString fileName)

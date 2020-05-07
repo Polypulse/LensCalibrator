@@ -5,25 +5,26 @@
 #include "LatchData.h"
 #include "LensSolverWorker.h"
 
+DECLARE_DELEGATE_OneParam(QueueCalibrationResultOutputDel, FCalibrationResult)
+DECLARE_DELEGATE_OneParam(QueueCalibrateWorkUnitInputDel, FLensSolverCalibrateWorkUnit)
+DECLARE_DELEGATE_OneParam(QueueLatchInputDel, const FLatchData)
+
 class FLensSolverWorkerCalibrate : public FLensSolverWorker
 {
 public:
-	DECLARE_DELEGATE_OneParam(QueueCalibrationResultOutputDel, FCalibrationResult)
-	DECLARE_DELEGATE_OneParam(QueueCalibrateWorkUnitInputDel, FLensSolverCalibrateWorkUnit)
-	DECLARE_DELEGATE_OneParam(QueueLatchInputDel, const FLatchData)
 
 	FLensSolverWorkerCalibrate(
 		FLensSolverWorkerParameters inputParameters,
-		const FLensSolverWorkerCalibrate::QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
-		const FLensSolverWorkerCalibrate::QueueLatchInputDel* inputSignalLatch,
-		const FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel* inputOnSolvePointsDel);
+		QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
+		QueueLatchInputDel* inputSignalLatch,
+		const QueueCalibrationResultOutputDel* inputOnSolvePointsDel);
 
 	~FLensSolverWorkerCalibrate() {}
 
 private:
 	const QueueCalibrationResultOutputDel * onSolvePointsDel;
 
-	TMap<FString, TQueue<FLensSolverCalibrateWorkUnit>> workQueue;
+	TMap<FString, TQueue<FLensSolverCalibrateWorkUnit>*> workQueue;
 	TQueue<FLatchData> latchQueue;
 
 	FMatrix GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength);
