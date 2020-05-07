@@ -179,7 +179,7 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 	interfaceContainer->queueTextureFileWorkUnitInputDel.Execute(textureFileWorkUnit);
 }
 
-void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit)
+void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit)
 {
 	FWorkerCalibrateInterfaceContainer * interfaceContainerPtr;
 	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseUnit.calibrationID, interfaceContainerPtr))
@@ -195,7 +195,7 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrateWorkU
 
 	if (IterateImageCount(calibrateWorkUnit.baseUnit.jobID, calibrateWorkUnit.baseUnit.jobID))
 	{
-		FLatchData latchData;
+		FCalibrateLatch latchData;
 		latchData.jobID = calibrateWorkUnit.baseUnit.jobID;
 		latchData.calibrationID = calibrateWorkUnit.baseUnit.calibrationID;
 
@@ -203,7 +203,7 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrateWorkU
 	}
 }
 
-void LensSolverWorkDistributor::LatchCalibrateWorker(const FLatchData& latchData)
+void LensSolverWorkDistributor::LatchCalibrateWorker(const FCalibrateLatch& latchData)
 {
 	if (latchData.calibrationID.IsEmpty())
 	{

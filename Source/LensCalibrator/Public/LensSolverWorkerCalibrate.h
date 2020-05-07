@@ -6,8 +6,8 @@
 #include "LensSolverWorker.h"
 
 DECLARE_DELEGATE_OneParam(QueueCalibrationResultOutputDel, FCalibrationResult)
-DECLARE_DELEGATE_OneParam(QueueCalibrateWorkUnitInputDel, FLensSolverCalibrateWorkUnit)
-DECLARE_DELEGATE_OneParam(QueueLatchInputDel, const FLatchData)
+DECLARE_DELEGATE_OneParam(QueueCalibrateWorkUnitInputDel, FLensSolverCalibrationPointsWorkUnit)
+DECLARE_DELEGATE_OneParam(QueueLatchInputDel, const FCalibrateLatch)
 
 class FLensSolverWorkerCalibrate : public FLensSolverWorker
 {
@@ -24,8 +24,8 @@ public:
 private:
 	const QueueCalibrationResultOutputDel * onSolvePointsDel;
 
-	TMap<FString, TQueue<FLensSolverCalibrateWorkUnit>*> workQueue;
-	TQueue<FLatchData> latchQueue;
+	TMap<FString, TQueue<FLensSolverCalibrationPointsWorkUnit>*> workQueue;
+	TQueue<FCalibrateLatch> latchQueue;
 
 	FMatrix GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength);
 	FTransform GenerateTransformFromRAndTVecs(std::vector<cv::Mat>& rvecs, std::vector<cv::Mat>& tvecs);
@@ -35,8 +35,8 @@ private:
 	void QueueSolvedPointsError(const FString& jobID, const float zoomLevel);
 	void QueueSolvedPoints(FCalibrationResult solvedPoints);
 
-	void QueueLatch(const FLatchData latchData);
-	void DequeueLatch(FLatchData & latchDataPtr);
+	void QueueLatch(const FCalibrateLatch latchData);
+	void DequeueLatch(FCalibrateLatch & latchDataPtr);
 
 	bool DequeueAllWorkUnits(
 		const FString calibrationID, 
@@ -45,7 +45,7 @@ private:
 
 	bool LatchInQueue();
 
-	void QueueWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit);
+	void QueueWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit);
 
 protected:
 	virtual void Tick() override;

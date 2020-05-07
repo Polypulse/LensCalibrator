@@ -39,8 +39,8 @@ private:
 		const FString calibrationID,
 		FWorkerCalibrateInterfaceContainer *& outputInterfaceContainerPtr);
 
-	void QueueCalibrateWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit);
-	void LatchCalibrateWorker(const FLatchData& latchData);
+	void QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit);
+	void LatchCalibrateWorker(const FCalibrateLatch& latchData);
 
 	bool IterateImageCount(const FString & jobID, const FString& calibrationID);
 

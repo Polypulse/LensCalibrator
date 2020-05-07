@@ -55,7 +55,8 @@ void FLensSolverWorkerFindCorners::DequeuePixelArrayWorkUnit(FLensSolverPixelArr
 
 void FLensSolverWorkerFindCorners::Tick()
 {
-	FLensSolverTextureWorkUnit textureWorkUnit;
+	FBaseParameters baseParameters;
+	FTextureSearchParameters textureSearchParameters;
 
 	FIntPoint sourceResolution;
 	FIntPoint resizeResolution;
@@ -66,9 +67,10 @@ void FLensSolverWorkerFindCorners::Tick()
 	{
 		FLensSolverTextureFileWorkUnit textureFileWorkUnit;
 		DequeueTextureFileWorkUnit(textureFileWorkUnit);
-		textureWorkUnit = textureFileWorkUnit.textureUnit;
+		baseParameters = textureFileWorkUnit.baseParameters;
+		textureSearchParameters = textureFileWorkUnit.textureSearchParameters;
 
-		if (!GetImageFromFile(textureFileWorkUnit.absoluteFilePath, image, sourceResolution))
+		if (!GetImageFromFile(textureFileWorkUnit.textureFileParameters.absoluteFilePath, image, sourceResolution))
 			return;
 	}
 
@@ -76,19 +78,20 @@ void FLensSolverWorkerFindCorners::Tick()
 	{
 		FLensSolverPixelArrayWorkUnit texturePixelArrayUnit;
 		DequeuePixelArrayWorkUnit(texturePixelArrayUnit);
-		textureWorkUnit = texturePixelArrayUnit.textureUnit;
+		baseParameters = texturePixelArrayUnit.baseParameters;
+		textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
 
-		if (!GetImageFromArray(texturePixelArrayUnit.pixels, texturePixelArrayUnit.sourceResolution, image))
+		if (!GetImageFromArray(texturePixelArrayUnit.pixelArrayParameters.pixels, texturePixelArrayUnit.pixelArrayParameters.sourceResolution, image))
 			return;
 	}
 
 	else return;
 
-	float resizePercentage = textureWorkUnit.resizePercentage;
-	bool resize = textureWorkUnit.resize;
+	float resizePercentage = textureSearchParameters.resizePercentage;
+	bool resize = textureSearchParameters.resize;
 
-	float checkerBoardSquareSizeMM = textureWorkUnit.checkerBoardSquareSizeMM;
-	FIntPoint checkerBoardCornerCount = textureWorkUnit.checkerBoardCornerCount;
+	float checkerBoardSquareSizeMM = textureSearchParameters.checkerBoardSquareSizeMM;
+	FIntPoint checkerBoardCornerCount = textureSearchParameters.checkerBoardCornerCount;
 	resizeResolution = sourceResolution * resizePercentage;
 
 	QueueLog(FString::Printf(TEXT("%sPrepared image of size: (%d, %d!"), *workerMessage, image.cols, image.rows));
@@ -127,7 +130,7 @@ void FLensSolverWorkerFindCorners::Tick()
 	int findFlags = cv::CALIB_CB_NORMALIZE_IMAGE;
 	findFlags |= cv::CALIB_CB_ADAPTIVE_THRESH;
 
-	if (textureWorkUnit.exhaustiveSearch)
+	if (textureSearchParameters.exhaustiveSearch)
 		findFlags |= cv::CALIB_CB_EXHAUSTIVE;
 
 	patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
@@ -148,10 +151,10 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	cv::cornerSubPix(image, imageCorners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
 
-	if (textureWorkUnit.writeDebugTextureToFile)
+	if (textureSearchParameters.writeDebugTextureToFile)
 	{
 		cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
-		WriteMatToFile(image, textureWorkUnit.debugTextureFolderPath, "CheckerboardVisualization");
+		WriteMatToFile(image, textureSearchParameters.debugTextureFolderPath, "CheckerboardVisualization");
 	}
 
 	for (int y = 0; y < checkerBoardCornerCount.Y; y++)
@@ -167,16 +170,11 @@ void FLensSolverWorkerFindCorners::Tick()
 	if (!queueFindCornerResultOutputDel->IsBound())
 		return;
 
-	FLensSolverCalibrateWorkUnit calibrateWorkUnitPtr;
+	FLensSolverCalibrationPointsWorkUnit calibrateWorkUnitPtr;
 
-	calibrateWorkUnitPtr.baseUnit.jobID = textureWorkUnit.baseUnit.jobID;
-	calibrateWorkUnitPtr.baseUnit.calibrationID = textureWorkUnit.baseUnit.calibrationID;
-	calibrateWorkUnitPtr.baseUnit.friendlyName = textureWorkUnit.baseUnit.friendlyName;
-
-	calibrateWorkUnitPtr.baseUnit.workUnitType = ELensSolverWorkUnitType::Calibrate;
-
-	calibrateWorkUnitPtr.corners = imageCorners;
-	calibrateWorkUnitPtr.objectPoints = imageObjectPoints;
+	calibrateWorkUnitPtr.baseParameters = baseParameters;
+	calibrateWorkUnitPtr.calibrationPointParameters.corners = imageCorners;
+	calibrateWorkUnitPtr.calibrationPointParameters.objectPoints = imageObjectPoints;
 
 	queueFindCornerResultOutputDel->Execute(calibrateWorkUnitPtr);
 }

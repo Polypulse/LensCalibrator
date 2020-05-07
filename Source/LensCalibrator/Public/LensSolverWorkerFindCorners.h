@@ -5,7 +5,7 @@
 
 DECLARE_DELEGATE_OneParam(QueueTextureFileWorkUnitInputDel, FLensSolverTextureFileWorkUnit)
 DECLARE_DELEGATE_OneParam(QueuePixelArrayWorkUnitInputDel, FLensSolverPixelArrayWorkUnit)
-DECLARE_DELEGATE_OneParam(QueueFindCornerResultOutputDel, FLensSolverCalibrateWorkUnit)
+DECLARE_DELEGATE_OneParam(QueueFindCornerResultOutputDel, FLensSolverCalibrationPointsWorkUnit)
 
 class FLensSolverWorkerFindCorners : public FLensSolverWorker
 {
