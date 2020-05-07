@@ -5,7 +5,7 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 {
 	if (findCornerWorkerCount <= 0)
 	{
-		QueueLogAsync("Start Background Image Processors was called with 0 requested workers.");
+		QueueLogAsync("(ERROR): Cannot start calibration with 0 FindCorner workers.");
 		return;
 	}
 
@@ -20,13 +20,15 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 			queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
-			guid
+			guid,
+			debug
 		);
 
 		interfaceContainer.queueFindCornerResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
 		interfaceContainer.baseContainer.workerID = guid;
 
-		UE_LOG(LogTemp, Log, TEXT("Starting lens solver worker: %d"), i);
+		if (debug)
+			QueueLogAsync(FString::Printf(TEXT("(INFO): Starting FindCorner worker: %d"), i));
 
 		interfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners>(
 			workerParameters,
@@ -39,6 +41,8 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 	}
 
 	threadLock.Unlock();
+	if (debug)
+		QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d FindCorner workers"), findCornerWorkerCount));
 }
 
 void LensSolverWorkDistributor::StartCalibrateWorkers(
@@ -46,7 +50,7 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 {
 	if (calibrateWorkerCount <= 0)
 	{
-		QueueLogAsync("(ERROR): Start Background Image Processors was called with 0 requested workers.");
+		QueueLogAsync("(ERROR): Cannot start calibration with 0 Calibrate workers.");
 		return;
 	}
 
@@ -61,11 +65,13 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 			queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
-			guid
+			guid,
+			debug
 		);
 
 		interfaceContainer.baseContainer.workerID = guid;
-		QueueLogAsync(FString::Printf(TEXT("Starting lens solver worker: %d"), i));
+		if (debug)
+			QueueLogAsync(FString::Printf(TEXT("(INFO): Starting Calibrate worker: %d"), i));
 
 		interfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorkerCalibrate>(
 			workerParameters,
@@ -79,6 +85,8 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 	}
 
 	threadLock.Unlock();
+	if (debug)
+		QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d Calibrate workers"), calibrateWorkerCount));
 }
 
 FJobInfo LensSolverWorkDistributor::RegisterJob(
@@ -114,6 +122,9 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 	threadLock.Lock();
 	jobs.Add(jobInfo.jobID, job);
 	threadLock.Unlock();
+
+	if (debug)
+		QueueLogAsync(FString::Printf(TEXT("(INFO): Registered job with ID: \"%s\"."), *job.jobInfo.jobID));
 
 	return jobInfo;
 }
@@ -275,8 +286,9 @@ void LensSolverWorkDistributor::DequeueCalibrationResult(FCalibrationResult & ca
 	queuedCalibrationResults.Dequeue(calibrationResult);
 }
 
-void LensSolverWorkDistributor::QueueLogAsync(const FString msg)
+void LensSolverWorkDistributor::QueueLogAsync(FString msg)
 {
+	msg = FString::Printf(TEXT("Work Distributor: %s"), *msg);
 	if (!queueLogOutputDel->IsBound())
 	{
 		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);
@@ -387,6 +399,51 @@ void LensSolverWorkDistributor::SortCalibrateWorkersByWorkLoad()
 		return interfaceContainerA->baseContainer.getWorkLoadDel.Execute() > interfaceContainerB->baseContainer.getWorkLoadDel.Execute();
 	});
 }
+
+/*
+FString LensSolverWorkDistributor::ExpectedAndCurrentImageCountToString(const TMap<FString, FExpectedAndCurrentImageCount> & map, const int tabCount)
+{;
+	FString tabs(tabCount, "\t");
+	TArray<FString> keys;
+	map.GetKeys(keys);
+	FString str = FString::Printf(TEXT("%s;
+	for (FString key : keys)
+	{
+
+	}
+	return FString::Printf(TEXT("%s{\n%s\tExpected: %d,\n\t%sCurrent: %d\n%s}"), 
+		*tabs, 
+		strct.expectedImageCount, 
+		*tabs, 
+		strct.currentImageCount, 
+		*tabs);
+}
+
+FString LensSolverWorkDistributor::FJobInfoToString(const FJobInfo& job, const int tabCount)
+{
+	FString tabs(tabCount, "\t");
+	FString str = FString::Printf(TEXT("%s\tJob ID: \"%s\","), *tabs, job.jobID);
+	FString::Printf(TEXT("%s%s\tCalibration IDs:\n%s\t["), *str, *tabs, *tabs);
+	for (int i = 0; i < job.calibrationIDs.Num() - 1; i++)
+		str = FString::Printf(TEXT("%s\n%s\t\t%s,"), *str, *tabs, *job.calibrationIDs[i]);
+	return FString::Printf(TEXT("%s\n%s\t\t%s\n%s\t],"), *str, *tabs, *job.calibrationIDs[job.calibrationIDs.Num() - 1], *tabs);
+}
+
+FString LensSolverWorkDistributor::FJobToString(const FJob& job, const int tabCount)
+{
+	FString tabs(tabCount, "\t");
+	FString str(TEXT("%s\tJob:\n%s\t{\n%s\t\tExpected Result Count: %d,\n%s\t\tCurrent Result Count: %d,\n%s\t\tJobInfo: \n%s, \n\tExpected and Current Image Counts: \n%s\n%s\t}"),
+		*tabs,
+		*tabs,
+		*tabs,
+		job.currentResultCount,
+		*tabs,
+		job.currentResultCount,
+		*FJobInfoToString(job.jobInfo, tabCount + 2),
+		*ExpectedAndCurrentImageCountToString(job.expectedAndCurrentImageCounts tabCount + 2),
+		*tabs);
+}
+*/
 
 void LensSolverWorkDistributor::StopFindCornerWorkers()
 {

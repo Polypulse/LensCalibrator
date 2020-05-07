@@ -34,19 +34,21 @@ struct FLensSolverWorkerParameters
 	const QueueLogOutputDel * inputQueueLogOutputDel;
 	IsClosingOutputDel * inputIsClosingOutputDel;
 	GetWorkLoadOutputDel * inputGetWorkOutputLoadDel;
+	bool debug;
 
 	const FString inputWorkerID;
 	FLensSolverWorkerParameters(
 		const QueueLogOutputDel* inQueueLogOutputDel,
 		IsClosingOutputDel* inIsClosingOutputDel,
 		GetWorkLoadOutputDel* inGetWorkOutputLoadDel,
-		const FString inWorkerID) :
+		const FString inWorkerID,
+		const bool inDebug) :
 		inputQueueLogOutputDel(inQueueLogOutputDel),
 		inputIsClosingOutputDel(inIsClosingOutputDel),
 		inputGetWorkOutputLoadDel(inGetWorkOutputLoadDel),
-		inputWorkerID(inWorkerID)
+		inputWorkerID(inWorkerID),
+		debug(inDebug)
 	{
-
 	}
 };
 
@@ -66,6 +68,7 @@ private:
 	bool Exit ();
 
 public:
+	static FString JobDataToString(const FBaseParameters & baseParameters);
 	FLensSolverWorker(const FLensSolverWorkerParameters & inputParameters);
 	virtual ~FLensSolverWorker() {};
 
@@ -80,10 +83,12 @@ public:
 
 protected:
 
+	const bool debug;
 	const FString calibrationVisualizationOutputPath;
 	const FString workerMessage;
 	
 	bool ShouldExit();
+	inline bool Debug() { return debug; }
 	void Lock();
 	void Unlock();
 	void QueueLog(FString log);

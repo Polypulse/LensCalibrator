@@ -125,7 +125,8 @@ void FLensSolverWorkerCalibrate::Tick()
 	float sensorHeight = (latchData.calibrationParameters.sensorDiagonalSizeMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
 	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
 
-	QueueLog(FString::Printf(TEXT("%sSensor size: (%f, %f) mm, diagonal: (%f) mm."), *workerMessage, sensorWidth, sensorHeight, latchData.calibrationParameters.sensorDiagonalSizeMM));
+	if (debug)
+		QueueLog(FString::Printf(TEXT("(INFO): Sensor size: (%f, %f) mm, diagonal: (%f) mm."), sensorWidth, sensorHeight, latchData.calibrationParameters.sensorDiagonalSizeMM));
 
 	double fovX = 0.0f, fovY = 0.0f, focalLength = 0.0f;
 	double aspectRatio = 0.0f;
@@ -146,17 +147,19 @@ void FLensSolverWorkerCalibrate::Tick()
 	{
 		cameraMatrix.at<float>(0, 2) = latchData.calibrationParameters.initialPrincipalPointPixelPosition.X;
 		cameraMatrix.at<float>(1, 2) = latchData.calibrationParameters.initialPrincipalPointPixelPosition.Y;
-		QueueLog(FString::Printf(TEXT("Setting initial principal point to: (%f, %f)"), 
-			latchData.calibrationParameters.initialPrincipalPointPixelPosition.X,
-			latchData.calibrationParameters.initialPrincipalPointPixelPosition.Y));
+		if (debug)
+			QueueLog(FString::Printf(TEXT("(INFO): Setting initial principal point to: (%f, %f)"), 
+				latchData.calibrationParameters.initialPrincipalPointPixelPosition.X,
+				latchData.calibrationParameters.initialPrincipalPointPixelPosition.Y));
 	}
 
 	else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 	{
 		cameraMatrix.at<float>(0, 0) = 1.0f / (latchData.resizeParameters.sourceResolution.X * 0.5f);
 		cameraMatrix.at<float>(1, 1) = 1.0f / (latchData.resizeParameters.sourceResolution.Y * 0.5f);
-		QueueLog(FString::Printf(TEXT("%sKeeping aspect ratio at: %f"), 
-			(latchData.resizeParameters.sourceResolution.X / (float)latchData.resizeParameters.sourceResolution.Y)));
+		if (debug)
+			QueueLog(FString::Printf(TEXT("(INFO): Keeping aspect ratio at: %f"), 
+				(latchData.resizeParameters.sourceResolution.X / (float)latchData.resizeParameters.sourceResolution.Y)));
 	}
 
 	double error = cv::calibrateCamera(
@@ -183,7 +186,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	principalPoint.x = sourcePixelWidth * (principalPoint.x / sensorWidth);
 	principalPoint.y = sourcePixelHeight * (principalPoint.y / sensorHeight);
 
-	FString format = FString("Completed camera calibration at zoom level: %f "
+	FString format = FString("(INFO): Completed camera calibration at zoom level: %f "
 		"with solve error: %f "
 		"with results: ("
 		"\n\tField of View in degrees: (%f, %f)"
@@ -229,7 +232,9 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (latchData.calibrationParameters.writeCalibrationResultsToFile)
 		WriteSolvedPointsToJSONFile(solvedPoints, latchData.calibrationParameters.calibrationResultsFolderPath, "result");
 
-	QueueLog(FString("Finished with work unit."));
+	if (debug)
+		QueueLog(FString("(INFO): Finished with work unit."));
+
 	QueueSolvedPoints(solvedPoints);
 }
 
@@ -267,7 +272,8 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 	TQueue<FLensSolverCalibrationPointsWorkUnit> ** queuePtr = workQueue.Find(calibrationID);
 	if (queuePtr == nullptr)
 	{
-		QueueLog(FString::Printf(TEXT("No work units in calibration queue with ID: \"%s\"."), *calibrationID));
+		if (debug)
+			QueueLog(FString::Printf(TEXT("(ERROR): No work units in calibration queue with ID: \"%s\"."), *calibrationID));
 		return false;
 	}
 
@@ -280,7 +286,8 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 
 		if (calibrateWorkUnit.calibrationPointParameters.corners.size() == 0 || calibrateWorkUnit.calibrationPointParameters.objectPoints.size() == 0)
 		{
-			QueueLog(FString("(ERROR): NULL calibrate worker work unit contained an invalid number of corners or object points!"));
+			if (debug)
+				QueueLog(FString("(ERROR): NULL calibrate worker work unit contained an invalid number of corners or object points!"));
 			continue;
 		}
 
@@ -347,11 +354,11 @@ void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationR
 
 	if (!FFileHelper::SaveStringToFile(outputJson, *outputPath))
 	{
-		UE_LOG(LogTemp, Error, TEXT("%sUnable to write calibration result to path: \"%s\", check your permissions."), *workerMessage, *outputPath);
+		QueueLog(FString::Printf(TEXT("(ERROR): Unable to write calibration result to path: \"%s\", check your permissions."), *outputPath));
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("%sCalibration result written to file at path: \"%s\"."), *workerMessage, *outputPath);
+	QueueLog(FString::Printf(TEXT("(INFO): Calibration result written to file at path: \"%s\"."), *outputPath));
 }
 
 void FLensSolverWorkerCalibrate::QueueSolvedPointsError(const FBaseParameters & baseParameters)
@@ -377,11 +384,15 @@ void FLensSolverWorkerCalibrate::QueueSolvedPoints(FCalibrationResult solvedPoin
 void FLensSolverWorkerCalibrate::QueueLatch(const FCalibrateLatch latchData)
 {
 	latchQueue.Enqueue(latchData);
+	if (Debug())
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued calibrate latch."), *JobDataToString(latchData.baseParameters)));
 }
 
 void FLensSolverWorkerCalibrate::DequeueLatch(FCalibrateLatch & latchData)
 {
 	latchQueue.Dequeue(latchData);
+	if (Debug())
+		QueueLog(FString::Printf(TEXT("(INFO): %s sDequeued calibrate latch."), *JobDataToString(latchData.baseParameters)));
 }
 
 bool FLensSolverWorkerCalibrate::LatchInQueue()

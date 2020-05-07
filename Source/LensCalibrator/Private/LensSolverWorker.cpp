@@ -13,7 +13,8 @@ FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters & inputPa
 	workerID(inputParameters.inputWorkerID),
 	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%s/"), *workerID))),
 	queueLogOutputDel(inputParameters.inputQueueLogOutputDel),
-	workerMessage(FString::Printf(TEXT("Worker (%s): "), *inputParameters.inputWorkerID))
+	workerMessage(FString::Printf(TEXT("Worker (%s): "), *inputParameters.inputWorkerID)),
+	debug(inputParameters.debug)
 {
 	inputParameters.inputGetWorkOutputLoadDel->BindRaw(this, &FLensSolverWorker::GetWorkLoad);
 	inputParameters.inputIsClosingOutputDel->BindRaw(this, &FLensSolverWorker::Exit);
@@ -23,8 +24,12 @@ FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters & inputPa
 
 void FLensSolverWorker::QueueLog(FString log)
 {
+	log = FString::Printf(TEXT("Worker (%s): %s"), *workerID, *log);
 	if (!queueLogOutputDel->IsBound())
+	{
+		UE_LOG(LogTemp, Log, TEXT("%s"), *log);
 		return;
+	}
 	queueLogOutputDel->Execute(log);
 }
 
@@ -71,5 +76,10 @@ void FLensSolverWorker::Lock()
 void FLensSolverWorker::Unlock()
 {
 	threadLock.Unlock();
+}
+
+FString FLensSolverWorker::JobDataToString(const FBaseParameters & baseParameters)
+{
+	return FString::Printf(TEXT("(Job ID: \"%s\", Calibration ID: \"%s\", Friendly Name: \"%s\", Zoom Level: %f"), *baseParameters.jobID, *baseParameters.calibrationID, *baseParameters.friendlyName, baseParameters.zoomLevel);
 }
 

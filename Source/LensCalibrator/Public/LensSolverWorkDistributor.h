@@ -18,6 +18,7 @@ private:
 	QueueCalibrationResultOutputDel queueCalibrationResultOutputDel;
 	const QueueFinishedJobOutputDel* queueFinishedJobOutputDel;
 	const QueueLogOutputDel * queueLogOutputDel;
+	const bool debug;
 
 	FCalibrationParameters cachedCalibrationParameters;
 
@@ -30,7 +31,7 @@ private:
 
 	TQueue<FCalibrationResult> queuedCalibrationResults;
 
-	void QueueLogAsync(const FString msg);
+	void QueueLogAsync(FString msg);
 
 	bool GetFindCornersContainerInterfacePtr(
 		const FString workerID,
@@ -53,9 +54,16 @@ private:
 protected:
 public:
 
-	LensSolverWorkDistributor(const QueueLogOutputDel * inputQueueLogOutputDel, const QueueFinishedJobOutputDel * inputQueueFinishedJobOutputDel) :
+	/*
+	static FString ExpectedAndCurrentImageCountToString(const TMap<FString, FExpectedAndCurrentImageCount> & map, const int tabCount);
+	static FString FJobInfoToString(const FJobInfo& job, const int tabCount = 0);
+	static FString FJobToString(const FJob& job, const int tabcount = 0);
+	*/
+
+	LensSolverWorkDistributor(const QueueLogOutputDel* inputQueueLogOutputDel, const QueueFinishedJobOutputDel* inputQueueFinishedJobOutputDel, bool debugEnabled = false) :
 		queueFinishedJobOutputDel(inputQueueFinishedJobOutputDel),
-		queueLogOutputDel(inputQueueLogOutputDel)
+		queueLogOutputDel(inputQueueLogOutputDel),
+		debug(debugEnabled)
 	{
 		queueCalibrationResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrationResult);
 	}
