@@ -1148,18 +1148,10 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
 		{
 			FLensSolverTextureFileWorkUnit workUnit;
-			workUnit.textureUnit.baseUnit.jobID				= jobInfo.jobID;
-			workUnit.textureUnit.baseUnit.calibrationID		= jobInfo.calibrationIDs[ci];
-
-			workUnit.textureUnit.exhaustiveSearch			= oneTimeProcessParameters.findCornerWorkerParameters.exhaustiveSearch;
-			workUnit.textureUnit.checkerBoardCornerCount	= oneTimeProcessParameters.findCornerWorkerParameters.cornerCount;
-			workUnit.textureUnit.checkerBoardSquareSizeMM	= oneTimeProcessParameters.findCornerWorkerParameters.squareSizeMM;
-			workUnit.textureUnit.resize						= oneTimeProcessParameters.findCornerWorkerParameters.resize;
-			workUnit.textureUnit.resizePercentage			= oneTimeProcessParameters.findCornerWorkerParameters.resizePercentage;
-			workUnit.textureUnit.writeDebugTextureToFile	= oneTimeProcessParameters.findCornerWorkerParameters.writeDebugTextureToFile;
-			workUnit.textureUnit.debugTextureFolderPath		= oneTimeProcessParameters.findCornerWorkerParameters.debugTextureFolderPath;
-
-			workUnit.absoluteFilePath = imageFiles[ci][ii];
+			workUnit.baseParameters.jobID				= jobInfo.jobID;
+			workUnit.baseParameters.calibrationID		= jobInfo.calibrationIDs[ci];
+			workUnit.textureSearchParameters = oneTimeProcessParameters.textureSearchParameters;
+			workUnit.textureFileParameters.absoluteFilePath = imageFiles[ci][ii];
 
 			workDistributor->QueueTextureFileWorkUnit(jobInfo.jobID, workUnit);
 		}

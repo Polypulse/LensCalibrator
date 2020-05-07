@@ -17,16 +17,13 @@ private:
 	mutable FCriticalSection threadLock;
 	const QueueLogOutputDel * queueLogOutputDel;
 
+	FCalibrationParameters cachedCalibrationParameters;
+
 	TMap<FString, FWorkerFindCornersInterfaceContainer> findCornersWorkers;
 	TMap<FString, FWorkerCalibrateInterfaceContainer> calibrateWorkers;
-
 	TArray<FString> workLoadSortedFindCornerWorkers;
 	TArray<FString> workLoadSortedCalibrateWorkers;
-
 	TMap<FString, FString> workerCalibrationIDLUT;
-
-	TMap<FString, TUniquePtr<FFindCornerWorkerParameters>> jobFindCornerWorkerParameters;
-	TMap<FString, TUniquePtr<FCalibrationWorkerParameters>> jobCalibrationWorkerParameters;
 	TMap<FString, FJob> jobs;
 
 	void QueueLogAsync(const FString msg);
@@ -39,6 +36,7 @@ private:
 		const FString calibrationID,
 		FWorkerCalibrateInterfaceContainer *& outputInterfaceContainerPtr);
 
+	void SetCalibrateWorkerParameters(FCalibrationParameters calibrationParameters);
 	void QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit);
 	void LatchCalibrateWorker(const FCalibrateLatch& latchData);
 

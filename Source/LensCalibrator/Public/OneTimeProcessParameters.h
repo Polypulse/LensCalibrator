@@ -8,6 +8,7 @@
 
 #include "CalibrationWorkerParameters.h"
 #include "FindCornerWorkerParameters.h"
+#include "LensSolverWorkerParameters.h"
 #include "OneTimeProcessParameters.generated.h"
 
 USTRUCT(BlueprintType)
@@ -16,10 +17,10 @@ struct FOneTimeProcessParameters
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FFindCornerWorkerParameters findCornerWorkerParameters;
+	FTextureSearchParameters textureSearchParameters;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FCalibrationWorkerParameters calibrationWorkerParameters;
+	FCalibrationParameters calibrationParameters;
 
 	FOneTimeProcessParameters()
 	{

@@ -4,5 +4,3 @@
 
 #include "JobInfo.h"
 #include "CalibrationWorkerParameters.h"
-
-#include "LatchData.generated.h" 

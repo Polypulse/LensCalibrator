@@ -179,10 +179,15 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 	interfaceContainer->queueTextureFileWorkUnitInputDel.Execute(textureFileWorkUnit);
 }
 
+void LensSolverWorkDistributor::SetCalibrateWorkerParameters(FCalibrationParameters calibrationParameters)
+{
+	cachedCalibrationParameters = calibrationParameters;
+}
+
 void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit)
 {
 	FWorkerCalibrateInterfaceContainer * interfaceContainerPtr;
-	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseUnit.calibrationID, interfaceContainerPtr))
+	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseParameters.calibrationID, interfaceContainerPtr))
 		return;
 
 	if (!interfaceContainerPtr->queueCalibrateWorkUnitDel.IsBound())
@@ -193,11 +198,14 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 
 	interfaceContainerPtr->queueCalibrateWorkUnitDel.Execute(calibrateWorkUnit);
 
-	if (IterateImageCount(calibrateWorkUnit.baseUnit.jobID, calibrateWorkUnit.baseUnit.jobID))
+	if (IterateImageCount(calibrateWorkUnit.baseParameters.jobID, calibrateWorkUnit.baseParameters.jobID))
 	{
 		FCalibrateLatch latchData;
-		latchData.jobID = calibrateWorkUnit.baseUnit.jobID;
-		latchData.calibrationID = calibrateWorkUnit.baseUnit.calibrationID;
+		latchData.baseParameters.jobID = calibrateWorkUnit.baseParameters.jobID;
+		latchData.baseParameters.calibrationID = calibrateWorkUnit.baseParameters.calibrationID;
+		latchData.baseParameters.friendlyName = calibrateWorkUnit.baseParameters.friendlyName;
+
+		latchData.calibrationParameters = cachedCalibrationParameters;
 
 		LatchCalibrateWorker(latchData);
 	}
@@ -205,14 +213,14 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 
 void LensSolverWorkDistributor::LatchCalibrateWorker(const FCalibrateLatch& latchData)
 {
-	if (latchData.calibrationID.IsEmpty())
+	if (latchData.baseParameters.calibrationID.IsEmpty())
 	{
 		QueueLogAsync("(ERROR): The calibration ID is empty!");
 		return;
 	}
 
 	FWorkerCalibrateInterfaceContainer* interfaceContainerPtr;
-	if (!GetCalibrateWorkerInterfaceContainerPtr(latchData.calibrationID, interfaceContainerPtr))
+	if (!GetCalibrateWorkerInterfaceContainerPtr(latchData.baseParameters.calibrationID, interfaceContainerPtr))
 		return;
 
 	if (!interfaceContainerPtr->signalLatch.IsBound())
