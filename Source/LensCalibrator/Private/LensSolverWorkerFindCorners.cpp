@@ -72,7 +72,7 @@ void FLensSolverWorkerFindCorners::Tick()
 			return;
 	}
 
-	else
+	else if (!pixelArrayWorkQueue.IsEmpty())
 	{
 		FLensSolverPixelArrayWorkUnit texturePixelArrayUnit;
 		DequeuePixelArrayWorkUnit(texturePixelArrayUnit);
@@ -81,6 +81,8 @@ void FLensSolverWorkerFindCorners::Tick()
 		if (!GetImageFromArray(texturePixelArrayUnit.pixels, texturePixelArrayUnit.sourceResolution, image))
 			return;
 	}
+
+	else return;
 
 	float resizePercentage = textureWorkUnit.resizePercentage;
 	bool resize = textureWorkUnit.resize;
@@ -183,6 +185,8 @@ bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFile
 {
 	cv::String cvPath(TCHAR_TO_UTF8(*absoluteFilePath));
 	image = cv::imread(cvPath);
+
+	sourceResolution = FIntPoint(image.cols, image.rows);
 
 	if (image.data == NULL)
 		return false;
