@@ -42,8 +42,7 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 }
 
 void LensSolverWorkDistributor::StartCalibrateWorkers(
-	int calibrateWorkerCount,
-	QueueCalibrationResultOutputDel * inputOnSolvedPointsDel)
+	int calibrateWorkerCount)
 {
 	if (calibrateWorkerCount <= 0)
 	{
@@ -72,7 +71,7 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 			workerParameters,
 			&interfaceContainer.queueCalibrateWorkUnitDel,
 			&interfaceContainer.signalLatch,
-			inputOnSolvedPointsDel);
+			&queueCalibrationResultOutputDel);
 
 		interfaceContainer.worker->StartBackgroundTask();
 		calibrateWorkers.Add(guid, MoveTemp(interfaceContainer));
@@ -121,6 +120,7 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 
 void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID, FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit)
 {
+	threadLock.Lock();
 	if (workLoadSortedFindCornerWorkers.Num() == 0)
 	{
 		QueueLogAsync("(ERROR): The work load sorted FindCornerWorker array is empty!");
@@ -146,11 +146,13 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 		return;
 	}
 
+	threadLock.Unlock();
 	interfaceContainer->queuePixelArrayWorkUnitInputDel.Execute(pixelArrayWorkUnit);
 }
 
 void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit)
 {
+	threadLock.Lock();
 	if (workLoadSortedFindCornerWorkers.Num() == 0)
 	{
 		QueueLogAsync("(ERROR): The work load sorted CalibrateWorker array is empty!");
@@ -176,6 +178,7 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 		return;
 	}
 
+	threadLock.Unlock();
 	interfaceContainer->queueTextureFileWorkUnitInputDel.Execute(textureFileWorkUnit);
 }
 
@@ -186,6 +189,7 @@ void LensSolverWorkDistributor::SetCalibrateWorkerParameters(FCalibrationParamet
 
 void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit)
 {
+	threadLock.Lock();
 	FWorkerCalibrateInterfaceContainer * interfaceContainerPtr;
 	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseParameters.calibrationID, interfaceContainerPtr))
 		return;
@@ -196,6 +200,7 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 		return;
 	}
 
+	threadLock.Unlock();
 	interfaceContainerPtr->queueCalibrateWorkUnitDel.Execute(calibrateWorkUnit);
 
 	if (IterateImageCount(calibrateWorkUnit.baseParameters.jobID, calibrateWorkUnit.baseParameters.jobID))
@@ -210,6 +215,7 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 
 void LensSolverWorkDistributor::LatchCalibrateWorker(const FCalibrateLatch& latchData)
 {
+	threadLock.Lock();
 	if (latchData.baseParameters.calibrationID.IsEmpty())
 	{
 		QueueLogAsync("(ERROR): The calibration ID is empty!");
@@ -226,13 +232,57 @@ void LensSolverWorkDistributor::LatchCalibrateWorker(const FCalibrateLatch& latc
 		return;
 	}
 
+	threadLock.Unlock();
 	interfaceContainerPtr->signalLatch.Execute(latchData);
+}
+
+void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult calibrationResult)
+{
+	queuedCalibrationResults.Enqueue(calibrationResult);
+	threadLock.Lock();
+
+	FJob* jobPtr = jobs.Find(calibrationResult.baseParameters.jobID);
+	if (jobPtr == nullptr)
+	{
+		QueueLogAsync(FString::Printf(TEXT("(ERROR): Unknown error occurred while queuing calibration result, no jobs are registered with ID: \"%s\"."), *calibrationResult.baseParameters.jobID));
+		return;
+	}
+
+	FJobInfo jobInfo;
+	bool done = false;
+
+	jobPtr->currentResultCount++;
+
+	if (jobPtr->currentResultCount >= jobPtr->expectedResultCount)
+	{
+		jobs.Remove(calibrationResult.baseParameters.jobID);
+		jobInfo = jobPtr->jobInfo;
+		done = true;
+	}
+
+	threadLock.Unlock();
+	if (done && queueFinishedJobOutputDel->IsBound())
+		queueFinishedJobOutputDel->Execute(jobInfo);
+}
+
+bool LensSolverWorkDistributor::CalibrationResultIsQueued()
+{
+	return queuedCalibrationResults.IsEmpty() == false;
+}
+
+void LensSolverWorkDistributor::DequeueCalibrationResult(FCalibrationResult & calibrationResult)
+{
+	queuedCalibrationResults.Dequeue(calibrationResult);
 }
 
 void LensSolverWorkDistributor::QueueLogAsync(const FString msg)
 {
 	if (!queueLogOutputDel->IsBound())
+	{
+		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);
 		return;
+	}
+
 	queueLogOutputDel->Execute(msg);
 }
 

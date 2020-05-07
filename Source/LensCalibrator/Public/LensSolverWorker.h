@@ -25,6 +25,7 @@
 #include "LensSolverWorkUnit.h"
 
 DECLARE_DELEGATE_OneParam(QueueLogOutputDel, FString)
+DECLARE_DELEGATE_OneParam(QueueFinishedJobOutputDel, FJobInfo)
 DECLARE_DELEGATE_RetVal(int, GetWorkLoadOutputDel)
 DECLARE_DELEGATE_RetVal(bool, IsClosingOutputDel)
 

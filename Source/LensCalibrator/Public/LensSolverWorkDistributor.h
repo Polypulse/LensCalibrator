@@ -15,6 +15,8 @@ class LensSolverWorkDistributor
 {
 private:
 	mutable FCriticalSection threadLock;
+	QueueCalibrationResultOutputDel queueCalibrationResultOutputDel;
+	const QueueFinishedJobOutputDel* queueFinishedJobOutputDel;
 	const QueueLogOutputDel * queueLogOutputDel;
 
 	FCalibrationParameters cachedCalibrationParameters;
@@ -25,6 +27,8 @@ private:
 	TArray<FString> workLoadSortedCalibrateWorkers;
 	TMap<FString, FString> workerCalibrationIDLUT;
 	TMap<FString, FJob> jobs;
+
+	TQueue<FCalibrationResult> queuedCalibrationResults;
 
 	void QueueLogAsync(const FString msg);
 
@@ -39,6 +43,7 @@ private:
 	void SetCalibrateWorkerParameters(FCalibrationParameters calibrationParameters);
 	void QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit);
 	void LatchCalibrateWorker(const FCalibrateLatch& latchData);
+	void QueueCalibrationResult(const FCalibrationResult calibrationResult);
 
 	bool IterateImageCount(const FString & jobID, const FString& calibrationID);
 
@@ -48,17 +53,18 @@ private:
 protected:
 public:
 
-	LensSolverWorkDistributor(const QueueLogOutputDel * inputQueueLogOutputDel) :
+	LensSolverWorkDistributor(const QueueLogOutputDel * inputQueueLogOutputDel, const QueueFinishedJobOutputDel * inputQueueFinishedJobOutputDel) :
+		queueFinishedJobOutputDel(inputQueueFinishedJobOutputDel),
 		queueLogOutputDel(inputQueueLogOutputDel)
 	{
+		queueCalibrationResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrationResult);
 	}
 
 	void StartFindCornerWorkers(
 		int findCornerWorkerCount);
 
 	void StartCalibrateWorkers(
-		int calibrateWorkerCount,
-		QueueCalibrationResultOutputDel * inputOnSolvedPointsDel);
+		int calibrateWorkerCount);
 
 	void StopFindCornerWorkers();
 	void StopCalibrationWorkers();
@@ -74,4 +80,7 @@ public:
 
 	void QueueTextureArrayWorkUnit(const FString & jobID, FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit);
 	void QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit);
+
+	bool CalibrationResultIsQueued();
+	void DequeueCalibrationResult(FCalibrationResult & calibrationResult);
 };

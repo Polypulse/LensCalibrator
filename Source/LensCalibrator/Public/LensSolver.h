@@ -53,10 +53,10 @@ private:
 	FTexture2DRHIRef correctDistortedTextureRenderTexture;
 	bool correctDistortedTextureRenderTextureAllocated;
 
-	QueueCalibrationResultOutputDel onSolvePointsDel;
 	QueueLogOutputDel queueLogOutputDel;
+	QueueFinishedJobOutputDel queueFinishedJobOutputDel;
 
-	TSharedPtr<TQueue<FCalibrationResult>> queuedSolvedPointsPtr;
+	TQueue<FJobInfo> queuedFinishedJobs;
 	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;
 	TSharedPtr<TQueue<FCorrectedDistortedImageResults>> queuedCorrectedDistortedImageResults;
 
@@ -114,9 +114,13 @@ private:
 
 	void PollLogs();
 	void PollCalibrationResults ();
+	void PollFinishedJobs();
 	void PollDistortionCorrectionMapGenerationResults ();
 	void PollCorrectedDistortedImageResults ();
 
+	void QueueFinishedJob(FJobInfo jobInfo);
+	bool FinishedJobIsQueued();
+	void DequeuedFinishedJob(FJobInfo& jobInfo);
 	void QueueLog(FString msg);
 
 protected:
@@ -125,12 +129,12 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
-	void DequeueSolvedPoints (FCalibrationResult solvedPoints);
-	virtual void DequeueSolvedPoints_Implementation (FCalibrationResult solvedPoints) {}
+	void OnReceiveCalibrationResult (FCalibrationResult calibrationResult);
+	virtual void OnReceiveCalibrationResult_Implementation (FCalibrationResult calibrationResult) {}
 
 	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
-	void FinishedJob (FJobInfo jobInfo);
-	virtual void FinishedJob_Implementation (FJobInfo jobInfo) {}
+	void OnFinishedJob (FJobInfo jobInfo);
+	virtual void OnFinishedJob_Implementation (FJobInfo jobInfo) {}
 
 	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
 	void OnGeneratedDistortionMap (UTexture2D * generatedDistortionMap);
@@ -201,7 +205,5 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void Poll ();
-
-	void OnSolvedPoints(FCalibrationResult solvedPoints);
 };
 

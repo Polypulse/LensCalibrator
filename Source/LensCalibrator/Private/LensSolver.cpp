@@ -854,7 +854,7 @@ void ULensSolver::ReturnErrorSolvedPoints(FJobInfo jobInfo)
 	solvedPoints.sensorSizeMM = FVector2D(0.0f, 0.0f);
 	solvedPoints.zoomLevel = 0;
 
-	this->DequeueSolvedPoints(solvedPoints);
+	this->OnReceiveCalibrationResult(solvedPoints);
 	*/
 }
 
@@ -870,6 +870,19 @@ void ULensSolver::PollLogs()
 
 void ULensSolver::PollCalibrationResults()
 {
+	if (!workDistributor.IsValid())
+		return;
+
+	bool isQueued = workDistributor->CalibrationResultIsQueued();
+	while (isQueued)
+	{
+		FCalibrationResult calibrationResult;
+		workDistributor->DequeueCalibrationResult(calibrationResult);
+
+		this->OnReceiveCalibrationResult(calibrationResult);
+
+		isQueued = workDistributor->CalibrationResultIsQueued();
+	}
 	/*
 	if (!queuedSolvedPointsPtr.IsValid())
 		return;
@@ -884,7 +897,7 @@ void ULensSolver::PollCalibrationResults()
 		if (!queuedSolvedPointsPtr->Peek(lastSolvedPoints))
 			return;
 
-		if (!jobs.Contains(lastSolvedPoints.jobInfo.jobID))
+		if (!jobs.Contains(lastSolvedPoints.baseParameters.jobID))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
 			return;
@@ -894,18 +907,16 @@ void ULensSolver::PollCalibrationResults()
 
 		UE_LOG(LogTemp, Log, TEXT("Dequeued solved points."));
 
-		/*
 		if (!jobs.Contains(lastSolvedPoints.jobInfo.jobID))
 		{
 			UE_LOG(LogTemp, Fatal, TEXT("Deqeued work unit result for job: \"%s\" that has not been registered."), *lastSolvedPoints.jobInfo.jobID);
 			return;
 		}
 
-		/*
 		if (this == nullptr)
 			return;
 
-		this->DequeueSolvedPoints(lastSolvedPoints);
+		this->OnReceiveCalibrationResult(lastSolvedPoints);
 		isQueued = queuedSolvedPointsPtr->IsEmpty() == false;
 
 		FJob *job = jobs.Find(lastSolvedPoints.jobInfo.jobID);
@@ -914,11 +925,24 @@ void ULensSolver::PollCalibrationResults()
 		if (job->completedWorkUnits >= lastSolvedPoints.jobInfo.workUnitCount)
 		{
 			UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *lastSolvedPoints.jobInfo.jobID);
-			this->FinishedJob(lastSolvedPoints.jobInfo);
+			this->OnFinishedJob(lastSolvedPoints.jobInfo);
 			jobs.Remove(lastSolvedPoints.jobInfo.jobID);
 		}
 	}
 	*/
+}
+
+void ULensSolver::PollFinishedJobs()
+{
+	bool isQueued = queuedFinishedJobs.IsEmpty() == false;
+	while (isQueued)
+	{
+		FJobInfo jobInfo;
+		DequeuedFinishedJob(jobInfo);
+		UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *jobInfo.jobID);
+		this->OnFinishedJob(jobInfo);
+		isQueued = queuedFinishedJobs.IsEmpty() == false;
+	}
 }
 
 void ULensSolver::PollDistortionCorrectionMapGenerationResults()
@@ -974,6 +998,21 @@ void ULensSolver::PollCorrectedDistortedImageResults()
 
 		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
 	}
+}
+
+void ULensSolver::QueueFinishedJob(FJobInfo jobInfo)
+{
+	queuedFinishedJobs.Enqueue(jobInfo);
+}
+
+bool ULensSolver::FinishedJobIsQueued()
+{
+	return queuedFinishedJobs.IsEmpty() == false;
+}
+
+void ULensSolver::DequeuedFinishedJob(FJobInfo& jobInfo)
+{
+	queuedFinishedJobs.Dequeue(jobInfo);
 }
 
 void ULensSolver::QueueLog(FString msg)
@@ -1327,16 +1366,16 @@ void ULensSolver::DistortTextureWithCoefficients(FDistortTextureWithCoefficients
 
 void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
 {
-	if (!onSolvePointsDel.IsBound())
-		onSolvePointsDel.BindUObject(this, &ULensSolver::OnSolvedPoints);
 	if (!queueLogOutputDel.IsBound())
 		queueLogOutputDel.BindUObject(this, &ULensSolver::QueueLog);
+	if (!queueFinishedJobOutputDel.IsBound())
+		queueFinishedJobOutputDel.BindUObject(this, &ULensSolver::QueueFinishedJob);
 
 	if (!workDistributor.IsValid())
-		workDistributor = MakeUnique<LensSolverWorkDistributor>(&queueLogOutputDel);
+		workDistributor = MakeUnique<LensSolverWorkDistributor>(&queueLogOutputDel, &queueFinishedJobOutputDel);
 
 	workDistributor->StartFindCornerWorkers(findCornersWorkerCount);
-	workDistributor->StartCalibrateWorkers(calibrateWorkerCount, &onSolvePointsDel);
+	workDistributor->StartCalibrateWorkers(calibrateWorkerCount);
 }
 
 void ULensSolver::StopBackgroundImageprocessors()
@@ -1350,14 +1389,7 @@ void ULensSolver::StopBackgroundImageprocessors()
 void ULensSolver::Poll()
 {
 	PollCalibrationResults();
+	PollFinishedJobs();
 	PollDistortionCorrectionMapGenerationResults();
 	PollCorrectedDistortedImageResults();
-}
-
-void ULensSolver::OnSolvedPoints(FCalibrationResult solvedPoints)
-{
-	if (!queuedSolvedPointsPtr.IsValid())
-		return;
-
-	queuedSolvedPointsPtr->Enqueue(solvedPoints);
 }
