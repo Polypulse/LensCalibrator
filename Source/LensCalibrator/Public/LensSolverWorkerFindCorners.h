@@ -11,10 +11,9 @@ public:
 	DECLARE_DELEGATE_OneParam(QueueFindCornerResultOutputDel, FLensSolverCalibrateWorkUnit)
 	FLensSolverWorkerFindCorners(
 		FLensSolverWorkerParameters inputParameters,
-		const QueueTextureFileWorkUnitInputDel * inputQueueTextureFileWorkUnitInputDel,
-		const QueuePixelArrayWorkUnitInputDel * inputQueuePixelArrayWorkUnitInputDel,
-		const QueueFindCornerResultOutputDel * inputQueueFindCornerResultOutputDel
-	);
+		const FLensSolverWorkerFindCorners::QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
+		const FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
+		const FLensSolverWorkerFindCorners::QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel);
 
 	~FLensSolverWorkerFindCorners() {}
 
@@ -25,8 +24,10 @@ private:
 	TQueue<FLensSolverPixelArrayWorkUnit> pixelArrayWorkQueue;
 	TQueue<FLensSolverTextureFileWorkUnit> textureFileWorkQueue;
 
+	/*
 	const QueueTextureFileWorkUnitInputDel* queueTextureFileWorkUnitInputDel;
 	const QueuePixelArrayWorkUnitInputDel* queuePixelArrayWorkUnitInputDel;
+	*/
 	const QueueFindCornerResultOutputDel* queueFindCornerResultOutputDel;
 
 	void WriteMatToFile(cv::Mat image, FString folder, FString fileName);

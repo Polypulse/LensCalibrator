@@ -3,11 +3,13 @@
 
 FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	FLensSolverWorkerParameters inputParameters,
-	const QueueLatchInputDel* inputSignalLatch, 
-	const QueueCalibrationResultOutputDel * inputOnSolvePointsDel) : 
-	onSolvePointsDel(inputOnSolvePointsDel),
-	FLensSolverWorker(inputParameters)
+	const FLensSolverWorkerCalibrate::QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
+	const FLensSolverWorkerCalibrate::QueueLatchInputDel* inputSignalLatch,
+	const FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel* inputOnSolvePointsDel) :
+	FLensSolverWorker(inputParameters),
+	onSolvePointsDel(inputOnSolvePointsDel)
 {
+	inputQueueCalibrateWorkUnitDel->BindRaw(this, &FLensSolverWorkerCalibrate::QueueWorkUnit);
 	inputSignalLatch->BindRaw(this, &FLensSolverWorkerCalibrate::QueueLatch);
 }
 
@@ -242,7 +244,7 @@ int FLensSolverWorkerCalibrate::GetWorkLoad()
 	return count;
 }
 
-void FLensSolverWorkerCalibrate::QueueWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit)
+void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrateWorkUnit calibrateWorkUnit)
 {
 	Lock();
 	TQueue<FLensSolverCalibrateWorkUnit> * queue = workQueue.Find(calibrateWorkUnit.baseUnit.calibrationID);

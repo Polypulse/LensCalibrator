@@ -14,7 +14,6 @@ FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters inputParameters
 	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%d/"), workerID))),
 	workerMessage(FString::Printf(TEXT("Worker (%s): "), inputParameters.inputWorkerID))
 {
-	inputParameters.inputQueueWorkUnitInputDel->BindRaw(this, &FLensSolverWorker::QueueWorkUnit);
 	inputParameters.inputGetWorkOutputLoadDel->BindRaw(this, &FLensSolverWorker::GetWorkLoad);
 	inputParameters.inputIsClosingOutputDel->BindRaw(this, &FLensSolverWorker::Exit);
 	queueLogOutputDel = inputParameters.inputQueueLogOutputDel;

@@ -13,27 +13,28 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 
 	for (int i = 0; i < findCornerWorkerCount; i++)
 	{
-		TUniquePtr<FWorkerFindCornersInterfaceContainer> interfaceContianer = MakeUnique<FWorkerFindCornersInterfaceContainer>();
+		FWorkerFindCornersInterfaceContainer interfaceContianer;
 		FLensSolverWorkerParameters workerParameters;
 
 		workerParameters.inputQueueLogOutputDel		= queueLogOutputDel;
-		workerParameters.inputIsClosingOutputDel	= &interfaceContianer->isClosingDel;
-		workerParameters.inputGetWorkOutputLoadDel	= &interfaceContianer->getWorkLoadDel;
-		workerParameters.inputQueueWorkUnitInputDel = &interfaceContianer->queueWorkUnitDel;
+		workerParameters.inputIsClosingOutputDel	= &interfaceContianer.baseContainer.isClosingDel;
+		workerParameters.inputGetWorkOutputLoadDel	= &interfaceContianer.baseContainer.getWorkLoadDel;
 
-		interfaceContianer->queueFindCornerResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
+		interfaceContianer.queueFindCornerResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
 
 		FString guid = FGuid::NewGuid().ToString();
-		interfaceContianer->workerID = guid;
+		interfaceContianer.baseContainer.workerID = guid;
 		workerParameters.inputWorkerID = guid;
 
 		UE_LOG(LogTemp, Log, TEXT("Starting lens solver worker: %d"), i);
 
-		interfaceContianer->worker = MakeUnique<FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners>>(
+		interfaceContianer.baseContainer.worker = MakeUnique<FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners>>(
 			workerParameters,
-			&interfaceContianer->queueFindCornerResultOutputDel);
+			interfaceContianer.queueTextureFileWorkUnitInputDel,
+			&interfaceContianer.queuePixelArrayWorkUnitInputDel,
+			&interfaceContianer.queueFindCornerResultOutputDel);
 
-		interfaceContianer->worker->StartBackgroundTask();
+		interfaceContianer.baseContainer.worker->StartBackgroundTask();
 		findCornersWorkers.Add(guid, MoveTemp(interfaceContianer));
 	}
 
@@ -54,26 +55,26 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 
 	for (int i = 0; i < calibrateWorkerCount; i++)
 	{
-		TUniquePtr<FWorkerCalibrateInterfaceContainer> interfaceContainer = MakeUnique<FWorkerCalibrateInterfaceContainer>();
+		FWorkerCalibrateInterfaceContainer interfaceContainer;
 		FLensSolverWorkerParameters workerParameters;
 
 		workerParameters.inputQueueLogOutputDel		= queueLogOutputDel;
-		workerParameters.inputIsClosingOutputDel	= &interfaceContainer->isClosingDel;
-		workerParameters.inputGetWorkOutputLoadDel	= &interfaceContainer->getWorkLoadDel;
-		workerParameters.inputQueueWorkUnitInputDel = &interfaceContainer->queueWorkUnitDel;
+		workerParameters.inputIsClosingOutputDel	= &interfaceContainer.baseContainer.isClosingDel;
+		workerParameters.inputGetWorkOutputLoadDel	= &interfaceContainer.baseContainer.getWorkLoadDel;
 
 		FString guid = FGuid::NewGuid().ToString();
 		workerParameters.inputWorkerID = guid;
-		interfaceContainer->workerID = guid;
+		interfaceContainer.baseContainer.workerID = guid;
 
 		QueueLogAsync(FString::Printf(TEXT("Starting lens solver worker: %d"), i));
 
-		interfaceContainer->worker = MakeUnique<FAutoDeleteAsyncTask<FLensSolverWorkerCalibrate>>(
+		interfaceContainer.baseContainer.worker = MakeUnique<FAutoDeleteAsyncTask<FLensSolverWorkerCalibrate>>(
 			workerParameters,
-			&interfaceContainer->signalLatch,
+			&interfaceContainer.queueCalibrateWorkUnitDel,
+			&interfaceContainer.signalLatch,
 			inputOnSolvedPointsDel);
 
-		interfaceContainer->worker->StartBackgroundTask();
+		interfaceContainer.baseContainer.worker->StartBackgroundTask();
 		calibrateWorkers.Add(guid, MoveTemp(interfaceContainer));
 	}
 
@@ -117,7 +118,7 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 	return jobInfo;
 }
 
-void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID, TUniquePtr<FLensSolverPixelArrayWorkUnit> pixelArrayWorkUnit)
+void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID, FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit)
 {
 	if (workLoadSortedFindCornerWorkers.Num() == 0)
 	{
@@ -138,16 +139,16 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 	if (!GetFindCornersContainerInterfacePtr(workerID, interfaceContainer))
 		return;
 
-	if (!interfaceContainer->queueWorkUnitDel.IsBound())
+	if (!interfaceContainer->queuePixelArrayWorkUnitInputDel.IsBound())
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): FindCornerWorker: \"%s\" does not have a QueueWorkUnit delegate binded!"), *workerID));
 		return;
 	}
 
-	interfaceContainer->queueWorkUnitDel.Execute(&pixelArrayWorkUnit);
+	interfaceContainer->queuePixelArrayWorkUnitInputDel.Execute(pixelArrayWorkUnit);
 }
 
-void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, TUniquePtr<FLensSolverTextureFileWorkUnit> textureFileWorkUnit)
+void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit)
 {
 	if (workLoadSortedCalibrateWorkers.Num() == 0)
 	{
@@ -168,28 +169,29 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 	if (!GetFindCornersContainerInterfacePtr(workerID, interfaceContainer))
 		return;
 
-	if (!interfaceContainer->queueWorkUnitDel.IsBound())
+	if (!interfaceContainer->queueTextureFileWorkUnitInputDel.IsBound())
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): CalibrateWorker: \"%s\" does not have a QueueWorkUnit delegate binded!"), *workerID));
 		return;
 	}
 
-	interfaceContainer->queueWorkUnitDel.Execute(&textureFileWorkUnit);
+	interfaceContainer->queueTextureFileWorkUnitInputDel.Execute(textureFileWorkUnit);
 }
 
 void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit)
 {
-	TUniquePtr<FWorkerCalibrateInterfaceContainer>* interfaceContainerUniquePtr;
-	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseUnit.calibrationID, interfaceContainerUniquePtr))
+	FWorkerCalibrateInterfaceContainer * interfaceContainerPtr;
+	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseUnit.calibrationID, interfaceContainerPtr))
 		return;
-	FWorkerCalibrateInterfaceContainer* interfaceContainerPtr = interfaceContainerUniquePtr->Get();
 
-	if (!interfaceContainerPtr->queueWorkUnitDel.IsBound())
+	if (!interfaceContainerPtr->queueCalibrateWorkUnitDel.IsBound())
 	{
-		QueueLogAsync(FString::Printf(TEXT("(ERROR): The QueueWOrkUnit delegate is not binded for CalibrateWorker with ID: \"%s\"."), *interfaceContainerPtr->workerID));
+		QueueLogAsync(FString::Printf(TEXT("(ERROR): The QueueWOrkUnit delegate is not binded for CalibrateWorker with ID: \"%s\"."), *interfaceContainerPtr->baseContainer.workerID));
 		return;
 	}
-	
+
+	interfaceContainerPtr->queueCalibrateWorkUnitDel.Execute(calibrateWorkUnit);
+
 	if (IterateImageCount(calibrateWorkUnit.baseUnit.jobID, calibrateWorkUnit.baseUnit.jobID))
 	{
 		FLatchData latchData;
@@ -208,13 +210,13 @@ void LensSolverWorkDistributor::LatchCalibrateWorker(const FLatchData& latchData
 		return;
 	}
 
-	TUniquePtr<FWorkerCalibrateInterfaceContainer>* interfaceContainerUniquePtr;
-	if (!GetCalibrateWorkerInterfaceContainerPtr(latchData.calibrationID, interfaceContainerUniquePtr))
+	FWorkerCalibrateInterfaceContainer* interfaceContainerPtr;
+	if (!GetCalibrateWorkerInterfaceContainerPtr(latchData.calibrationID, interfaceContainerPtr))
 		return;
-	FWorkerCalibrateInterfaceContainer* interfaceContainerPtr = interfaceContainerUniquePtr->Get();
+
 	if (!interfaceContainerPtr->signalLatch.IsBound())
 	{
-		QueueLogAsync(FString::Printf(TEXT("(ERROR): The CalibrateWorker: \"%s\" does not have a QueueLatchInput delegate binded!"), *interfaceContainerPtr->workerID));
+		QueueLogAsync(FString::Printf(TEXT("(ERROR): The CalibrateWorker: \"%s\" does not have a QueueLatchInput delegate binded!"), *interfaceContainerPtr->baseContainer.workerID));
 		return;
 	}
 
@@ -228,32 +230,30 @@ void LensSolverWorkDistributor::QueueLogAsync(const FString msg)
 	queueLogOutputDel->Execute(msg);
 }
 
-bool LensSolverWorkDistributor::GetFindCornersContainerInterfacePtr(const FString& workerID, FWorkerFindCornersInterfaceContainer *& interfaceContainer)
+bool LensSolverWorkDistributor::GetFindCornersContainerInterfacePtr(
+	const FString& workerID,
+	FWorkerFindCornersInterfaceContainer *& outputInterfaceContainerPtr)
 {
-	interfaceContainer = nullptr;
-	TUniquePtr<FWorkerFindCornersInterfaceContainer> * cornerWorker = findCornersWorkers.Find(workerID);
+	outputInterfaceContainerPtr = nullptr;
+	FWorkerFindCornersInterfaceContainer * interfaceContainerPtr = findCornersWorkers.Find(workerID);
 
-	if (cornerWorker == nullptr)
+	if (interfaceContainerPtr == nullptr)
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): There is no FWorkerCalibrateInterfaceContainer registered for worker ID: \"%s\"!"), *workerID));
 		return false;
 	}
 
-	if (cornerWorker->IsValid())
-	{
-		QueueLogAsync(FString::Printf(TEXT("(ERROR): The worker ID: \"%s\" is registered. However, the TUniquePtr reference to FWorkerCalibrateInterfaceContainer is NULL!"), *workerID));
-		return false;
-	}
-
-	interfaceContainer = cornerWorker->Get();
+	outputInterfaceContainerPtr = interfaceContainerPtr;
 
 	return true;
 }
 
 bool LensSolverWorkDistributor::GetCalibrateWorkerInterfaceContainerPtr(
 	const FString& calibrationID,
-	TUniquePtr<FWorkerCalibrateInterfaceContainer> *& interfaceContainerUniquePtr)
+	FWorkerCalibrateInterfaceContainer *& outputInterfaceContainerPtr)
 {
+	outputInterfaceContainerPtr = nullptr;
+
 	if (calibrationID.IsEmpty())
 	{
 		QueueLogAsync("(ERROR): Received NULL LensSolverCalibrateWorkUnit with empty calibrationID FString member!");
@@ -272,19 +272,14 @@ bool LensSolverWorkDistributor::GetCalibrateWorkerInterfaceContainerPtr(
 
 	else workerID = *workerIDPtr;
 
-	interfaceContainerUniquePtr = calibrateWorkers.Find(workerID);
-	if (interfaceContainerUniquePtr == nullptr)
+	FWorkerCalibrateInterfaceContainer * interfaceContainerPtr = calibrateWorkers.Find(workerID);
+	if (interfaceContainerPtr == nullptr)
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): We the worker ID: \"%s\". However, no CalibrateWorkerInterfaceContainer is registered with that ID!"), *workerID));
 		return false;
 	}
 
-	if (!interfaceContainerUniquePtr->IsValid())
-	{
-		QueueLogAsync(FString::Printf(TEXT("(ERROR): The worker ID: \"%s\" is registered. However, the CalibrateWorkerInterfaceContainer is NULL!"), *workerID));
-		interfaceContainerUniquePtr = nullptr;
-		return false;
-	}
+	outputInterfaceContainerPtr = interfaceContainerPtr;
 
 	return true;
 }
@@ -315,9 +310,16 @@ void LensSolverWorkDistributor::SortFindCornersWorkersByWorkLoad()
 	LensSolverWorkDistributor* workDistributor = this;
 	workLoadSortedFindCornerWorkers.Sort([workDistributor](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) 
 	{
-		TUniquePtr<FWorkerFindCornersInterfaceContainer> * interfaceContainerA = workDistributor->findCornersWorkers.Find(workerA.workerID);
-		TUniquePtr<FWorkerFindCornersInterfaceContainer> * interfaceContainerB = workDistributor->findCornersWorkers.Find(workerB.workerID);
-		return interfaceContainerA->Get()->getWorkLoadDel.Execute() > interfaceContainerB->Get()->getWorkLoadDel.Execute();
+		FWorkerFindCornersInterfaceContainer * interfaceContainerA = workDistributor->findCornersWorkers.Find(workerA.workerID);
+		FWorkerFindCornersInterfaceContainer * interfaceContainerB = workDistributor->findCornersWorkers.Find(workerB.workerID);
+
+		if (interfaceContainerA == nullptr || 
+			interfaceContainerB == nullptr ||
+			!interfaceContainerA->baseContainer.getWorkLoadDel.IsBound() ||
+			!interfaceContainerB->baseContainer.getWorkLoadDel.IsBound())
+			return false;
+
+		return interfaceContainerA->baseContainer.getWorkLoadDel.Execute() > interfaceContainerB->baseContainer.getWorkLoadDel.Execute();
 	});
 }
 
@@ -326,9 +328,14 @@ void LensSolverWorkDistributor::SortCalibrateWorkersByWorkLoad()
 	LensSolverWorkDistributor* workDistributor = this;
 	workLoadSortedCalibrateWorkers.Sort([workDistributor](const FWorkerInterfaceContainer& workerA, const FWorkerInterfaceContainer& workerB) 
 	{
-		TUniquePtr<FWorkerCalibrateInterfaceContainer> * interfaceContainerA = workDistributor->calibrateWorkers.Find(workerA.workerID);
-		TUniquePtr<FWorkerCalibrateInterfaceContainer> * interfaceContainerB = workDistributor->calibrateWorkers.Find(workerB.workerID);
-		return interfaceContainerA->Get()->getWorkLoadDel.Execute() > interfaceContainerB->Get()->getWorkLoadDel.Execute();
+		FWorkerCalibrateInterfaceContainer * interfaceContainerA = workDistributor->calibrateWorkers.Find(workerA.workerID);
+		FWorkerCalibrateInterfaceContainer * interfaceContainerB = workDistributor->calibrateWorkers.Find(workerB.workerID);
+		if (interfaceContainerA == nullptr || 
+			interfaceContainerB == nullptr ||
+			!interfaceContainerA->baseContainer.getWorkLoadDel.IsBound() ||
+			!interfaceContainerB->baseContainer.getWorkLoadDel.IsBound())
+			return false;
+		return interfaceContainerA->baseContainer.getWorkLoadDel.Execute() > interfaceContainerB->baseContainer.getWorkLoadDel.Execute();
 	});
 }
 
@@ -342,13 +349,12 @@ void LensSolverWorkDistributor::StopFindCornerWorkers()
 	findCornersWorkers.GetKeys(keys);
 	for (int i = 0; i < keys.Num(); i++)
 	{
-		TUniquePtr<FWorkerFindCornersInterfaceContainer>* interfaceContainerUniquePtr = findCornersWorkers.Find(keys[i]);
-		if (interfaceContainerUniquePtr == nullptr || !interfaceContainerUniquePtr->IsValid())
+		FWorkerFindCornersInterfaceContainer* interfaceContainerPtr = findCornersWorkers.Find(keys[i]);
+		if (interfaceContainerPtr == nullptr)
 			continue;
-		FWorkerFindCornersInterfaceContainer* interfaceContainerPtr = interfaceContainerUniquePtr->Get();
 
-		if (interfaceContainerPtr->isClosingDel.IsBound())
-			interfaceContainerPtr->isClosingDel.Execute();
+		if (interfaceContainerPtr->baseContainer.isClosingDel.IsBound())
+			interfaceContainerPtr->baseContainer.isClosingDel.Execute();
 	}
 
 	threadLock.Unlock();
@@ -366,13 +372,12 @@ void LensSolverWorkDistributor::StopCalibrationWorkers()
 	calibrateWorkers.GetKeys(keys);
 	for (int i = 0; i < keys.Num(); i++)
 	{
-		TUniquePtr<FWorkerCalibrateInterfaceContainer>* interfaceContainerUniquePtr = calibrateWorkers.Find(keys[i]);
-		if (interfaceContainerUniquePtr == nullptr || !interfaceContainerUniquePtr->IsValid())
+		FWorkerCalibrateInterfaceContainer* interfaceContainerPtr = calibrateWorkers.Find(keys[i]);
+		if (interfaceContainerPtr == nullptr)
 			continue;
-		FWorkerCalibrateInterfaceContainer* interfaceContainerPtr = interfaceContainerUniquePtr->Get();
 
-		if (interfaceContainerPtr->isClosingDel.IsBound())
-			interfaceContainerPtr->isClosingDel.Execute();
+		if (interfaceContainerPtr->baseContainer.isClosingDel.IsBound())
+			interfaceContainerPtr->baseContainer.isClosingDel.Execute();
 	}
 
 	threadLock.Unlock();

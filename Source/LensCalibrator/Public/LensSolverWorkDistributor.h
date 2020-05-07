@@ -17,8 +17,8 @@ private:
 	mutable FCriticalSection threadLock;
 	FLensSolverWorkerParameters::QueueLogOutputDel * queueLogOutputDel;
 
-	TMap<FString, TUniquePtr<FWorkerFindCornersInterfaceContainer>> findCornersWorkers;
-	TMap<FString, TUniquePtr<FWorkerCalibrateInterfaceContainer>> calibrateWorkers;
+	TMap<FString, FWorkerFindCornersInterfaceContainer> findCornersWorkers;
+	TMap<FString, FWorkerCalibrateInterfaceContainer> calibrateWorkers;
 
 	TArray<FString> workLoadSortedFindCornerWorkers;
 	TArray<FString> workLoadSortedCalibrateWorkers;
@@ -31,14 +31,16 @@ private:
 
 	void QueueLogAsync(const FString msg);
 
-	bool GetFindCornersContainerInterfacePtr(const FString & workerID, FWorkerFindCornersInterfaceContainer *& interfaceContainer);
-
-	void QueueCalibrateWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit);
-	void LatchCalibrateWorker(const FLatchData& latchData);
+	bool GetFindCornersContainerInterfacePtr(
+		const FString& workerID,
+		FWorkerFindCornersInterfaceContainer*& outputInterfaceContainerPtr);
 
 	bool GetCalibrateWorkerInterfaceContainerPtr(
 		const FString& calibrationID,
-		TUniquePtr<FWorkerCalibrateInterfaceContainer> *& interfaceContainerUniquePtr);
+		FWorkerCalibrateInterfaceContainer *& outputInterfaceContainerPtr);
+
+	void QueueCalibrateWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit);
+	void LatchCalibrateWorker(const FLatchData& latchData);
 
 	bool IterateImageCount(const FString & jobID, const FString& calibrationID);
 
@@ -71,6 +73,6 @@ public:
 		const int expectedResultCount,
 		const UJobType jobType);
 
-	void QueueTextureArrayWorkUnit(const FString & jobID, TUniquePtr<FLensSolverPixelArrayWorkUnit> pixelArrayWorkUnit);
-	void QueueTextureFileWorkUnit(const FString & jobID, TUniquePtr<FLensSolverTextureFileWorkUnit> textureFileWorkUnit);
+	void QueueTextureArrayWorkUnit(const FString & jobID, FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit);
+	void QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit);
 };

@@ -202,6 +202,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void Poll ();
 
-	void OnSolvedPoints(const TUniquePtr<FCalibrationResult>* solvedPoints);
+	void OnSolvedPoints(FCalibrationResult solvedPoints);
 };
 

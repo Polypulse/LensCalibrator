@@ -1140,9 +1140,9 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
 		{
 			FLensSolverTextureFileWorkUnit workUnit;
-			workUnit->jobID = jobInfo.jobID;
-			workUnit->calibrationID = jobInfo.calibrationIDs[ci];
-			workUnit->absoluteFilePath = imageFiles[ci][ii];
+			workUnit.textureUnit.baseUnit.jobID = jobInfo.jobID;
+			workUnit.textureUnit.baseUnit.calibrationID = jobInfo.calibrationIDs[ci];
+			workUnit.absoluteFilePath = imageFiles[ci][ii];
 
 			workDistributor->QueueTextureFileWorkUnit(jobInfo.jobID, workUnit);
 		}
@@ -1341,7 +1341,7 @@ void ULensSolver::Poll()
 	PollCorrectedDistortedImageResults();
 }
 
-void ULensSolver::OnSolvedPoints(FCalibrationResult solvedPointsPtr)
+void ULensSolver::OnSolvedPoints(FCalibrationResult solvedPoints)
 {
 	if (!queuedSolvedPointsPtr.IsValid())
 		return;

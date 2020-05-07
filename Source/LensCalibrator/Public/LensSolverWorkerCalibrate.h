@@ -9,13 +9,14 @@ class FLensSolverWorkerCalibrate : public FLensSolverWorker
 {
 public:
 	DECLARE_DELEGATE_OneParam(QueueCalibrationResultOutputDel, FCalibrationResult)
+	DECLARE_DELEGATE_OneParam(QueueCalibrateWorkUnitInputDel, FLensSolverCalibrateWorkUnit)
 	DECLARE_DELEGATE_OneParam(QueueLatchInputDel, const FLatchData)
 
 	FLensSolverWorkerCalibrate(
 		FLensSolverWorkerParameters inputParameters,
-		const QueueLatchInputDel * inputSignalLatch,
-		const QueueCalibrationResultOutputDel * inputOnSolvePointsDel
-	);
+		const FLensSolverWorkerCalibrate::QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
+		const FLensSolverWorkerCalibrate::QueueLatchInputDel* inputSignalLatch,
+		const FLensSolverWorkerCalibrate::QueueCalibrationResultOutputDel* inputOnSolvePointsDel);
 
 	~FLensSolverWorkerCalibrate() {}
 
@@ -43,7 +44,7 @@ private:
 
 	bool LatchInQueue();
 
-	void QueueWorkUnit(FLensSolverCalibrateWorkUnit workUnit);
+	void QueueWorkUnit(FLensSolverCalibrateWorkUnit calibrateWorkUnit);
 
 protected:
 	virtual void Tick() override;

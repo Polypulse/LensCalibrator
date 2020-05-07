@@ -2,14 +2,14 @@
 
 FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	FLensSolverWorkerParameters inputParameters,
-	const QueueTextureFileWorkUnitInputDel * inputQueueTextureFileWorkUnitInputDel,
-	const QueuePixelArrayWorkUnitInputDel * inputQueuePixelArrayWorkUnitInputDel,
-	const QueueFindCornerResultOutputDel * inputQueueFindCornerResultOutputDel) :
-	queueTextureFileWorkUnitInputDel(inputQueueTextureFileWorkUnitInputDel),
-	queuePixelArrayWorkUnitInputDel(inputQueuePixelArrayWorkUnitInputDel),
-	queueFindCornerResultOutputDel(inputQueueFindCornerResultOutputDel),
-	FLensSolverWorker(inputParameters)
+	const FLensSolverWorkerFindCorners::QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
+	const FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
+	const FLensSolverWorkerFindCorners::QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel) :
+	FLensSolverWorker(inputParameters),
+	queueFindCornerResultOutputDel(inputQueueFindCornerResultOutputDel)
 {
+	inputQueueTextureFileWorkUnitInputDel->BindRaw(this, &FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit);
+	inputQueuePixelArrayWorkUnitInputDel->BindRaw(this, &FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit);
 }
 
 int FLensSolverWorkerFindCorners::GetWorkLoad()
