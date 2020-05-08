@@ -13,8 +13,9 @@ FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters& inputPar
 	workerID(inputParameters.inputWorkerID),
 	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%s/"), *workerID))),
 	queueLogOutputDel(inputParameters.inputQueueLogOutputDel),
-	lockDel(inputParameters.lockDel),
-	unlockDel(inputParameters.unlockDel),
+	// lockDel(inputParameters.lockDel),
+	// unlockDel(inputParameters.unlockDel),
+	// isFenceDownDel(inputParameters.inputIsFenceDownDel),
 	workerMessage(FString::Printf(TEXT("Worker (%s): "), *inputParameters.inputWorkerID)),
 	debug(inputParameters.debug)
 {
@@ -47,11 +48,18 @@ FString FLensSolverWorker::GetWorkerID()
 void FLensSolverWorker::DoWork()
 {
 	FLensSolverWorker* baseWorker = this;
+	/*
 	if (!lockDel->IsBound() || !unlockDel->IsBound())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Lock/Unlock delegates are not bound!"));
 		return;
 	}
+	*/
+	/*
+	while (!isFenceDownDel->Execute())
+		continue;
+	QueueLog("Fence down!");
+	*/
 
 	while (1)
 	{
@@ -96,6 +104,7 @@ bool FLensSolverWorker::ShouldExit()
 
 void FLensSolverWorker::Lock()
 {
+	/*
 	if (!lockDel->IsBound())
 	{
 		flagToExit = true;
@@ -103,11 +112,17 @@ void FLensSolverWorker::Lock()
 	}
 
 	lockDel->Execute();
-	// threadLock.Lock();
+	*/
+	/*
+	while (!threadLock.TryLock())
+		continue;
+	*/
+	threadLock.Lock();
 }
 
 void FLensSolverWorker::Unlock()
 {
+	/*
 	if (!unlockDel->IsBound())
 	{
 		flagToExit = true;
@@ -115,7 +130,8 @@ void FLensSolverWorker::Unlock()
 	}
 
 	unlockDel->Execute();
-	// threadLock.Unlock();
+	*/
+	threadLock.Unlock();
 }
 
 FString FLensSolverWorker::JobDataToString(const FBaseParameters & baseParameters)

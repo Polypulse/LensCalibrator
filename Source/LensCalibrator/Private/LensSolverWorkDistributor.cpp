@@ -1,6 +1,6 @@
 #include "LensSolverWorkDistributor.h"
 
-void LensSolverWorkDistributor::StartFindCornerWorkers(
+void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 	int findCornerWorkerCount)
 {
 	if (findCornerWorkerCount <= 0)
@@ -10,9 +10,15 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 	}
 
 	queueCalibrateWorkUnitInputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
-	queueCalibrationResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrationResult);
+
+	/*
+	isFenceDownDel.BindRaw(this, &LensSolverWorkDistributor::IsFenceDown);
+	fenceUp = true;
+	*/
+	/*
 	lockDel.BindRaw(this, &LensSolverWorkDistributor::Lock);
 	unlockDel.BindRaw(this, &LensSolverWorkDistributor::Unlock);
+	*/
 
 	Lock();
 
@@ -25,8 +31,9 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 			queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
-			&lockDel,
-			&unlockDel,
+			// &isFenceDownDel,
+			// &lockDel,
+			// &unlockDel,
 			guid,
 			debug
 		);
@@ -51,7 +58,7 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 		QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d FindCorner workers"), findCornerWorkerCount));
 }
 
-void LensSolverWorkDistributor::StartCalibrateWorkers(
+void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 	int calibrateWorkerCount)
 {
 	if (calibrateWorkerCount <= 0)
@@ -60,6 +67,7 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 		return;
 	}
 
+	queueCalibrationResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrationResult);
 	Lock();
 
 	for (int i = 0; i < calibrateWorkerCount; i++)
@@ -71,8 +79,9 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 			queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
-			&lockDel,
-			&unlockDel,
+			// &isFenceDownDel,
+			// &lockDel,
+			// &unlockDel,
 			guid,
 			debug
 		);
@@ -168,7 +177,6 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 	if (!interfaceContainer->queuePixelArrayWorkUnitInputDel.IsBound())
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): FindCornerWorker: \"%s\" does not have a QueueWorkUnit delegate binded!"), *workerID));
-		Unlock();
 		return;
 	}
 
@@ -177,6 +185,7 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 
 void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit)
 {
+	// static int count = 0;
 	Lock();
 	if (workLoadSortedFindCornerWorkers.Num() == 0)
 	{
@@ -206,10 +215,11 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 	if (!interfaceContainer->queueTextureFileWorkUnitInputDel.IsBound())
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): CalibrateWorker: \"%s\" does not have a QueueWorkUnit delegate binded!"), *workerID));
-		Unlock();
 		return;
 	}
 
+	// count++;
+	// QueueLogAsync(FString::Printf(TEXT("Work Distributor received TextureFileWorkUnit of index: %d"), count));
 	interfaceContainer->queueTextureFileWorkUnitInputDel.Execute(textureFileWorkUnit);
 }
 
@@ -220,6 +230,7 @@ void LensSolverWorkDistributor::SetCalibrateWorkerParameters(FCalibrationParamet
 
 void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit)
 {
+	// static int count = 0;
 	Lock();
 	FWorkerCalibrateInterfaceContainer * interfaceContainerPtr;
 	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseParameters.calibrationID, interfaceContainerPtr))
@@ -236,6 +247,8 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 		return;
 	}
 
+	// count++;
+	// QueueLogAsync(FString::Printf(TEXT("Work Distributor received TextureFileWorkUnit of index: %d"), count));
 	interfaceContainerPtr->queueCalibrateWorkUnitDel.Execute(calibrateWorkUnit);
 
 	bool hitExpectedImageCount = IterateImageCount(calibrateWorkUnit.baseParameters.jobID, calibrateWorkUnit.baseParameters.calibrationID);
@@ -453,6 +466,10 @@ void LensSolverWorkDistributor::SortCalibrateWorkersByWorkLoad()
 
 void LensSolverWorkDistributor::Lock()
 {
+	/*
+	while (!threadLock.TryLock())
+		continue;
+	*/
 	threadLock.Lock();
 }
 
@@ -460,6 +477,19 @@ void LensSolverWorkDistributor::Unlock()
 {
 	threadLock.Unlock();
 }
+
+/*
+void LensSolverWorkDistributor::SetFenceDown()
+{
+	QueueLogAsync("Setting fence down.");
+	fenceUp = false;
+}
+
+bool LensSolverWorkDistributor::IsFenceDown()
+{
+	return !fenceUp;
+}
+*/
 
 /*
 FString LensSolverWorkDistributor::ExpectedAndCurrentImageCountToString(const TMap<FString, FExpectedAndCurrentImageCount> & map, const int tabCount)
@@ -508,10 +538,10 @@ FString LensSolverWorkDistributor::FJobToString(const FJob& job, const int tabCo
 
 void LensSolverWorkDistributor::StopFindCornerWorkers()
 {
-	threadLock.Lock();
+	Lock();
 	if (findCornersWorkers.Num() == 0)
 	{
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
@@ -527,17 +557,17 @@ void LensSolverWorkDistributor::StopFindCornerWorkers()
 			interfaceContainerPtr->baseContainer.isClosingDel.Execute();
 	}
 
-	threadLock.Unlock();
+	Unlock();
 	findCornersWorkers.Empty();
 	workLoadSortedFindCornerWorkers.Empty();
 }
 
 void LensSolverWorkDistributor::StopCalibrationWorkers()
 {
-	threadLock.Lock();
+	Lock();
 	if (calibrateWorkers.Num() == 0)
 	{
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
@@ -553,7 +583,7 @@ void LensSolverWorkDistributor::StopCalibrationWorkers()
 			interfaceContainerPtr->baseContainer.isClosingDel.Execute();
 	}
 
-	threadLock.Unlock();
+	Unlock();
 	calibrateWorkers.Empty();
 	workLoadSortedCalibrateWorkers.Empty();
 	workerCalibrationIDLUT.Empty();
@@ -568,19 +598,17 @@ void LensSolverWorkDistributor::StopBackgroundWorkers()
 int LensSolverWorkDistributor::GetFindCornerWorkerCount()
 {
 	int count = 0;
-	threadLock.Lock();
+	Lock();
 	count = findCornersWorkers.Num();
-	threadLock.Unlock();
-
+	Unlock();
 	return count;
 }
 
 int LensSolverWorkDistributor::GetCalibrateCount()
 {
 	int count = 0;
-	threadLock.Lock();
+	Lock();
 	count = calibrateWorkers.Num();
-	threadLock.Unlock();
-
+	Unlock();
 	return count;
 }

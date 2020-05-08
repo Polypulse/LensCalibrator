@@ -1197,8 +1197,11 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
 			workDistributor->QueueTextureFileWorkUnit(jobInfo.jobID, workUnit);
+			UE_LOG(LogTemp, Log, TEXT("Index: %d"), ii);
 		}
 	}
+
+	// workDistributor->SetFenceDown();
 
 	/*
 	TArray<FTextureArrayZoomPair> textureArrayZoomPairs;
@@ -1374,8 +1377,8 @@ void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int
 	if (!workDistributor.IsValid())
 		workDistributor = MakeUnique<LensSolverWorkDistributor>(&queueLogOutputDel, &queueFinishedJobOutputDel, debug);
 
-	workDistributor->StartFindCornerWorkers(findCornersWorkerCount);
-	workDistributor->StartCalibrateWorkers(calibrateWorkerCount);
+	workDistributor->PrepareFindCornerWorkers(findCornersWorkerCount);
+	workDistributor->PrepareCalibrateWorkers(calibrateWorkerCount);
 }
 
 void ULensSolver::StopBackgroundImageprocessors()

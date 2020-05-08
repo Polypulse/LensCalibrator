@@ -14,17 +14,20 @@
 class LensSolverWorkDistributor
 {
 private:
-	mutable FCriticalSection threadLock;
+	FCriticalSection threadLock;
 
 	QueueCalibrationResultOutputDel queueCalibrationResultOutputDel;
 	QueueCalibrateWorkUnitInputDel queueCalibrateWorkUnitInputDel;
+	// IsFenceDownDel isFenceDownDel;
 
-	LockDel lockDel;
-	UnlockDel unlockDel;
+	// LockDel lockDel;
+	// UnlockDel unlockDel;
 
 	const QueueFinishedJobOutputDel* queueFinishedJobOutputDel;
 	const QueueLogOutputDel * queueLogOutputDel;
 	const bool debug;
+
+	// FThreadSafeBool fenceUp;
 
 	FCalibrationParameters cachedCalibrationParameters;
 
@@ -60,6 +63,8 @@ private:
 	void Lock();
 	void Unlock();
 
+	// bool IsFenceDown();
+
 protected:
 public:
 
@@ -76,10 +81,9 @@ public:
 	{
 	}
 
-	void StartFindCornerWorkers(
+	void PrepareFindCornerWorkers(
 		int findCornerWorkerCount);
-
-	void StartCalibrateWorkers(
+	void PrepareCalibrateWorkers(
 		int calibrateWorkerCount);
 
 	void StopFindCornerWorkers();
@@ -99,4 +103,6 @@ public:
 
 	bool CalibrationResultIsQueued();
 	void DequeueCalibrationResult(FCalibrationResult & calibrationResult);
+
+	// void SetFenceDown();
 };

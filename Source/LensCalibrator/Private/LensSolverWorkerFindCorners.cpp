@@ -112,6 +112,10 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	else return;
 
+	static int count = 0;
+	count++;
+	QueueLog(FString::Printf(TEXT("Worker received TextureFileWorkUnit of index: %d"), count));
+
 	if (debug)
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Preparing search for calibration pattern using source image of size: (%d, %d)."), 
 			*JobDataToString(baseParameters), 
@@ -181,6 +185,8 @@ void FLensSolverWorkerFindCorners::Tick()
 	if (textureSearchParameters.exhaustiveSearch)
 		findFlags |= cv::CALIB_CB_EXHAUSTIVE;
 
+	if (debug)
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Beginning calibration pattern detection for image: \"%s\"."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
 	patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
 
 	if (!patternFound)
