@@ -8,10 +8,10 @@
 #include "CalibrationWorkerParameters.h"
 #include "FindCornerWorkerParameters.h"
 #include "LensSolverWorkerParameters.h"
-#include "OneTimeProcessParameters.generated.h"
+#include "StartMediaStreamParameters.generated.h"
 
 USTRUCT(BlueprintType)
-struct FOneTimeProcessParameters
+struct FStartMediaStreamParameters
 {
 	GENERATED_BODY()
 
@@ -21,8 +21,6 @@ struct FOneTimeProcessParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FCalibrationParameters calibrationParameters;
 
-	FOneTimeProcessParameters()
-	{
-		// currentResolution = FIntPoint(0, 0);
-	}
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FMediaStreamParameters mediaStreamParameters;
 };

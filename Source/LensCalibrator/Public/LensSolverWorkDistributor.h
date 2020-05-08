@@ -1,3 +1,5 @@
+/* Copyright (C) Polypulse LLC - All Rights Reserved
+ * Written by Sean Connor <sean@polypulse.io>, April 2020 */
 #pragma once
 #include "Engine.h"
 #include "LensSolverWorker.h"
@@ -7,6 +9,9 @@
 #include "LensSolverWorkerInterfaceContainer.h"
 #include "FindCornerWorkerParameters.h"
 #include "CalibrationWorkerParameters.h"
+#include "StartMediaStreamParameters.h"
+#include "MediaAssets/Public/MediaTexture.h"
+#include "MediaAssets/Public/MediaPlayer.h"
 #include "JobInfo.h"
 #include "Job.h"
 #include "LatchData.h"
@@ -35,10 +40,15 @@ private:
 	TMap<FString, FWorkerCalibrateInterfaceContainer> calibrateWorkers;
 	TArray<FString> workLoadSortedFindCornerWorkers;
 	TArray<FString> workLoadSortedCalibrateWorkers;
-	TMap<FString, FString> workerCalibrationIDLUT;
+
 	TMap<FString, FJob> jobs;
+	TMap<FString, const FString> workerCalibrationIDLUT;
+	TMap<FString, FMediaStreamWorkUnit> mediaTextureJobLUT;
 
 	TQueue<FCalibrationResult> queuedCalibrationResults;
+
+	FTexture2DRHIRef blitRenderTexture;
+	bool blitRenderTextureAllocated;
 
 	void QueueLogAsync(FString msg);
 
@@ -65,6 +75,9 @@ private:
 
 	int64 GetTickNow();
 	// bool IsFenceDown();
+	void MediaTextureRenderThread(
+		FRHICommandListImmediate& RHICmdList,
+		const FMediaStreamWorkUnit mediaStreamParameters);
 
 protected:
 public:
@@ -101,9 +114,11 @@ public:
 
 	void QueueTextureArrayWorkUnit(const FString & jobID, FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit);
 	void QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit);
+	void QueueMediaStreamWorkUnit(const FMediaStreamWorkUnit mediaStreamWorkUnit);
 
 	bool CalibrationResultIsQueued();
 	void DequeueCalibrationResult(FCalibrationResult & calibrationResult);
+	void PollMediaTextureStreams();
 
 	// void SetFenceDown();
 };

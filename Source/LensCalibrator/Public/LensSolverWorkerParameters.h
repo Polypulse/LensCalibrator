@@ -1,6 +1,12 @@
+/* Copyright (C) Polypulse LLC - All Rights Reserved
+ * Written by Sean Connor <sean@polypulse.io>, April 2020 */
 #pragma once
+
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
+
+#include "MediaAssets/Public/MediaTexture.h"
+#include "MediaAssets/Public/MediaPlayer.h"
 
 #include "LensSolverWorkerParameters.generated.h"
 
@@ -93,6 +99,10 @@ struct FTextureSearchParameters
 	float resizePercentage;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool resize;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Lens Calibrator")
+	bool flipX;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Lens Calibrator")
+	bool flipY;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool exhaustiveSearch;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
@@ -130,3 +140,30 @@ struct FTextureFileParameters
 	}
 };
 
+USTRUCT(BlueprintType)
+struct FMediaStreamParameters
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UMediaTexture * mediaTexture;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	int expectedStreamSnapshotCount;
+	int currentStreamSnapshotCount;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float streamSnapshotIntervalFrequencyInSeconds;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float zoomLevel;
+
+	FMediaStreamParameters()
+	{
+		mediaTexture = nullptr;
+		expectedStreamSnapshotCount = 50;
+		currentStreamSnapshotCount = 0;
+		streamSnapshotIntervalFrequencyInSeconds = 2.0f;
+		zoomLevel = 0.0f;
+	}
+};

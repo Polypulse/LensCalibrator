@@ -1,4 +1,14 @@
 #include "LensSolverWorkDistributor.h"
+#include "TextureResource.h"
+#include "CoreTypes.h"
+#include "GlobalShader.h"
+#include "RHIStaticStates.h"
+#include "Engine/RendererSettings.h"
+#include "PixelShaderUtils.h"
+
+#include "Engine.h"
+#include "BlitShader.h"
+#include "LensSolverUtilities.h"
 
 void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 	int findCornerWorkerCount)
@@ -221,6 +231,17 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 	interfaceContainer->queueTextureFileWorkUnitInputDel.Execute(textureFileWorkUnit);
 }
 
+void LensSolverWorkDistributor::QueueMediaStreamWorkUnit(const FMediaStreamWorkUnit mediaStreamWorkUnit)
+{
+	if (mediaTextureJobLUT.Contains(mediaStreamWorkUnit.baseParameters.jobID))
+	{
+		UE_LOG(LogTemp, Fatal, TEXT("Attempted to re-register already registered job ID: \"%s\" in MediaTexture Job LUT."), mediaStreamWorkUnit.baseParameters.jobID);
+		return;
+	}
+
+	mediaTextureJobLUT.Add(mediaStreamWorkUnit.baseParameters.jobID, mediaStreamWorkUnit);
+}
+
 void LensSolverWorkDistributor::SetCalibrateWorkerParameters(FCalibrationParameters calibrationParameters)
 {
 	cachedCalibrationParameters = calibrationParameters;
@@ -330,6 +351,45 @@ void LensSolverWorkDistributor::DequeueCalibrationResult(FCalibrationResult & ca
 	queuedCalibrationResults.Dequeue(calibrationResult);
 }
 
+void LensSolverWorkDistributor::PollMediaTextureStreams()
+{
+	Lock();
+	if (mediaTextureJobLUT.Num() == 0)
+	{
+		Unlock();
+		return;
+	}
+
+	LensSolverWorkDistributor* workDistributor = this;
+
+	TArray<FString> keys;
+	mediaTextureJobLUT.GetKeys(keys);
+
+	for (int i = 0; i < keys.Num(); i++)
+	{
+		FMediaStreamWorkUnit & mediaStreamWorkUnit = mediaTextureJobLUT.FindRef(keys[i]);
+
+		mediaStreamWorkUnit.mediaStreamParameters.currentStreamSnapshotCount++;
+		if (mediaStreamWorkUnit.mediaStreamParameters.currentStreamSnapshotCount >= mediaStreamWorkUnit.mediaStreamParameters.expectedStreamSnapshotCount)
+		{
+			mediaTextureJobLUT.Remove(keys[i]);
+			continue;
+		}
+
+		ENQUEUE_RENDER_COMMAND(MediaStreamSnapshotRenderCommand)
+		(
+			[workDistributor, mediaStreamWorkUnit](FRHICommandListImmediate& RHICmdList)
+			{
+				workDistributor->MediaTextureRenderThread(
+					RHICmdList,
+					mediaStreamWorkUnit);
+			}
+		);
+	}
+
+	Unlock();
+}
+
 void LensSolverWorkDistributor::QueueLogAsync(FString msg)
 {
 	msg = FString::Printf(TEXT("Work Distributor: %s"), *msg);
@@ -367,7 +427,7 @@ bool LensSolverWorkDistributor::GetCalibrateWorkerInterfaceContainerPtr(
 		return false;
 	}
 
-	FString* workerIDPtr = workerCalibrationIDLUT.Find(calibrationID);
+	const FString* workerIDPtr = workerCalibrationIDLUT.Find(calibrationID);
 	FString workerID;
 
 	if (workerIDPtr == nullptr)
@@ -616,4 +676,131 @@ int LensSolverWorkDistributor::GetCalibrateCount()
 	count = calibrateWorkers.Num();
 	Unlock();
 	return count;
+}
+
+void LensSolverWorkDistributor::MediaTextureRenderThread(
+	FRHICommandListImmediate& RHICmdList,
+	const FMediaStreamWorkUnit meidaStreamWorkUnit)
+{
+	/*
+	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.X * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.X;
+	int height = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.Y * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.Y;
+	*/
+	int width = meidaStreamWorkUnit.textureSearchParameters.resize ? meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth() * meidaStreamWorkUnit.textureSearchParameters.resizePercentage : meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth();
+	int height = meidaStreamWorkUnit.textureSearchParameters.resize ? meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight() * meidaStreamWorkUnit.textureSearchParameters.resizePercentage : meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight();
+	if (!blitRenderTextureAllocated)
+	{
+		FRHIResourceCreateInfo createInfo;
+		FTexture2DRHIRef dummyTexRef;
+		RHICreateTargetableShaderResource2D(
+			width,
+			height,
+			EPixelFormat::PF_B8G8R8A8,
+			1,
+			TexCreate_None,
+			TexCreate_RenderTargetable,
+			false,
+			createInfo,
+			blitRenderTexture,
+			dummyTexRef);
+
+		blitRenderTextureAllocated = true;
+	}
+
+	FRHIRenderPassInfo RPInfo(blitRenderTexture, ERenderTargetActions::Clear_DontStore);
+	RHICmdList.BeginRenderPass(RPInfo, TEXT("PresentAndCopyMediaTexture"));
+	{
+		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
+		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
+
+		TShaderMapRef<FBlitShaderVS> VertexShader(GlobalShaderMap);
+		TShaderMapRef<FBlitShaderPS> PixelShader(GlobalShaderMap);
+
+		FGraphicsPipelineStateInitializer GraphicsPSOInit;
+		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+		RHICmdList.SetViewport(0, 0, 0.0f, width, height, 1.0f);
+
+		GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGB, BO_Add, BF_One, BF_SourceAlpha>::GetRHI();
+		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
+		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
+		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
+		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+
+		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+		PixelShader->SetParameters(RHICmdList, meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(meidaStreamWorkUnit.textureSearchParameters.flipX ? -1.0f : 1.0f, meidaStreamWorkUnit.textureSearchParameters.flipY ? 1.0f : -1.0f));
+
+		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
+	}
+
+	RHICmdList.EndRenderPass();
+
+	FRHITexture2D * texture2D = blitRenderTexture->GetTexture2D();
+	TArray<FColor> surfaceData;
+
+	FReadSurfaceDataFlags ReadDataFlags;
+	ReadDataFlags.SetLinearToGamma(false);
+	ReadDataFlags.SetOutputStencil(false);
+	ReadDataFlags.SetMip(0);
+
+	// UE_LOG(LogTemp, Log, TEXT("Reading pixels from rect: (%d, %d, %d, %d)."), 0, 0, width, height);
+	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), surfaceData, ReadDataFlags);
+
+	FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit;
+	pixelArrayWorkUnit.baseParameters = meidaStreamWorkUnit.baseParameters;
+	pixelArrayWorkUnit.textureSearchParameters = meidaStreamWorkUnit.textureSearchParameters;
+	pixelArrayWorkUnit.pixelArrayParameters.pixels = surfaceData;
+	pixelArrayWorkUnit.pixelArrayParameters.sourceResolution = FIntPoint(meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth(), meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight());
+
+	QueueTextureArrayWorkUnit(pixelArrayWorkUnit.baseParameters.jobID, pixelArrayWorkUnit);
+
+	/*
+	threadLock.Lock();
+	if (workers.Num() == 0)
+	{
+		threadLock.Unlock();
+		return;
+	}
+
+	FString textureName;
+	textureZoomPair.texture->GetName(textureName);
+
+	FLensSolverTextureWorkUnit workerUnit;
+	workerUnit.unitName = textureName;
+	workerUnit.pixels = surfaceData;
+
+	if (nextWorkerIndex < 0 || nextWorkerIndex > workers.Num() - 1)
+		nextWorkerIndex = 0;
+
+	workers[nextWorkerIndex].queueWorkUnitDel.Execute(workerUnit);
+
+	if (latch)
+	{
+		FCalibrateLatch latchData =
+		{
+			jobInfo,
+			oneTimeProcessParameters.workerParameters,
+			latchImageCount,
+			textureZoomPair.zoomLevel,
+			oneTimeProcessParameters.currentResolution,
+			oneTimeProcessParameters.resize,
+			oneTimeProcessParameters.resizePercentage,
+			oneTimeProcessParameters.cornerCount,
+			oneTimeProcessParameters.squareSizeMM,
+			oneTimeProcessParameters.sensorDiagonalSizeMM,
+			oneTimeProcessParameters.initialPrincipalPointPixelPosition
+		};
+
+		UE_LOG(LogTemp, Log, TEXT("Latching worker."))
+		workers[nextWorkerIndex].signalLatch.Execute(latchData);
+
+
+		nextWorkerIndex++;
+		if (nextWorkerIndex > workers.Num() - 1)
+			nextWorkerIndex = 0;
+	}
+
+	threadLock.Unlock();
+	*/
 }

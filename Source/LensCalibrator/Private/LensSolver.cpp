@@ -5,8 +5,8 @@
 
 #include <Runtime\Engine\Classes\Engine\Texture.h>
 #include <Runtime\Engine\Classes\Engine\Texture2D.h>
-#include "TextureResource.h"
 
+#include "TextureResource.h"
 #include "CoreTypes.h"
 #include "GlobalShader.h"
 #include "RHIStaticStates.h"
@@ -785,12 +785,11 @@ bool ULensSolver::ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* in
 	return true;
 }
 
-bool ULensSolver::ValidateMediaTexture(const FJobInfo& jobInfo, const UMediaTexture* inputTexture)
+bool ULensSolver::ValidateMediaTexture(const UMediaTexture* inputTexture)
 {
 	if (inputTexture == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot process null texture."));
-		ReturnErrorSolvedPoints(jobInfo);
 		return false;
 	}
 
@@ -798,7 +797,6 @@ bool ULensSolver::ValidateMediaTexture(const FJobInfo& jobInfo, const UMediaText
 		inputTexture->GetHeight() <= 3)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot process texture, it's to small."));
-		ReturnErrorSolvedPoints(jobInfo);
 		return false;
 	}
 
@@ -1019,6 +1017,19 @@ void ULensSolver::QueueLog(FString msg)
 	logQueue.Enqueue(msg);
 }
 
+bool ULensSolver::ValidateWorkDistributor()
+{
+	if (!workDistributor.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("The work distributor has not been initialized, make sure you've called StartBackgroundImageProcessors first."));
+		return false;
+	}
+
+
+	return true;
+
+}
+
 bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* mediaTexture, FString url)
 {
 	return
@@ -1128,12 +1139,6 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	FOneTimeProcessParameters oneTimeProcessParameters, 
 	FJobInfo& ouptutJobInfo)
 {
-	if (!workDistributor.IsValid())
-	{
-		UE_LOG(LogTemp, Error, TEXT("The work distributor has not been initialized, make sure you've called StartBackgroundImageProcessors first."));
-		return;
-	}
-
 	if (inputTextures.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No input texture folders."));
@@ -1243,6 +1248,53 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 
 	OneTimeProcessArrayOfTextureArrayZoomPairs(textureArrayZoomPairs, oneTimeProcessParameters, ouptutJobInfo);
 	*/
+}
+
+void ULensSolver::StartMediaStreamCalibration(
+	FStartMediaStreamParameters mediaStreamParameters,
+	FJobInfo& ouptutJobInfo)
+{
+	if (!ValidateWorkDistributor())
+		return;
+
+	if (!ValidateMediaTexture(mediaStreamParameters.mediaStreamParameters.mediaTexture))
+	{
+		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Media Texture\" invalid!"));
+		return;
+	}
+
+	if (mediaStreamParameters.mediaStreamParameters.expectedStreamSnapshotCount <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Expected Stream Snapshot Count\" should be a positive number greater than zero!"));
+		return;
+	}
+
+	if (mediaStreamParameters.mediaStreamParameters.streamSnapshotIntervalFrequencyInSeconds <= 0.0f)
+	{
+		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Stream Snapshot Interval Frequency In Seconds\" should be a positive number greater than zero!"));
+		return;
+	}
+
+	if (mediaStreamParameters.mediaStreamParameters.zoomLevel < 0.0f || mediaStreamParameters.mediaStreamParameters.zoomLevel > 1.0f)
+	{
+		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Zoom Level\" should be a normalized value between 0 - 1!"));
+		return;
+	}
+
+	TArray<int> expectedImageCounts;
+	expectedImageCounts.Add(mediaStreamParameters.mediaStreamParameters.expectedStreamSnapshotCount);
+
+	ouptutJobInfo = workDistributor->RegisterJob(expectedImageCounts, 1, OneTime);
+
+	FMediaStreamWorkUnit workUnit;
+	workUnit.baseParameters.jobID								= ouptutJobInfo.jobID;
+	workUnit.baseParameters.calibrationID						= ouptutJobInfo.calibrationIDs[0];
+	workUnit.baseParameters.zoomLevel							= mediaStreamParameters.mediaStreamParameters.zoomLevel;
+	workUnit.textureSearchParameters							= mediaStreamParameters.textureSearchParameters;
+	workUnit.mediaStreamParameters								= mediaStreamParameters.mediaStreamParameters;
+	workUnit.mediaStreamParameters.currentStreamSnapshotCount	= 0;
+
+	workDistributor->QueueMediaStreamWorkUnit(workUnit);
 }
 
 void ULensSolver::GenerateDistortionCorrectionMap(
@@ -1395,4 +1447,7 @@ void ULensSolver::Poll()
 	PollFinishedJobs();
 	PollDistortionCorrectionMapGenerationResults();
 	PollCorrectedDistortedImageResults();
+
+	if (ValidateWorkDistributor())
+		workDistributor->PollMediaTextureStreams();
 }

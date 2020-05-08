@@ -1,6 +1,5 @@
 /* Copyright (C) Polypulse LLC - All Rights Reserved
  * Written by Sean Connor <sean@polypulse.io>, April 2020 */
-
 #pragma once
 
 #include "CoreTypes.h"
@@ -17,6 +16,7 @@
 #include "Job.h"
 #include "LensSolverWorkDistributor.h"
 #include "OneTimeProcessParameters.h"
+#include "StartMediaStreamParameters.h"
 
 #include "DistortionCorrectionMapGenerationParameters.h"
 #include "DistortionCorrectionMapGenerationResults.h"
@@ -108,7 +108,7 @@ private:
 
 	bool ValidateZoom(const FJobInfo& jobInfo, const float zoomValue);
 	bool ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture, const int textureIndex, const FIntPoint targetResolution);
-	bool ValidateMediaTexture(const FJobInfo & jobInfo, const UMediaTexture* inputTexture);
+	bool ValidateMediaTexture(const UMediaTexture* inputTexture);
 	bool ValidateOneTimeProcessParameters(const FOneTimeProcessParameters& oneTimeProcessParameters);
 	void ReturnErrorSolvedPoints(FJobInfo jobInfo);
 
@@ -122,6 +122,8 @@ private:
 	bool FinishedJobIsQueued();
 	void DequeuedFinishedJob(FJobInfo& jobInfo);
 	void QueueLog(FString msg);
+
+	bool ValidateWorkDistributor();
 
 protected:
 
@@ -183,13 +185,10 @@ public:
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
-	/*
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StartMediaStreamCalibration(
-		UMediaTexture * mediaTexture,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		FJobInfo & ouptutJobInfo);
-	*/
+		FStartMediaStreamParameters mediaStreamParameters,
+		FJobInfo& ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void GenerateDistortionCorrectionMap(
