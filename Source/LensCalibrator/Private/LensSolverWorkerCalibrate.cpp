@@ -171,8 +171,7 @@ void FLensSolverWorkerCalibrate::Tick()
 				(latchData.resizeParameters.sourceResolution.X / (float)latchData.resizeParameters.sourceResolution.Y)));
 	}
 
-	if (debug)
-		QueueLog("(INFO): Calibrating...");
+	QueueLog("(INFO): Calibrating...");
 
 	double error = cv::calibrateCamera(
 		objectPoints,
@@ -188,8 +187,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (ShouldExit())
 		return;
 
-	if (debug)
-		QueueLog("(INFO): Done.");
+	QueueLog("(INFO): Done.");
 
 	cv::calibrationMatrixValues(cameraMatrix, sourceImageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
 	FMatrix perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(sourceImageSize, principalPoint, focalLength);

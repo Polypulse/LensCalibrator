@@ -45,4 +45,6 @@ struct FJob
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	TMap<FString, FExpectedAndCurrentImageCount> expectedAndCurrentImageCounts;
+
+	int64 startTime;
 };

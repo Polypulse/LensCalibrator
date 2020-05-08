@@ -1184,19 +1184,19 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		zoomLevels[useIndex] = inputTextures[ti].zoomLevel;
 	}
 
-	FJobInfo jobInfo = workDistributor->RegisterJob(expectedImageCounts, useCount, OneTime);
+	ouptutJobInfo = workDistributor->RegisterJob(expectedImageCounts, useCount, OneTime);
 	for (int ci = 0; ci < useCount; ci++)
 	{
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
 		{
 			FLensSolverTextureFileWorkUnit workUnit;
-			workUnit.baseParameters.jobID						= jobInfo.jobID;
-			workUnit.baseParameters.calibrationID				= jobInfo.calibrationIDs[ci];
+			workUnit.baseParameters.jobID						= ouptutJobInfo.jobID;
+			workUnit.baseParameters.calibrationID				= ouptutJobInfo.calibrationIDs[ci];
 			workUnit.baseParameters.zoomLevel					= zoomLevels[ci];
 			workUnit.textureSearchParameters					= oneTimeProcessParameters.textureSearchParameters;
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
-			workDistributor->QueueTextureFileWorkUnit(jobInfo.jobID, workUnit);
+			workDistributor->QueueTextureFileWorkUnit(ouptutJobInfo.jobID, workUnit);
 			// UE_LOG(LogTemp, Log, TEXT("Index: %d"), ii);
 		}
 	}

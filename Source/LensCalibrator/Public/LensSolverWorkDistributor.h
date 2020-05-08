@@ -63,6 +63,7 @@ private:
 	void Lock();
 	void Unlock();
 
+	int64 GetTickNow();
 	// bool IsFenceDown();
 
 protected:

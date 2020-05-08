@@ -101,8 +101,7 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 	}
 
 	Unlock();
-	if (debug)
-		QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d Calibrate workers"), calibrateWorkerCount));
+	QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d Calibrate workers"), calibrateWorkerCount));
 }
 
 FJobInfo LensSolverWorkDistributor::RegisterJob(
@@ -133,14 +132,14 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 		job.expectedAndCurrentImageCounts = mapOfExpectedAndCurrentImageCounts;
 		job.expectedResultCount = expectedResultCount;
 		job.currentResultCount = 0;
+		job.startTime = GetTickNow();
 	}
 
 	Lock();
 	jobs.Add(jobInfo.jobID, job);
 	Unlock();
 
-	if (debug)
-		QueueLogAsync(FString::Printf(TEXT("(INFO): Registered job with ID: \"%s\"."), *job.jobInfo.jobID));
+	QueueLogAsync(FString::Printf(TEXT("(INFO): Registered job with ID: \"%s\"."), *job.jobInfo.jobID));
 
 	return jobInfo;
 }
@@ -310,6 +309,8 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 	if (jobPtr->currentResultCount >= jobPtr->expectedResultCount)
 	{
 		jobInfo = jobPtr->jobInfo;
+		float duration = (GetTickNow() - jobPtr->startTime) / 1000.0f;
+		QueueLogAsync(FString::Printf(TEXT("Job: \"%s\" took %f seconds."), *jobInfo.jobID, duration));
 		jobs.Remove(calibrationResult.baseParameters.jobID);
 		done = true;
 	}
@@ -415,16 +416,14 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 
 	if (currentImageCount >= expectedImageCount)
 	{
-		if (debug)
-			QueueLogAsync(FString::Printf(TEXT("(INFO): Completed processing all images of count %d/%d for calibration: \"%s\"."), currentImageCount, expectedImageCount, *calibrationID));
+		QueueLogAsync(FString::Printf(TEXT("(INFO): Completed processing all images of count %d/%d for calibration: \"%s\"."), currentImageCount, expectedImageCount, *calibrationID));
 
 		Unlock();
 		return true;
 	}
 
 	Unlock();
-	if (debug)
-		QueueLogAsync(FString::Printf(TEXT("(INFO): Iterate image count %d/%d for calibration: \"%s\"."), currentImageCount, expectedImageCount, *calibrationID));
+	QueueLogAsync(FString::Printf(TEXT("(INFO): Iterate image count %d/%d for calibration: \"%s\"."), currentImageCount, expectedImageCount, *calibrationID));
 
 	return false;
 }
@@ -476,6 +475,12 @@ void LensSolverWorkDistributor::Lock()
 void LensSolverWorkDistributor::Unlock()
 {
 	threadLock.Unlock();
+}
+
+int64 LensSolverWorkDistributor::GetTickNow()
+{
+	FDateTime timeUtc = FDateTime::UtcNow();
+	return timeUtc.ToUnixTimestamp() * 1000 + timeUtc.GetMillisecond();
 }
 
 /*
