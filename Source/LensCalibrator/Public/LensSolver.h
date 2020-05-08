@@ -62,8 +62,6 @@ private:
 
 	TQueue<FString> logQueue;
 
-	TUniquePtr<LensSolverWorkDistributor> workDistributor;
-
 	void RandomSortTArray(TArray<UTexture2D*>& arr);
 
 	void BeginDetectPoints(
@@ -122,8 +120,6 @@ private:
 	bool FinishedJobIsQueued();
 	void DequeuedFinishedJob(FJobInfo& jobInfo);
 	void QueueLog(FString msg);
-
-	bool ValidateWorkDistributor();
 
 protected:
 

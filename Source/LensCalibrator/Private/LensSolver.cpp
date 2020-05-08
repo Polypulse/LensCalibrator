@@ -867,18 +867,15 @@ void ULensSolver::PollLogs()
 
 void ULensSolver::PollCalibrationResults()
 {
-	if (!workDistributor.IsValid())
-		return;
-
-	bool isQueued = workDistributor->CalibrationResultIsQueued();
+	bool isQueued = LensSolverWorkDistributor::GetInstance().CalibrationResultIsQueued();
 	while (isQueued)
 	{
 		FCalibrationResult calibrationResult;
-		workDistributor->DequeueCalibrationResult(calibrationResult);
+		LensSolverWorkDistributor::GetInstance().DequeueCalibrationResult(calibrationResult);
 
 		this->OnReceiveCalibrationResult(calibrationResult);
 
-		isQueued = workDistributor->CalibrationResultIsQueued();
+		isQueued = LensSolverWorkDistributor::GetInstance().CalibrationResultIsQueued();
 	}
 	/*
 	if (!queuedSolvedPointsPtr.IsValid())
@@ -1017,18 +1014,6 @@ void ULensSolver::QueueLog(FString msg)
 	logQueue.Enqueue(msg);
 }
 
-bool ULensSolver::ValidateWorkDistributor()
-{
-	if (!workDistributor.IsValid())
-	{
-		UE_LOG(LogTemp, Error, TEXT("The work distributor has not been initialized, make sure you've called StartBackgroundImageProcessors first."));
-		return false;
-	}
-
-	return true;
-
-}
-
 bool ULensSolver::ValidateMediaInputs(UMediaPlayer* mediaPlayer, UMediaTexture* mediaTexture, FString url)
 {
 	return
@@ -1138,16 +1123,13 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	FOneTimeProcessParameters oneTimeProcessParameters, 
 	FJobInfo& ouptutJobInfo)
 {
-	if (!ValidateWorkDistributor())
-		return;
-
 	if (inputTextures.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No input texture folders."));
 		return;
 	}
 
-	if (workDistributor->GetFindCornerWorkerCount() <= 0 || workDistributor->GetCalibrateCount() <= 0)
+	if (LensSolverWorkDistributor::GetInstance().GetFindCornerWorkerCount() <= 0 || LensSolverWorkDistributor::GetInstance().GetCalibrateCount() <= 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No workers available, make sure you start both background \"FindCorner\" & \"Calibrate\" workers."));
 		return;
@@ -1190,7 +1172,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		zoomLevels[useIndex] = inputTextures[ti].zoomLevel;
 	}
 
-	ouptutJobInfo = workDistributor->RegisterJob(expectedImageCounts, useCount, OneTime);
+	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(expectedImageCounts, useCount, OneTime);
 	for (int ci = 0; ci < useCount; ci++)
 	{
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
@@ -1202,7 +1184,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.textureSearchParameters					= oneTimeProcessParameters.textureSearchParameters;
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
-			workDistributor->QueueTextureFileWorkUnit(ouptutJobInfo.jobID, workUnit);
+			LensSolverWorkDistributor::GetInstance().QueueTextureFileWorkUnit(ouptutJobInfo.jobID, workUnit);
 			// UE_LOG(LogTemp, Log, TEXT("Index: %d"), ii);
 		}
 	}
@@ -1256,9 +1238,6 @@ void ULensSolver::StartMediaStreamCalibration(
 	FStartMediaStreamParameters mediaStreamParameters,
 	FJobInfo& ouptutJobInfo)
 {
-	if (!ValidateWorkDistributor())
-		return;
-
 	if (!ValidateMediaTexture(mediaStreamParameters.mediaStreamParameters.mediaTexture))
 	{
 		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Media Texture\" invalid!"));
@@ -1286,7 +1265,7 @@ void ULensSolver::StartMediaStreamCalibration(
 	TArray<int> expectedImageCounts;
 	expectedImageCounts.Add(mediaStreamParameters.mediaStreamParameters.expectedStreamSnapshotCount);
 
-	ouptutJobInfo = workDistributor->RegisterJob(expectedImageCounts, 1, OneTime);
+	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(expectedImageCounts, 1, OneTime);
 
 	FMediaStreamWorkUnit workUnit;
 	workUnit.baseParameters.jobID								= ouptutJobInfo.jobID;
@@ -1296,7 +1275,7 @@ void ULensSolver::StartMediaStreamCalibration(
 	workUnit.mediaStreamParameters								= mediaStreamParameters.mediaStreamParameters;
 	workUnit.mediaStreamParameters.currentStreamSnapshotCount	= 0;
 
-	workDistributor->QueueMediaStreamWorkUnit(workUnit);
+	LensSolverWorkDistributor::GetInstance().QueueMediaStreamWorkUnit(workUnit);
 }
 
 void ULensSolver::GenerateDistortionCorrectionMap(
@@ -1434,22 +1413,15 @@ void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int
 		UE_LOG(LogTemp, Log, TEXT("Binded finished queue."));
 	}
 
-	if (!workDistributor.IsValid())
-	{
-		workDistributor = MakeUnique<LensSolverWorkDistributor>(&queueLogOutputDel, &queueFinishedJobOutputDel, debug);
-		UE_LOG(LogTemp, Log, TEXT("Initialized work distributor."));
-	}
+	LensSolverWorkDistributor::GetInstance().Configure(&queueLogOutputDel, &queueFinishedJobOutputDel, debug);
 
-	workDistributor->PrepareFindCornerWorkers(findCornersWorkerCount);
-	workDistributor->PrepareCalibrateWorkers(calibrateWorkerCount);
+	LensSolverWorkDistributor::GetInstance().PrepareFindCornerWorkers(findCornersWorkerCount);
+	LensSolverWorkDistributor::GetInstance().PrepareCalibrateWorkers(calibrateWorkerCount);
 }
 
 void ULensSolver::StopBackgroundImageprocessors()
 {
-	if (!workDistributor.IsValid())
-		return;
-
-	workDistributor->StopBackgroundWorkers();
+	LensSolverWorkDistributor::GetInstance().StopBackgroundWorkers();
 }
 
 void ULensSolver::Poll()
@@ -1460,6 +1432,5 @@ void ULensSolver::Poll()
 	PollDistortionCorrectionMapGenerationResults();
 	PollCorrectedDistortedImageResults();
 
-	if (ValidateWorkDistributor())
-		workDistributor->PollMediaTextureStreams();
+	LensSolverWorkDistributor::GetInstance().PollMediaTextureStreams();
 }

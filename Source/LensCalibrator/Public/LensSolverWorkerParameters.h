@@ -154,6 +154,7 @@ struct FMediaStreamParameters
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float streamSnapshotIntervalFrequencyInSeconds;
+	int64 previousSnapshotTime;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float zoomLevel;

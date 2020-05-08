@@ -129,12 +129,15 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	float checkerBoardSquareSizeMM = textureSearchParameters.checkerBoardSquareSizeMM;
 	FIntPoint checkerBoardCornerCount = textureSearchParameters.checkerBoardCornerCount;
-	resizeParameters.resizeResolution = resizeParameters.sourceResolution * resizePercentage;
+	// resizeParameters.resizeResolution = resizeParameters.sourceResolution * resizePercentage;
 
 	// QueueLog(FString::Printf(TEXT("%sPrepared image of size: (%d, %d!"), *workerMessage, image.cols, image.rows));
 
-	resizeParameters.resizeResolution.X = FMath::FloorToInt(resizeParameters.sourceResolution.X * resizePercentage);
-	resizeParameters.resizeResolution.Y = FMath::FloorToInt(resizeParameters.sourceResolution.Y * resizePercentage);
+	if (resize)
+	{
+		resizeParameters.resizeResolution.X = FMath::FloorToInt(resizeParameters.sourceResolution.X * resizePercentage);
+		resizeParameters.resizeResolution.Y = FMath::FloorToInt(resizeParameters.sourceResolution.Y * resizePercentage);
+	}
 
 	cv::Size sourceImageSize(resizeParameters.sourceResolution.X, resizeParameters.sourceResolution.Y);
 	cv::Size resizedImageSize(resizeParameters.resizeResolution.X, resizeParameters.resizeResolution.Y);
@@ -265,7 +268,7 @@ bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixe
 		image.at<uint8>(pi / resolution.X, pi % resolution.X) = pixels[pi].R;
 
 	QueueLog(FString::Printf(TEXT("(INFO): Done copying pixel data."), pixels.Num(), resolution.X, resolution.Y));
-	return false;
+	return true;
 }
 
 void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString folder, FString fileName)

@@ -19,6 +19,8 @@
 class LensSolverWorkDistributor
 {
 private:
+	LensSolverWorkDistributor() {}
+
 	FCriticalSection threadLock;
 
 	QueueCalibrationResultOutputDel queueCalibrationResultOutputDel;
@@ -28,9 +30,9 @@ private:
 	// LockDel lockDel;
 	// UnlockDel unlockDel;
 
-	const QueueFinishedJobOutputDel* queueFinishedJobOutputDel;
-	const QueueLogOutputDel * queueLogOutputDel;
-	const bool debug;
+	QueueFinishedJobOutputDel* queueFinishedJobOutputDel;
+	QueueLogOutputDel * queueLogOutputDel;
+	bool debug;
 
 	// FThreadSafeBool fenceUp;
 
@@ -84,17 +86,28 @@ private:
 protected:
 public:
 
+	static LensSolverWorkDistributor& GetInstance()
+	{
+		static LensSolverWorkDistributor workDistributor;
+		return workDistributor;
+	}
+
+	LensSolverWorkDistributor(LensSolverWorkDistributor const&) = delete;
+	void operator=(LensSolverWorkDistributor const&) = delete;
+
 	/*
 	static FString ExpectedAndCurrentImageCountToString(const TMap<FString, FExpectedAndCurrentImageCount> & map, const int tabCount);
 	static FString FJobInfoToString(const FJobInfo& job, const int tabCount = 0);
 	static FString FJobToString(const FJob& job, const int tabcount = 0);
 	*/
 
-	LensSolverWorkDistributor(const QueueLogOutputDel* inputQueueLogOutputDel, const QueueFinishedJobOutputDel* inputQueueFinishedJobOutputDel, bool debugEnabled = false) :
-		queueFinishedJobOutputDel(inputQueueFinishedJobOutputDel),
-		queueLogOutputDel(inputQueueLogOutputDel),
-		debug(debugEnabled)
+	void Configure(QueueLogOutputDel* inputQueueLogOutputDel,
+		QueueFinishedJobOutputDel* inputQueueFinishedJobOutputDel,
+		bool debugEnabled = false)
 	{
+		queueFinishedJobOutputDel = inputQueueFinishedJobOutputDel;
+		queueLogOutputDel = inputQueueLogOutputDel;
+		debug = debugEnabled;
 	}
 
 	void PrepareFindCornerWorkers(

@@ -253,6 +253,12 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 {
 	// static int count = 0;
 	Lock();
+	if (calibrateWorkers.Num() == 0)
+	{
+		Unlock();
+		return;
+	}
+
 	FWorkerCalibrateInterfaceContainer * interfaceContainerPtr;
 	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseParameters.calibrationID, interfaceContainerPtr))
 	{
@@ -370,6 +376,14 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 	for (int i = 0; i < keys.Num(); i++)
 	{
 		FMediaStreamWorkUnit * mediaStreamWorkUnit = mediaTextureJobLUT.Find(keys[i]);
+
+		int64 tickNow = GetTickNow();
+
+		if ((tickNow - mediaStreamWorkUnit->mediaStreamParameters.previousSnapshotTime) / 1000.0f < mediaStreamWorkUnit->mediaStreamParameters.streamSnapshotIntervalFrequencyInSeconds)
+			continue;
+
+		mediaStreamWorkUnit->mediaStreamParameters.previousSnapshotTime = tickNow;
+
 		if (!ValidateMediaTexture(mediaStreamWorkUnit->mediaStreamParameters.mediaTexture))
 		{
 			QueueLogAsync(FString::Printf(TEXT("Media texture in media stream work unit is invalid for calibration: \"%s\""), *mediaStreamWorkUnit->baseParameters.calibrationID));
@@ -813,8 +827,8 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 
 	FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit;
 	pixelArrayWorkUnit.baseParameters = mediaStreamWorkUnit.baseParameters;
-	pixelArrayWorkUnit.textureSearchParameters.resize = false;
 	pixelArrayWorkUnit.textureSearchParameters = mediaStreamWorkUnit.textureSearchParameters;
+	pixelArrayWorkUnit.textureSearchParameters.resize = false;
 	pixelArrayWorkUnit.pixelArrayParameters.pixels = surfaceData;
 
 	pixelArrayWorkUnit.resizeParameters.sourceResolution = FIntPoint(mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth(), mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight());
