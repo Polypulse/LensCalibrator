@@ -235,9 +235,12 @@ void LensSolverWorkDistributor::QueueMediaStreamWorkUnit(const FMediaStreamWorkU
 {
 	if (mediaTextureJobLUT.Contains(mediaStreamWorkUnit.baseParameters.jobID))
 	{
-		UE_LOG(LogTemp, Fatal, TEXT("Attempted to re-register already registered job ID: \"%s\" in MediaTexture Job LUT."), mediaStreamWorkUnit.baseParameters.jobID);
+		UE_LOG(LogTemp, Fatal, TEXT("Attempted to re-register already registered job ID: \"%s\" in MediaTexture Job LUT."), *mediaStreamWorkUnit.baseParameters.jobID);
 		return;
 	}
+
+	if (debug)
+		QueueLogAsync(FString::Printf(TEXT("Queued MediaStreamWorkUnit for calibration"), *mediaStreamWorkUnit.baseParameters.calibrationID));
 
 	mediaTextureJobLUT.Add(mediaStreamWorkUnit.baseParameters.jobID, mediaStreamWorkUnit);
 }
@@ -367,24 +370,35 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 
 	for (int i = 0; i < keys.Num(); i++)
 	{
-		FMediaStreamWorkUnit & mediaStreamWorkUnit = mediaTextureJobLUT.FindRef(keys[i]);
+		FMediaStreamWorkUnit * mediaStreamWorkUnit = mediaTextureJobLUT.Find(keys[i]);
+		FMediaStreamWorkUnit copyMediaSreamWorkUnit = *mediaStreamWorkUnit;
 
-		mediaStreamWorkUnit.mediaStreamParameters.currentStreamSnapshotCount++;
-		if (mediaStreamWorkUnit.mediaStreamParameters.currentStreamSnapshotCount >= mediaStreamWorkUnit.mediaStreamParameters.expectedStreamSnapshotCount)
+		ENQUEUE_RENDER_COMMAND(MediaStreamSnapshotRenderCommand)
+		(
+			[workDistributor, copyMediaSreamWorkUnit](FRHICommandListImmediate& RHICmdList)
+			{
+				workDistributor->MediaTextureRenderThread(
+					RHICmdList,
+					copyMediaSreamWorkUnit);
+			}
+		);
+
+		mediaStreamWorkUnit->mediaStreamParameters.currentStreamSnapshotCount++;
+		if (mediaStreamWorkUnit->mediaStreamParameters.currentStreamSnapshotCount >= mediaStreamWorkUnit->mediaStreamParameters.expectedStreamSnapshotCount)
 		{
+			QueueLogAsync(FString::Printf(TEXT("(INFO): Completed queuing media stream snapshots %d/%d to render thread for calibration: \"%s\"."), 
+				mediaStreamWorkUnit->mediaStreamParameters.currentStreamSnapshotCount, 
+				mediaStreamWorkUnit->mediaStreamParameters.expectedStreamSnapshotCount, 
+				*mediaStreamWorkUnit->baseParameters.calibrationID));
+
 			mediaTextureJobLUT.Remove(keys[i]);
 			continue;
 		}
 
-		ENQUEUE_RENDER_COMMAND(MediaStreamSnapshotRenderCommand)
-		(
-			[workDistributor, mediaStreamWorkUnit](FRHICommandListImmediate& RHICmdList)
-			{
-				workDistributor->MediaTextureRenderThread(
-					RHICmdList,
-					mediaStreamWorkUnit);
-			}
-		);
+		QueueLogAsync(FString::Printf(TEXT("(INFO): Queued media stream snapshot %d/%d to render thread for calibration: \"%s\""), 
+				mediaStreamWorkUnit->mediaStreamParameters.currentStreamSnapshotCount, 
+				mediaStreamWorkUnit->mediaStreamParameters.expectedStreamSnapshotCount, 
+				*mediaStreamWorkUnit->baseParameters.calibrationID));
 	}
 
 	Unlock();
@@ -680,14 +694,14 @@ int LensSolverWorkDistributor::GetCalibrateCount()
 
 void LensSolverWorkDistributor::MediaTextureRenderThread(
 	FRHICommandListImmediate& RHICmdList,
-	const FMediaStreamWorkUnit meidaStreamWorkUnit)
+	const FMediaStreamWorkUnit mediaStreamWorkUnit)
 {
 	/*
 	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.X * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.X;
 	int height = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.Y * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.Y;
 	*/
-	int width = meidaStreamWorkUnit.textureSearchParameters.resize ? meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth() * meidaStreamWorkUnit.textureSearchParameters.resizePercentage : meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth();
-	int height = meidaStreamWorkUnit.textureSearchParameters.resize ? meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight() * meidaStreamWorkUnit.textureSearchParameters.resizePercentage : meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight();
+	int width = mediaStreamWorkUnit.textureSearchParameters.resize ? mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth() * mediaStreamWorkUnit.textureSearchParameters.resizePercentage : mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth();
+	int height = mediaStreamWorkUnit.textureSearchParameters.resize ? mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight() * mediaStreamWorkUnit.textureSearchParameters.resizePercentage : mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight();
 	if (!blitRenderTextureAllocated)
 	{
 		FRHIResourceCreateInfo createInfo;
@@ -729,7 +743,7 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-		PixelShader->SetParameters(RHICmdList, meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(meidaStreamWorkUnit.textureSearchParameters.flipX ? -1.0f : 1.0f, meidaStreamWorkUnit.textureSearchParameters.flipY ? 1.0f : -1.0f));
+		PixelShader->SetParameters(RHICmdList, mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(mediaStreamWorkUnit.textureSearchParameters.flipX ? -1.0f : 1.0f, mediaStreamWorkUnit.textureSearchParameters.flipY ? 1.0f : -1.0f));
 
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}
@@ -747,11 +761,17 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	// UE_LOG(LogTemp, Log, TEXT("Reading pixels from rect: (%d, %d, %d, %d)."), 0, 0, width, height);
 	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), surfaceData, ReadDataFlags);
 
+	QueueLogAsync(FString::Printf(TEXT("(INFO): Completed snapshot blit of media stream on render thread of count %d/%d for calibration: \"%s\", queuing resulting pixel array."), 
+			mediaStreamWorkUnit.mediaStreamParameters.currentStreamSnapshotCount, 
+			mediaStreamWorkUnit.mediaStreamParameters.expectedStreamSnapshotCount, 
+			*mediaStreamWorkUnit.baseParameters.calibrationID));
+
 	FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit;
-	pixelArrayWorkUnit.baseParameters = meidaStreamWorkUnit.baseParameters;
-	pixelArrayWorkUnit.textureSearchParameters = meidaStreamWorkUnit.textureSearchParameters;
+	pixelArrayWorkUnit.baseParameters = mediaStreamWorkUnit.baseParameters;
+	pixelArrayWorkUnit.textureSearchParameters.resize = false;
+	pixelArrayWorkUnit.textureSearchParameters = mediaStreamWorkUnit.textureSearchParameters;
 	pixelArrayWorkUnit.pixelArrayParameters.pixels = surfaceData;
-	pixelArrayWorkUnit.pixelArrayParameters.sourceResolution = FIntPoint(meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth(), meidaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight());
+	pixelArrayWorkUnit.pixelArrayParameters.sourceResolution = FIntPoint(mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth(), mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight());
 
 	QueueTextureArrayWorkUnit(pixelArrayWorkUnit.baseParameters.jobID, pixelArrayWorkUnit);
 

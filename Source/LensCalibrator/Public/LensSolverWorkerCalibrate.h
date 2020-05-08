@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 
-#include "LatchData.h"
 #include "LensSolverWorker.h"
 
 DECLARE_DELEGATE_OneParam(QueueCalibrationResultOutputDel, FCalibrationResult)

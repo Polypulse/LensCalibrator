@@ -2,6 +2,7 @@
  * Written by Sean Connor <sean@polypulse.io>, April 2020 */
 #pragma once
 #include "Engine.h"
+
 #include "LensSolverWorker.h"
 #include "LensSolverWorkerFindCorners.h"
 #include "LensSolverWorkerCalibrate.h"
@@ -14,7 +15,6 @@
 #include "MediaAssets/Public/MediaPlayer.h"
 #include "JobInfo.h"
 #include "Job.h"
-#include "LatchData.h"
 
 class LensSolverWorkDistributor
 {

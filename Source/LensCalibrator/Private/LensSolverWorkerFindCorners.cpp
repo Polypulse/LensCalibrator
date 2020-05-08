@@ -133,13 +133,13 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	// QueueLog(FString::Printf(TEXT("%sPrepared image of size: (%d, %d!"), *workerMessage, image.cols, image.rows));
 
-	resizeParameters.resizeResolution.X = FMath::FloorToInt(resizeParameters.sourceResolution.X * (resize ? resizePercentage : 1.0f));
-	resizeParameters.resizeResolution.Y = FMath::FloorToInt(resizeParameters.sourceResolution.Y * (resize ? resizePercentage : 1.0f));
+	resizeParameters.resizeResolution.X = FMath::FloorToInt(resizeParameters.sourceResolution.X * resizePercentage);
+	resizeParameters.resizeResolution.Y = FMath::FloorToInt(resizeParameters.sourceResolution.Y * resizePercentage);
 
 	cv::Size sourceImageSize(resizeParameters.sourceResolution.X, resizeParameters.sourceResolution.Y);
 	cv::Size resizedImageSize(resizeParameters.resizeResolution.X, resizeParameters.resizeResolution.Y);
 
-	float inverseResizeRatio = resize ? 1.0f / resizePercentage : 1.0f;
+	float inverseResizeRatio = 1.0f / resizePercentage;
 
 	if (resize && resizePercentage != 1.0f)
 	{

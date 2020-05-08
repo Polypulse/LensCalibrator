@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "JobInfo.h"
-#include "LatchData.h"
 #include "LensSolverUtilities.h"
 #include "LensSolverWorkUnit.h"
 

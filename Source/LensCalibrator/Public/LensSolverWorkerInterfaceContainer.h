@@ -9,7 +9,6 @@
 #include "LensSolverWorker.h"
 #include "LensSolverWorkerCalibrate.h"
 #include "LensSolverWorkerFindCorners.h"
-#include "LatchData.h"
 #include "LensSolverWorkUnit.h"
 
 // #include "LensSolverWorkerInterfaceContainer.generated.h"
