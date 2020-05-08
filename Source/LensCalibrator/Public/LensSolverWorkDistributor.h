@@ -15,8 +15,13 @@ class LensSolverWorkDistributor
 {
 private:
 	mutable FCriticalSection threadLock;
+
 	QueueCalibrationResultOutputDel queueCalibrationResultOutputDel;
 	QueueCalibrateWorkUnitInputDel queueCalibrateWorkUnitInputDel;
+
+	LockDel lockDel;
+	UnlockDel unlockDel;
+
 	const QueueFinishedJobOutputDel* queueFinishedJobOutputDel;
 	const QueueLogOutputDel * queueLogOutputDel;
 	const bool debug;
@@ -52,6 +57,9 @@ private:
 	void SortFindCornersWorkersByWorkLoad();
 	void SortCalibrateWorkersByWorkLoad();
 
+	void Lock();
+	void Unlock();
+
 protected:
 public:
 
@@ -66,7 +74,6 @@ public:
 		queueLogOutputDel(inputQueueLogOutputDel),
 		debug(debugEnabled)
 	{
-		queueCalibrationResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrationResult);
 	}
 
 	void StartFindCornerWorkers(

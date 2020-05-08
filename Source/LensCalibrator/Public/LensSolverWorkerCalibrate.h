@@ -22,6 +22,7 @@ public:
 	~FLensSolverWorkerCalibrate() {}
 
 private:
+	mutable int workUnitCount;
 	const QueueCalibrationResultOutputDel * onSolvePointsDel;
 
 	TMap<FString, TQueue<FLensSolverCalibrationPointsWorkUnit>*> workQueue;

@@ -21,8 +21,10 @@ int FLensSolverWorkerFindCorners::GetWorkLoad()
 	count = workUnitCount;
 	Unlock();
 
+	/*
 	if (debug)
 		QueueLog(FString::Printf(TEXT("(INFO): Retrieving FindCorners worker work load: %d"), count));
+	*/
 
 	return count;
 }
@@ -73,9 +75,6 @@ void FLensSolverWorkerFindCorners::DequeuePixelArrayWorkUnit(FLensSolverPixelArr
 
 void FLensSolverWorkerFindCorners::Tick()
 {
-	if (GetWorkLoad() == 0)
-		FPlatformProcess::Sleep(0.5f);
-
 	FBaseParameters baseParameters;
 	FTextureSearchParameters textureSearchParameters;
 	FResizeParameters resizeParameters;
@@ -108,7 +107,10 @@ void FLensSolverWorkerFindCorners::Tick()
 	else return;
 
 	if (debug)
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Preparing search for calibration pattern using source image of size: (%d, %d)."), *JobDataToString(baseParameters), resizeParameters.sourceResolution.X, resizeParameters.sourceResolution.Y));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Preparing search for calibration pattern using source image of size: (%d, %d)."), 
+			*JobDataToString(baseParameters), 
+			resizeParameters.sourceResolution.X,
+			resizeParameters.sourceResolution.Y));
 
 	float resizePercentage = textureSearchParameters.resizePercentage;
 	bool resize = textureSearchParameters.resize;
@@ -177,7 +179,13 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	if (!patternFound)
 	{
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Found no pattern in image: \"%s\"."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Found no pattern in image: \"%s\", queuing empty work unit."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
+
+		FLensSolverCalibrationPointsWorkUnit calibrateWorkUnitPtr;
+		calibrateWorkUnitPtr.baseParameters								= baseParameters;
+		calibrateWorkUnitPtr.resizeParameters							= resizeParameters;
+		queueFindCornerResultOutputDel->Execute(calibrateWorkUnitPtr);
+
 		return;
 	}
 

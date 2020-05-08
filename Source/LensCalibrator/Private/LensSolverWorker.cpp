@@ -9,10 +9,12 @@
 #include "RenderUtils.h"
 #include "Engine/Texture2D.h"
 
-FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters & inputParameters) :
+FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters& inputParameters) :
 	workerID(inputParameters.inputWorkerID),
 	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%s/"), *workerID))),
 	queueLogOutputDel(inputParameters.inputQueueLogOutputDel),
+	lockDel(inputParameters.lockDel),
+	unlockDel(inputParameters.unlockDel),
 	workerMessage(FString::Printf(TEXT("Worker (%s): "), *inputParameters.inputWorkerID)),
 	debug(inputParameters.debug)
 {
@@ -45,6 +47,11 @@ FString FLensSolverWorker::GetWorkerID()
 void FLensSolverWorker::DoWork()
 {
 	FLensSolverWorker* baseWorker = this;
+	if (!lockDel->IsBound() || !unlockDel->IsBound())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Lock/Unlock delegates are not bound!"));
+		return;
+	}
 
 	while (1)
 	{
@@ -55,6 +62,13 @@ void FLensSolverWorker::DoWork()
 			break;
 		}
 
+		if (GetWorkLoad() == 0)
+		{
+			FPlatformProcess::Sleep(1.0f);
+			if (GetWorkLoad() == 0)
+				continue;
+		}
+
 		baseWorker->Tick();
 	}
 
@@ -63,9 +77,9 @@ void FLensSolverWorker::DoWork()
 
 bool FLensSolverWorker::Exit()
 {
-	threadLock.Lock();
+	Lock();
 	flagToExit = true;
-	threadLock.Unlock();
+	Unlock();
 	if (debug)
 		QueueLog("Exiting worker.");
 	return true;
@@ -74,20 +88,34 @@ bool FLensSolverWorker::Exit()
 bool FLensSolverWorker::ShouldExit()
 {
 	bool shouldExit = false;
-	threadLock.Lock();
+	Lock();
 	shouldExit = flagToExit;
-	threadLock.Unlock();
+	Unlock();
 	return shouldExit;
 }
 
 void FLensSolverWorker::Lock()
 {
-	threadLock.Lock();
+	if (!lockDel->IsBound())
+	{
+		flagToExit = true;
+		return;
+	}
+
+	lockDel->Execute();
+	// threadLock.Lock();
 }
 
 void FLensSolverWorker::Unlock()
 {
-	threadLock.Unlock();
+	if (!unlockDel->IsBound())
+	{
+		flagToExit = true;
+		return;
+	}
+
+	unlockDel->Execute();
+	// threadLock.Unlock();
 }
 
 FString FLensSolverWorker::JobDataToString(const FBaseParameters & baseParameters)

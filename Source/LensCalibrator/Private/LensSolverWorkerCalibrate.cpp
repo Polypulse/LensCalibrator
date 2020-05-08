@@ -98,9 +98,6 @@ FTransform FLensSolverWorkerCalibrate::GenerateTransformFromRAndTVecs(std::vecto
 
 void FLensSolverWorkerCalibrate::Tick()
 {
-	if (GetWorkLoad() == 0)
-		FPlatformProcess::Sleep(0.5f);
-
 	if (!LatchInQueue())
 		return;
 
@@ -260,8 +257,9 @@ void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrationPoint
 		workQueue.Add(calibrateWorkUnit.baseParameters.calibrationID, new TQueue<FLensSolverCalibrationPointsWorkUnit>());
 		queuePtr = workQueue.Find(calibrateWorkUnit.baseParameters.calibrationID);
 	}
+	workUnitCount++;
+	QueueLog(FString::Printf(TEXT("Queued calibration work unit at index: %d"), workUnitCount));
 	TQueue<FLensSolverCalibrationPointsWorkUnit>* queue = *queuePtr;
-
 	queue->Enqueue(calibrateWorkUnit);
 	Unlock();
 }
@@ -272,26 +270,30 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 	std::vector<std::vector<cv::Point3f>> & objectPoints)
 {
 	Lock();
-
 	TQueue<FLensSolverCalibrationPointsWorkUnit> ** queuePtr = workQueue.Find(calibrationID);
 	if (queuePtr == nullptr)
 	{
 		if (debug)
 			QueueLog(FString::Printf(TEXT("(ERROR): No work units in calibration queue with ID: \"%s\"."), *calibrationID));
+		Unlock();
 		return false;
 	}
 
+	Unlock();
 	TQueue<FLensSolverCalibrationPointsWorkUnit>* queue = *queuePtr; 
 
 	while (!queue->IsEmpty())
 	{
 		FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit;
 		queue->Dequeue(calibrateWorkUnit);
+		workUnitCount--;
 
 		if (calibrateWorkUnit.calibrationPointParameters.corners.size() == 0 || calibrateWorkUnit.calibrationPointParameters.objectPoints.size() == 0)
 		{
 			if (debug)
-				QueueLog(FString("(ERROR): NULL calibrate worker work unit contained an invalid number of corners or object points!"));
+				QueueLog(FString::Printf(TEXT("(WARNING): No detected calibration pattern corners in image: \"%s\" for calibration: \"%s\", skipping and continuing to next image."),
+					*calibrateWorkUnit.baseParameters.friendlyName,
+					*calibrateWorkUnit.baseParameters.calibrationID));
 			continue;
 		}
 
@@ -299,7 +301,6 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		objectPoints.push_back(calibrateWorkUnit.calibrationPointParameters.objectPoints);
 	}
 
-	Unlock();
 	return true;
 }
 

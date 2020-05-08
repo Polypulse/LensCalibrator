@@ -9,9 +9,12 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 		return;
 	}
 
-	threadLock.Lock();
-
 	queueCalibrateWorkUnitInputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
+	queueCalibrationResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrationResult);
+	lockDel.BindRaw(this, &LensSolverWorkDistributor::Lock);
+	unlockDel.BindRaw(this, &LensSolverWorkDistributor::Unlock);
+
+	Lock();
 
 	for (int i = 0; i < findCornerWorkerCount; i++)
 	{
@@ -22,6 +25,8 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 			queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
+			&lockDel,
+			&unlockDel,
 			guid,
 			debug
 		);
@@ -41,7 +46,7 @@ void LensSolverWorkDistributor::StartFindCornerWorkers(
 		workLoadSortedFindCornerWorkers.Add(guid);
 	}
 
-	threadLock.Unlock();
+	Unlock();
 	if (debug)
 		QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d FindCorner workers"), findCornerWorkerCount));
 }
@@ -55,7 +60,7 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 		return;
 	}
 
-	threadLock.Lock();
+	Lock();
 
 	for (int i = 0; i < calibrateWorkerCount; i++)
 	{
@@ -66,6 +71,8 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 			queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
+			&lockDel,
+			&unlockDel,
 			guid,
 			debug
 		);
@@ -85,7 +92,7 @@ void LensSolverWorkDistributor::StartCalibrateWorkers(
 		workLoadSortedCalibrateWorkers.Add(guid);
 	}
 
-	threadLock.Unlock();
+	Unlock();
 	if (debug)
 		QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d Calibrate workers"), calibrateWorkerCount));
 }
@@ -120,9 +127,9 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 		job.currentResultCount = 0;
 	}
 
-	threadLock.Lock();
+	Lock();
 	jobs.Add(jobInfo.jobID, job);
-	threadLock.Unlock();
+	Unlock();
 
 	if (debug)
 		QueueLogAsync(FString::Printf(TEXT("(INFO): Registered job with ID: \"%s\"."), *job.jobInfo.jobID));
@@ -132,11 +139,11 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 
 void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID, FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit)
 {
-	threadLock.Lock();
+	Lock();
 	if (workLoadSortedFindCornerWorkers.Num() == 0)
 	{
 		QueueLogAsync("(ERROR): The work load sorted FindCornerWorker array is empty!");
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
@@ -146,35 +153,35 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 	if (workerID.IsEmpty())
 	{
 		QueueLogAsync("(ERROR): A worker ID in the work load sorted FindCornerWorker array is empty!");
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
 	FWorkerFindCornersInterfaceContainer* interfaceContainer =nullptr;
 	if (!GetFindCornersContainerInterfacePtr(workerID, interfaceContainer))
 	{
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
+	Unlock();
 
 	if (!interfaceContainer->queuePixelArrayWorkUnitInputDel.IsBound())
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): FindCornerWorker: \"%s\" does not have a QueueWorkUnit delegate binded!"), *workerID));
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
-	threadLock.Unlock();
 	interfaceContainer->queuePixelArrayWorkUnitInputDel.Execute(pixelArrayWorkUnit);
 }
 
 void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit)
 {
-	threadLock.Lock();
+	Lock();
 	if (workLoadSortedFindCornerWorkers.Num() == 0)
 	{
 		QueueLogAsync("(ERROR): The work load sorted CalibrateWorker array is empty!");
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
@@ -184,25 +191,25 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 	if (workerID.IsEmpty())
 	{
 		QueueLogAsync("(ERROR): A worker ID in the work load sorted CalibrateWorker array is empty!");
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
 	FWorkerFindCornersInterfaceContainer* interfaceContainer = nullptr;
 	if (!GetFindCornersContainerInterfacePtr(workerID, interfaceContainer))
 	{
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
+	Unlock();
 
 	if (!interfaceContainer->queueTextureFileWorkUnitInputDel.IsBound())
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): CalibrateWorker: \"%s\" does not have a QueueWorkUnit delegate binded!"), *workerID));
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
-	threadLock.Unlock();
 	interfaceContainer->queueTextureFileWorkUnitInputDel.Execute(textureFileWorkUnit);
 }
 
@@ -213,22 +220,22 @@ void LensSolverWorkDistributor::SetCalibrateWorkerParameters(FCalibrationParamet
 
 void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit)
 {
-	threadLock.Lock();
+	Lock();
 	FWorkerCalibrateInterfaceContainer * interfaceContainerPtr;
 	if (!GetCalibrateWorkerInterfaceContainerPtr(calibrateWorkUnit.baseParameters.calibrationID, interfaceContainerPtr))
 	{
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
+	Unlock();
 
 	if (!interfaceContainerPtr->queueCalibrateWorkUnitDel.IsBound())
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): The QueueWOrkUnit delegate is not binded for CalibrateWorker with ID: \"%s\"."), *interfaceContainerPtr->baseContainer.workerID));
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
-	threadLock.Unlock();
 	interfaceContainerPtr->queueCalibrateWorkUnitDel.Execute(calibrateWorkUnit);
 
 	bool hitExpectedImageCount = IterateImageCount(calibrateWorkUnit.baseParameters.jobID, calibrateWorkUnit.baseParameters.calibrationID);
@@ -245,42 +252,40 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 
 void LensSolverWorkDistributor::LatchCalibrateWorker(const FCalibrateLatch& latchData)
 {
-	threadLock.Lock();
 	if (latchData.baseParameters.calibrationID.IsEmpty())
 	{
 		QueueLogAsync("(ERROR): The calibration ID is empty!");
-		threadLock.Unlock();
 		return;
 	}
 
+	Lock();
 	FWorkerCalibrateInterfaceContainer* interfaceContainerPtr;
 	if (!GetCalibrateWorkerInterfaceContainerPtr(latchData.baseParameters.calibrationID, interfaceContainerPtr))
 	{
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
+	Unlock();
 
 	if (!interfaceContainerPtr->signalLatch.IsBound())
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): The CalibrateWorker: \"%s\" does not have a QueueLatchInput delegate binded!"), *interfaceContainerPtr->baseContainer.workerID));
-		threadLock.Unlock();
 		return;
 	}
 
-	threadLock.Unlock();
 	interfaceContainerPtr->signalLatch.Execute(latchData);
 }
 
 void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult calibrationResult)
 {
 	queuedCalibrationResults.Enqueue(calibrationResult);
-	threadLock.Lock();
+	Lock();
 
 	FJob* jobPtr = jobs.Find(calibrationResult.baseParameters.jobID);
 	if (jobPtr == nullptr)
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): Unknown error occurred while queuing calibration result, no jobs are registered with ID: \"%s\"."), *calibrationResult.baseParameters.jobID));
-		threadLock.Unlock();
+		Unlock();
 		return;
 	}
 
@@ -296,7 +301,7 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 		done = true;
 	}
 
-	threadLock.Unlock();
+	Unlock();
 	if (done && queueFinishedJobOutputDel->IsBound())
 		queueFinishedJobOutputDel->Execute(jobInfo);
 }
@@ -372,12 +377,12 @@ bool LensSolverWorkDistributor::GetCalibrateWorkerInterfaceContainerPtr(
 
 bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const FString& calibrationID)
 {
-	threadLock.Lock();
+	Lock();
 	FJob* job = jobs.Find(jobID);
 	if (job == nullptr)
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): Cannot iterate image count, no job with ID: \"%s\" registered."), *jobID));
-		threadLock.Unlock();
+		Unlock();
 		return false;
 	}
 
@@ -385,7 +390,7 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 	if (expectedAndCurrentImageCount == nullptr)
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): Cannot iterate image count, the job: \"%s\" does not contain the calibration ID: \"%s\"."), *jobID, *calibrationID));
-		threadLock.Unlock();
+		Unlock();
 		return false;
 	}
 
@@ -396,14 +401,14 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 		if (debug)
 			QueueLogAsync(FString::Printf(TEXT("(INFO): Completed processing all images of count %d/%d for calibration: \"%s\"."), expectedAndCurrentImageCount->currentImageCount, expectedAndCurrentImageCount->expectedImageCount, *calibrationID));
 
-		threadLock.Unlock();
+		Unlock();
 		return true;
 	}
 
+	Unlock();
 	if (debug)
 		QueueLogAsync(FString::Printf(TEXT("(INFO): Iterate image count %d/%d for calibration: \"%s\"."), expectedAndCurrentImageCount->currentImageCount, expectedAndCurrentImageCount->expectedImageCount, *calibrationID));
 
-	threadLock.Unlock();
 	return false;
 }
 
@@ -440,6 +445,16 @@ void LensSolverWorkDistributor::SortCalibrateWorkersByWorkLoad()
 
 		return interfaceContainerA->baseContainer.getWorkLoadDel.Execute() < interfaceContainerB->baseContainer.getWorkLoadDel.Execute();
 	});
+}
+
+void LensSolverWorkDistributor::Lock()
+{
+	threadLock.Lock();
+}
+
+void LensSolverWorkDistributor::Unlock()
+{
+	threadLock.Unlock();
 }
 
 /*
@@ -491,7 +506,10 @@ void LensSolverWorkDistributor::StopFindCornerWorkers()
 {
 	threadLock.Lock();
 	if (findCornersWorkers.Num() == 0)
+	{
+		threadLock.Unlock();
 		return;
+	}
 
 	TArray<FString> keys;
 	findCornersWorkers.GetKeys(keys);
@@ -514,7 +532,10 @@ void LensSolverWorkDistributor::StopCalibrationWorkers()
 {
 	threadLock.Lock();
 	if (calibrateWorkers.Num() == 0)
+	{
+		threadLock.Unlock();
 		return;
+	}
 
 	TArray<FString> keys;
 	calibrateWorkers.GetKeys(keys);

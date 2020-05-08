@@ -28,12 +28,16 @@ DECLARE_DELEGATE_OneParam(QueueLogOutputDel, FString)
 DECLARE_DELEGATE_OneParam(QueueFinishedJobOutputDel, FJobInfo)
 DECLARE_DELEGATE_RetVal(int, GetWorkLoadOutputDel)
 DECLARE_DELEGATE_RetVal(bool, IsClosingOutputDel)
+DECLARE_DELEGATE(LockDel)
+DECLARE_DELEGATE(UnlockDel)
 
 struct FLensSolverWorkerParameters 
 {
 	const QueueLogOutputDel * inputQueueLogOutputDel;
 	IsClosingOutputDel * inputIsClosingOutputDel;
 	GetWorkLoadOutputDel * inputGetWorkOutputLoadDel;
+	const LockDel* lockDel;
+	const UnlockDel* unlockDel;
 	bool debug;
 
 	const FString inputWorkerID;
@@ -41,11 +45,15 @@ struct FLensSolverWorkerParameters
 		const QueueLogOutputDel* inQueueLogOutputDel,
 		IsClosingOutputDel* inIsClosingOutputDel,
 		GetWorkLoadOutputDel* inGetWorkOutputLoadDel,
+		const LockDel* inLockDel,
+		const UnlockDel* inUnlockDel,
 		const FString inWorkerID,
 		const bool inDebug) :
 		inputQueueLogOutputDel(inQueueLogOutputDel),
 		inputIsClosingOutputDel(inIsClosingOutputDel),
 		inputGetWorkOutputLoadDel(inGetWorkOutputLoadDel),
+		lockDel(inLockDel),
+		unlockDel(inUnlockDel),
 		inputWorkerID(inWorkerID),
 		debug(inDebug)
 	{
@@ -63,7 +71,8 @@ private:
 	mutable bool flagToExit;
 
 	const QueueLogOutputDel* queueLogOutputDel;
-	FCriticalSection threadLock;
+	const LockDel* lockDel;
+	const UnlockDel* unlockDel;
 
 	bool Exit ();
 
