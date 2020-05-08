@@ -394,12 +394,16 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 		return false;
 	}
 
-	expectedAndCurrentImageCount->currentImageCount++;
+	int currentImageCount = expectedAndCurrentImageCount->currentImageCount;
+	int expectedImageCount = expectedAndCurrentImageCount->expectedImageCount;
 
-	if (expectedAndCurrentImageCount->currentImageCount >= expectedAndCurrentImageCount->expectedImageCount - 1)
+	currentImageCount++;
+	expectedAndCurrentImageCount->currentImageCount = currentImageCount;
+
+	if (currentImageCount >= expectedImageCount - 1)
 	{
 		if (debug)
-			QueueLogAsync(FString::Printf(TEXT("(INFO): Completed processing all images of count %d/%d for calibration: \"%s\"."), expectedAndCurrentImageCount->currentImageCount, expectedAndCurrentImageCount->expectedImageCount, *calibrationID));
+			QueueLogAsync(FString::Printf(TEXT("(INFO): Completed processing all images of count %d/%d for calibration: \"%s\"."), currentImageCount, expectedImageCount, *calibrationID));
 
 		Unlock();
 		return true;
@@ -407,7 +411,7 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 
 	Unlock();
 	if (debug)
-		QueueLogAsync(FString::Printf(TEXT("(INFO): Iterate image count %d/%d for calibration: \"%s\"."), expectedAndCurrentImageCount->currentImageCount, expectedAndCurrentImageCount->expectedImageCount, *calibrationID));
+		QueueLogAsync(FString::Printf(TEXT("(INFO): Iterate image count %d/%d for calibration: \"%s\"."), currentImageCount, expectedImageCount, *calibrationID));
 
 	return false;
 }

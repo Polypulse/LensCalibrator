@@ -12,6 +12,7 @@ FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 {
 	inputQueueCalibrateWorkUnitDel->BindRaw(this, &FLensSolverWorkerCalibrate::QueueWorkUnit);
 	inputSignalLatch->BindRaw(this, &FLensSolverWorkerCalibrate::QueueLatch);
+	workUnitCount = 0;
 }
 
 FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength)

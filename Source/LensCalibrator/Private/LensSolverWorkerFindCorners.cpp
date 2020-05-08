@@ -37,7 +37,7 @@ void FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit(FLensSolverTextureFi
 	Unlock();
 
 	if (debug)
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued TextureFileWorkUnit with path: \"%s\"."), *JobDataToString(workUnit.baseParameters), *workUnit.textureFileParameters.absoluteFilePath));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued TextureFileWorkUnit with path: \"%s\", total currently queued: %d."), *JobDataToString(workUnit.baseParameters), *workUnit.textureFileParameters.absoluteFilePath, workUnitCount));
 }
 
 void FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit(FLensSolverPixelArrayWorkUnit workUnit)
@@ -48,7 +48,7 @@ void FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit(FLensSolverPixelArray
 	Unlock();
 
 	if (debug)
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued PixelArrayWorkUnit of resolution: (%d, %d)."), *JobDataToString(workUnit.baseParameters), workUnit.pixelArrayParameters.sourceResolution.X, workUnit.pixelArrayParameters.sourceResolution.Y));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued PixelArrayWorkUnit of resolution: (%d, %d), total currently queued: %d."), *JobDataToString(workUnit.baseParameters), workUnit.pixelArrayParameters.sourceResolution.X, workUnit.pixelArrayParameters.sourceResolution.Y, workUnitCount));
 }
 
 void FLensSolverWorkerFindCorners::DequeueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit& workUnit)
@@ -89,7 +89,10 @@ void FLensSolverWorkerFindCorners::Tick()
 		textureSearchParameters = textureFileWorkUnit.textureSearchParameters;
 
 		if (!GetImageFromFile(textureFileWorkUnit.textureFileParameters.absoluteFilePath, image, resizeParameters.sourceResolution))
+		{
+			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 			return;
+		}
 	}
 
 	else if (!pixelArrayWorkQueue.IsEmpty())
@@ -101,7 +104,10 @@ void FLensSolverWorkerFindCorners::Tick()
 		resizeParameters.sourceResolution = texturePixelArrayUnit.pixelArrayParameters.sourceResolution;
 
 		if (!GetImageFromArray(texturePixelArrayUnit.pixelArrayParameters.pixels, texturePixelArrayUnit.pixelArrayParameters.sourceResolution, image))
+		{
+			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 			return;
+		}
 	}
 
 	else return;
@@ -180,12 +186,7 @@ void FLensSolverWorkerFindCorners::Tick()
 	if (!patternFound)
 	{
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Found no pattern in image: \"%s\", queuing empty work unit."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
-
-		FLensSolverCalibrationPointsWorkUnit calibrateWorkUnitPtr;
-		calibrateWorkUnitPtr.baseParameters								= baseParameters;
-		calibrateWorkUnitPtr.resizeParameters							= resizeParameters;
-		queueFindCornerResultOutputDel->Execute(calibrateWorkUnitPtr);
-
+		QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 		return;
 	}
 
@@ -216,17 +217,14 @@ void FLensSolverWorkerFindCorners::Tick()
 		imageCorners[ci].y = imageCorners[ci].y * inverseResizeRatio;
 	}
 
-	if (!queueFindCornerResultOutputDel->IsBound())
-		return;
+	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;
 
-	FLensSolverCalibrationPointsWorkUnit calibrateWorkUnitPtr;
+	calibrationPointsWorkUnit.baseParameters								= baseParameters;
+	calibrationPointsWorkUnit.calibrationPointParameters.corners			= imageCorners;
+	calibrationPointsWorkUnit.calibrationPointParameters.objectPoints	= imageObjectPoints;
+	calibrationPointsWorkUnit.resizeParameters							= resizeParameters;
 
-	calibrateWorkUnitPtr.baseParameters								= baseParameters;
-	calibrateWorkUnitPtr.calibrationPointParameters.corners			= imageCorners;
-	calibrateWorkUnitPtr.calibrationPointParameters.objectPoints	= imageObjectPoints;
-	calibrateWorkUnitPtr.resizeParameters							= resizeParameters;
-
-	queueFindCornerResultOutputDel->Execute(calibrateWorkUnitPtr);
+	QueueCalibrationPointsWorkUnit(calibrationPointsWorkUnit);
 }
 
 bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution)
@@ -275,4 +273,27 @@ void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString folder,
 	}
 
 	QueueLog(FString::Printf(TEXT("(INFO): %sDebug texture written to file at path: \"%s\"."), *outputPath));
+}
+
+void FLensSolverWorkerFindCorners::QueueCalibrationPointsWorkUnit(const FLensSolverCalibrationPointsWorkUnit & calibrationPointsWorkUnit)
+{
+	if (!queueFindCornerResultOutputDel->IsBound())
+		return;
+	if (debug)
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Queuing calibration points work unit."), *JobDataToString(calibrationPointsWorkUnit.baseParameters)));
+	queueFindCornerResultOutputDel->Execute(calibrationPointsWorkUnit);
+}
+
+void FLensSolverWorkerFindCorners::QueueEmptyCalibrationPointsWorkUnit(const FBaseParameters & baseParameters, const FResizeParameters & resizeParameters)
+{
+	if (!queueFindCornerResultOutputDel->IsBound())
+		return;
+
+	if (debug)
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Queuing EMPTY calibration points work unit."), *JobDataToString(baseParameters)));
+
+	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;
+	calibrationPointsWorkUnit.baseParameters = baseParameters;
+	calibrationPointsWorkUnit.resizeParameters = resizeParameters;
+	queueFindCornerResultOutputDel->Execute(calibrationPointsWorkUnit);
 }

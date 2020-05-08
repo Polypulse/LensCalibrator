@@ -120,6 +120,7 @@ void FLensSolverWorker::Unlock()
 
 FString FLensSolverWorker::JobDataToString(const FBaseParameters & baseParameters)
 {
-	return FString::Printf(TEXT("(Job ID: \"%s\", Calibration ID: \"%s\", Friendly Name: \"%s\", Zoom Level: %f"), *baseParameters.jobID, *baseParameters.calibrationID, *baseParameters.friendlyName, baseParameters.zoomLevel);
+	return FString::Printf(TEXT("Calibration ID: (%s)"), *baseParameters.calibrationID);
+	// return FString::Printf(TEXT("(Job ID: \"%s\", Calibration ID: \"%s\", Friendly Name: \"%s\", Zoom Level: %f"), *baseParameters.jobID, *baseParameters.calibrationID, *baseParameters.friendlyName, baseParameters.zoomLevel);
 }
 

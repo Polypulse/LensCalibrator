@@ -37,6 +37,9 @@ private:
 	void QueueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit workUnit);
 	void QueuePixelArrayWorkUnit(FLensSolverPixelArrayWorkUnit workUnit);
 
+	void QueueCalibrationPointsWorkUnit(const FLensSolverCalibrationPointsWorkUnit & calibrationPointsWorkUnit);
+	void QueueEmptyCalibrationPointsWorkUnit(const FBaseParameters & baseParameters, const FResizeParameters & resizeParameters);
+
 protected:
 	bool GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution);
 	bool GetImageFromArray(const TArray<FColor> & pixels, const FIntPoint resolution, cv::Mat& image);
