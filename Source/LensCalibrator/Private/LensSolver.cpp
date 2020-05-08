@@ -17,7 +17,6 @@
 #include "ImageWriteStream.h"
 #include "ImageWriteTask.h"
 #include "ImageWriteQueue.h"
-#include "UniquePtr.h"
 
 #include "LensSolverUtilities.h"
 #include "BlitShader.h"

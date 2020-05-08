@@ -5,7 +5,6 @@
 #include "Runtime/ImageWritequeue/Public/ImageWriteStream.h"
 #include "Runtime/ImageWritequeue/Public/ImageWriteTask.h"
 #include "Runtime/ImageWritequeue/Public/ImageWriteQueue.h"
-#include "UniquePtr.h"
 
 class LensSolverUtilities
 {

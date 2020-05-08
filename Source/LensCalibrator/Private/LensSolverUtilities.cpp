@@ -163,9 +163,9 @@ bool LensSolverUtilities::CreateTexture2D(
 	{
 		output->Filter = TextureFilter::TF_Nearest;
 		output->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
-		output->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-		output->CompressionNone = true;
-		output->NeverStream = true;
+		// output->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+		// output->CompressionNone = true;
+		// output->NeverStream = true;
 	}
 
 	if (output == nullptr)
@@ -280,7 +280,7 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, bool sRGB, bo
 	if (isLUT)
 	{
 		texture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
-		texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+		// texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
 	}
 
 	texture->SRGB = sRGB;

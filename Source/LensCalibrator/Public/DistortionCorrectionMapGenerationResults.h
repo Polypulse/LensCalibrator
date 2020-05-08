@@ -1,7 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
-#include "Color.h"
 #include "Engine.h"
 
 #include "DistortionCorrectionMapGenerationResults.generated.h"

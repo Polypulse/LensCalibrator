@@ -183,6 +183,14 @@ public:
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
+	/*
+	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
+	void StartMediaStreamCalibration(
+		UMediaTexture * mediaTexture,
+		FOneTimeProcessParameters oneTimeProcessParameters,
+		FJobInfo & ouptutJobInfo);
+	*/
+
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void GenerateDistortionCorrectionMap(
 		FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams);
