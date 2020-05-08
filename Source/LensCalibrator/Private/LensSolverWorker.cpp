@@ -72,14 +72,18 @@ void FLensSolverWorker::DoWork()
 
 		if (GetWorkLoad() == 0)
 		{
+			// QueueLog("No work units in queue.");
 			FPlatformProcess::Sleep(1.0f);
 			if (GetWorkLoad() == 0)
+			{
 				continue;
+			}
 		}
 
 		baseWorker->Tick();
 	}
 
+	QueueLog("Exited loop.");
 	flagToExit = true;
 }
 

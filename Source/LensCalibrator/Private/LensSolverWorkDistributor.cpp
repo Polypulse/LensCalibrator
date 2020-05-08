@@ -25,6 +25,7 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 	for (int i = 0; i < findCornerWorkerCount; i++)
 	{
 		FString guid = FGuid::NewGuid().ToString();
+		workLoadSortedFindCornerWorkers.Add(guid);
 		FWorkerFindCornersInterfaceContainer & interfaceContainer = findCornersWorkers.Add(guid, FWorkerFindCornersInterfaceContainer());
 
 		FLensSolverWorkerParameters workerParameters(
@@ -50,7 +51,6 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 			&queueCalibrateWorkUnitInputDel);
 
 		interfaceContainer.worker->StartBackgroundTask();
-		workLoadSortedFindCornerWorkers.Add(guid);
 	}
 
 	Unlock();
@@ -72,9 +72,10 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 
 	for (int i = 0; i < calibrateWorkerCount; i++)
 	{
-		FWorkerCalibrateInterfaceContainer interfaceContainer;
-
 		FString guid = FGuid::NewGuid().ToString();
+		workLoadSortedCalibrateWorkers.Add(guid);
+		FWorkerCalibrateInterfaceContainer & interfaceContainer = calibrateWorkers.Add(guid, FWorkerCalibrateInterfaceContainer());
+
 		FLensSolverWorkerParameters workerParameters(
 			queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
@@ -97,8 +98,6 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 			&queueCalibrationResultOutputDel);
 
 		interfaceContainer.worker->StartBackgroundTask();
-		calibrateWorkers.Add(guid, MoveTemp(interfaceContainer));
-		workLoadSortedCalibrateWorkers.Add(guid);
 	}
 
 	Unlock();
@@ -258,6 +257,7 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 		FCalibrateLatch latchData;
 		latchData.baseParameters		= calibrateWorkUnit.baseParameters;
 		latchData.calibrationParameters	= cachedCalibrationParameters;
+		latchData.resizeParameters		= calibrateWorkUnit.resizeParameters;
 
 		LatchCalibrateWorker(latchData);
 	}
@@ -309,8 +309,8 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 
 	if (jobPtr->currentResultCount >= jobPtr->expectedResultCount)
 	{
-		jobs.Remove(calibrationResult.baseParameters.jobID);
 		jobInfo = jobPtr->jobInfo;
+		jobs.Remove(calibrationResult.baseParameters.jobID);
 		done = true;
 	}
 

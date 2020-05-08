@@ -31,6 +31,10 @@ int FLensSolverWorkerFindCorners::GetWorkLoad()
 
 void FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit workUnit)
 {
+	static int count = 0;
+	count++;
+	QueueLog(FString::Printf(TEXT("Worker received TextureFileWorkUnit of index: %d"), count));
+
 	textureFileWorkQueue.Enqueue(workUnit);
 	Lock();
 	workUnitCount++;
@@ -111,10 +115,6 @@ void FLensSolverWorkerFindCorners::Tick()
 	}
 
 	else return;
-
-	static int count = 0;
-	count++;
-	QueueLog(FString::Printf(TEXT("Worker received TextureFileWorkUnit of index: %d"), count));
 
 	if (debug)
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Preparing search for calibration pattern using source image of size: (%d, %d)."), 
