@@ -114,6 +114,9 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (ShouldExit())
 		return;
 
+	if (debug)
+		QueueLog(FString::Printf(TEXT("(INFO): Done dequeing work units, preparing calibration using %d sets of points."), corners.size()));
+
 	std::vector<cv::Mat> rvecs, tvecs;
 	cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<float>::type);
 	cv::Mat distortionCoefficients = cv::Mat::zeros(5, 1, cv::DataType<float>::type);
@@ -123,9 +126,13 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	int sourcePixelWidth = latchData.resizeParameters.sourceResolution.X;
 	int sourcePixelHeight = latchData.resizeParameters.sourceResolution.Y;
-
+	
+	float sensorHeight = latchData.calibrationParameters.sensorDiagonalSizeMM / FMath::Sqrt(FMath::Square(sourcePixelWidth / (float)sourcePixelHeight) + 1.0f);
+	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
+	/*
 	float sensorHeight = (latchData.calibrationParameters.sensorDiagonalSizeMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
 	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
+	*/
 
 	if (debug)
 		QueueLog(FString::Printf(TEXT("(INFO): Sensor size: (%f, %f) mm, diagonal: (%f) mm."), sensorWidth, sensorHeight, latchData.calibrationParameters.sensorDiagonalSizeMM));
@@ -164,6 +171,9 @@ void FLensSolverWorkerCalibrate::Tick()
 				(latchData.resizeParameters.sourceResolution.X / (float)latchData.resizeParameters.sourceResolution.Y)));
 	}
 
+	if (debug)
+		QueueLog("(INFO): Calibrating...");
+
 	double error = cv::calibrateCamera(
 		objectPoints,
 		corners,
@@ -177,6 +187,9 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	if (ShouldExit())
 		return;
+
+	if (debug)
+		QueueLog("(INFO): Done.");
 
 	cv::calibrationMatrixValues(cameraMatrix, sourceImageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
 	FMatrix perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(sourceImageSize, principalPoint, focalLength);
@@ -237,7 +250,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (debug)
 		QueueLog(FString("(INFO): Finished with work unit."));
 
-	QueueSolvedPoints(solvedPoints);
+	QueueCalibrationResult(solvedPoints);
 }
 
 int FLensSolverWorkerCalibrate::GetWorkLoad()
@@ -257,12 +270,16 @@ void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrationPoint
 	{
 		workQueue.Add(calibrateWorkUnit.baseParameters.calibrationID, new TQueue<FLensSolverCalibrationPointsWorkUnit>());
 		queuePtr = workQueue.Find(calibrateWorkUnit.baseParameters.calibrationID);
+		if (debug)
+			QueueLog(FString::Printf(TEXT("Registered expected calibration work units with ID: \"%s\""), *calibrateWorkUnit.baseParameters.calibrationID));
 	}
-	workUnitCount++;
-	QueueLog(FString::Printf(TEXT("Queued calibration work unit at index: %d"), workUnitCount));
+	Unlock();
+
+	if (debug)
+		QueueLog(FString::Printf(TEXT("Queued calibration work unit with calibration ID: \"%s\""), *calibrateWorkUnit.baseParameters.calibrationID));
+
 	TQueue<FLensSolverCalibrationPointsWorkUnit>* queue = *queuePtr;
 	queue->Enqueue(calibrateWorkUnit);
-	Unlock();
 }
 
 bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
@@ -280,7 +297,6 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		return false;
 	}
 
-	Unlock();
 	TQueue<FLensSolverCalibrationPointsWorkUnit>* queue = *queuePtr; 
 
 	while (!queue->IsEmpty())
@@ -300,7 +316,18 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 
 		corners.push_back(calibrateWorkUnit.calibrationPointParameters.corners);
 		objectPoints.push_back(calibrateWorkUnit.calibrationPointParameters.objectPoints);
+
+		if (debug)
+			QueueLog(FString::Printf(TEXT("(INFO): Dequeued %d corner points and %d object points for image: \"%s\" for calibration: \"%s\"."),
+				calibrateWorkUnit.calibrationPointParameters.corners.size(),
+				calibrateWorkUnit.calibrationPointParameters.objectPoints.size(),
+				*calibrateWorkUnit.baseParameters.friendlyName,
+				*calibrateWorkUnit.baseParameters.calibrationID));
 	}
+
+	delete queue;
+	workQueue.Remove(calibrationID);
+	Unlock();
 
 	return true;
 }
@@ -367,7 +394,7 @@ void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationR
 	QueueLog(FString::Printf(TEXT("(INFO): Calibration result written to file at path: \"%s\"."), *outputPath));
 }
 
-void FLensSolverWorkerCalibrate::QueueSolvedPointsError(const FBaseParameters & baseParameters)
+void FLensSolverWorkerCalibrate::QueueCalibrationResultError(const FBaseParameters & baseParameters)
 {
 	TArray<FVector2D> emptyPoints;
 
@@ -380,7 +407,7 @@ void FLensSolverWorkerCalibrate::QueueSolvedPointsError(const FBaseParameters & 
 	onSolvePointsDel->Execute(solvedPoints);
 }
 
-void FLensSolverWorkerCalibrate::QueueSolvedPoints(FCalibrationResult solvedPoints)
+void FLensSolverWorkerCalibrate::QueueCalibrationResult(FCalibrationResult solvedPoints)
 {
 	if (!onSolvePointsDel->IsBound())
 		return;

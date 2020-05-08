@@ -31,9 +31,11 @@ int FLensSolverWorkerFindCorners::GetWorkLoad()
 
 void FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit workUnit)
 {
+	/*
 	static int count = 0;
 	count++;
 	QueueLog(FString::Printf(TEXT("Worker received TextureFileWorkUnit of index: %d"), count));
+	*/
 
 	textureFileWorkQueue.Enqueue(workUnit);
 	Lock();

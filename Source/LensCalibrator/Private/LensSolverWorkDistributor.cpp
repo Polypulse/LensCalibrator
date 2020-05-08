@@ -413,7 +413,7 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 	currentImageCount++;
 	expectedAndCurrentImageCount->currentImageCount = currentImageCount;
 
-	if (currentImageCount >= expectedImageCount - 1)
+	if (currentImageCount >= expectedImageCount)
 	{
 		if (debug)
 			QueueLogAsync(FString::Printf(TEXT("(INFO): Completed processing all images of count %d/%d for calibration: \"%s\"."), currentImageCount, expectedImageCount, *calibrationID));
