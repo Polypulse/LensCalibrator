@@ -1025,7 +1025,6 @@ bool ULensSolver::ValidateWorkDistributor()
 		return false;
 	}
 
-
 	return true;
 
 }
@@ -1139,6 +1138,9 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	FOneTimeProcessParameters oneTimeProcessParameters, 
 	FJobInfo& ouptutJobInfo)
 {
+	if (!ValidateWorkDistributor())
+		return;
+
 	if (inputTextures.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No input texture folders."));
@@ -1421,12 +1423,22 @@ void ULensSolver::DistortTextureWithCoefficients(FDistortTextureWithCoefficients
 void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
 {
 	if (!queueLogOutputDel.IsBound())
+	{
 		queueLogOutputDel.BindUObject(this, &ULensSolver::QueueLog);
+		UE_LOG(LogTemp, Log, TEXT("Binded log queue."));
+	}
+
 	if (!queueFinishedJobOutputDel.IsBound())
+	{
 		queueFinishedJobOutputDel.BindUObject(this, &ULensSolver::QueueFinishedJob);
+		UE_LOG(LogTemp, Log, TEXT("Binded finished queue."));
+	}
 
 	if (!workDistributor.IsValid())
+	{
 		workDistributor = MakeUnique<LensSolverWorkDistributor>(&queueLogOutputDel, &queueFinishedJobOutputDel, debug);
+		UE_LOG(LogTemp, Log, TEXT("Initialized work distributor."));
+	}
 
 	workDistributor->PrepareFindCornerWorkers(findCornersWorkerCount);
 	workDistributor->PrepareCalibrateWorkers(calibrateWorkerCount);

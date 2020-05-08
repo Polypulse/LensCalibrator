@@ -54,7 +54,7 @@ void FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit(FLensSolverPixelArray
 	Unlock();
 
 	if (debug)
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued PixelArrayWorkUnit of resolution: (%d, %d), total currently queued: %d."), *JobDataToString(workUnit.baseParameters), workUnit.pixelArrayParameters.sourceResolution.X, workUnit.pixelArrayParameters.sourceResolution.Y, workUnitCount));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued PixelArrayWorkUnit of resolution: (%d, %d), total currently queued: %d."), *JobDataToString(workUnit.baseParameters), workUnit.resizeParameters.sourceResolution.X, workUnit.resizeParameters.sourceResolution.Y, workUnitCount));
 }
 
 void FLensSolverWorkerFindCorners::DequeueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit& workUnit)
@@ -76,7 +76,7 @@ void FLensSolverWorkerFindCorners::DequeuePixelArrayWorkUnit(FLensSolverPixelArr
 	Unlock();
 
 	if (debug)
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Dequeued PixelArrayWorkUnit of resolution: (%d, %d)."), *JobDataToString(workUnit.baseParameters), workUnit.pixelArrayParameters.sourceResolution.X, workUnit.pixelArrayParameters.sourceResolution.Y));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Dequeued PixelArrayWorkUnit of resolution: (%d, %d)."), *JobDataToString(workUnit.baseParameters), workUnit.resizeParameters.sourceResolution.X, workUnit.resizeParameters.sourceResolution.Y));
 }
 
 void FLensSolverWorkerFindCorners::Tick()
@@ -107,9 +107,9 @@ void FLensSolverWorkerFindCorners::Tick()
 		DequeuePixelArrayWorkUnit(texturePixelArrayUnit);
 		baseParameters = texturePixelArrayUnit.baseParameters;
 		textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
-		resizeParameters.sourceResolution = texturePixelArrayUnit.pixelArrayParameters.sourceResolution;
+		resizeParameters = texturePixelArrayUnit.resizeParameters;
 
-		if (!GetImageFromArray(texturePixelArrayUnit.pixelArrayParameters.pixels, texturePixelArrayUnit.pixelArrayParameters.sourceResolution, image))
+		if (!GetImageFromArray(texturePixelArrayUnit.pixelArrayParameters.pixels, resizeParameters.resizeResolution, image))
 		{
 			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 			return;
@@ -258,6 +258,7 @@ bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFile
 bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixels, const FIntPoint resolution, cv::Mat& image)
 {
 	QueueLog(FString::Printf(TEXT("(INFO): Copying pixel data of pixel count: %d to image of size: (%d, %d)."), pixels.Num(), resolution.X, resolution.Y));
+	image = cv::Mat(resolution.Y, resolution.X, cv::DataType<uint8>::type);
 
 	int pixelCount = resolution.X * resolution.Y;
 	for (int pi = 0; pi < pixelCount; pi++)

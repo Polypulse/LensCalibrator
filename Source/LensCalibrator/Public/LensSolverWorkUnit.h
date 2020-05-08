@@ -39,19 +39,30 @@ struct FLensSolverTextureWorkUnit
 
 struct FPixelArrayParameters
 {
-	FIntPoint sourceResolution;
 	TArray<FColor> pixels;
 	FPixelArrayParameters()
 	{
-		sourceResolution = FIntPoint(0, 0);
 		pixels = TArray<FColor>();
 	}
 };
+
+struct FResizeParameters
+{
+	FIntPoint sourceResolution;
+	FIntPoint resizeResolution;
+	FResizeParameters()
+	{
+		sourceResolution = FIntPoint(0, 0);
+		resizeResolution = FIntPoint(0, 0);
+	}
+};
+
 
 struct FLensSolverPixelArrayWorkUnit
 {
 	FBaseParameters baseParameters;
 	FTextureSearchParameters textureSearchParameters;
+	FResizeParameters resizeParameters;
 	FPixelArrayParameters pixelArrayParameters;
 
 	FLensSolverPixelArrayWorkUnit() 
@@ -68,12 +79,6 @@ struct FLensSolverTextureFileWorkUnit
 	FLensSolverTextureFileWorkUnit() 
 	{
 	}
-};
-
-struct FResizeParameters
-{
-	FIntPoint sourceResolution;
-	FIntPoint resizeResolution;
 };
 
 struct FCalibrationPointParameters

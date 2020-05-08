@@ -47,8 +47,8 @@ private:
 
 	TQueue<FCalibrationResult> queuedCalibrationResults;
 
-	FTexture2DRHIRef blitRenderTexture;
-	bool blitRenderTextureAllocated;
+	// FTexture2DRHIRef blitRenderTexture;
+	// bool blitRenderTextureAllocated;
 
 	void QueueLogAsync(FString msg);
 
@@ -69,6 +69,8 @@ private:
 
 	void SortFindCornersWorkersByWorkLoad();
 	void SortCalibrateWorkersByWorkLoad();
+
+	bool ValidateMediaTexture(const UMediaTexture* inputTexture);
 
 	void Lock();
 	void Unlock();

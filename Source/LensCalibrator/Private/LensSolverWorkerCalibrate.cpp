@@ -111,6 +111,13 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (!DequeueAllWorkUnits(latchData.baseParameters.calibrationID, corners, objectPoints))
 		return;
 
+	if (corners.size() == 0 || objectPoints.size() == 0)
+	{
+		QueueLog("No calibration corners or object points to use in calibration process.");
+		QueueCalibrationResultError(latchData.baseParameters);
+		return;
+	}
+
 	if (ShouldExit())
 		return;
 
