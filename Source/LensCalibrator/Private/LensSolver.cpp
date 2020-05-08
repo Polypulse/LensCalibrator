@@ -1197,7 +1197,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
 			workDistributor->QueueTextureFileWorkUnit(jobInfo.jobID, workUnit);
-			UE_LOG(LogTemp, Log, TEXT("Index: %d"), ii);
+			// UE_LOG(LogTemp, Log, TEXT("Index: %d"), ii);
 		}
 	}
 
