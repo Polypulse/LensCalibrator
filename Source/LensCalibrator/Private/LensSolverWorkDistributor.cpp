@@ -349,7 +349,10 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 		float duration = (GetTickNow() - jobPtr->startTime) / 1000.0f;
 		QueueLogAsync(FString::Printf(TEXT("Job: \"%s\" took %f seconds."), *jobInfo.jobID, duration));
 
-		jobPtr->eventReceiver->OnFinishedJob(jobInfo);
+		FinishedJobQueueContainer queueContainer;
+		queueContainer.jobInfo = jobInfo;
+		queueContainer.eventReceiver = jobPtr->eventReceiver;
+		queueFinishedJobOutputDel.Execute(queueContainer);
 
 		jobs.Remove(calibrationResult.baseParameters.jobID);
 		done = true;

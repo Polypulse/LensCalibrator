@@ -42,7 +42,8 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 		height,
 		EPixelFormat::PF_B8G8R8A8,
 		1,
-		TexCreate_SRGB,
+		TexCreate_Transient,
+		// TexCreate_SRGB,
 		TexCreate_RenderTargetable,
 		false,
 		createInfo,
@@ -557,7 +558,7 @@ void ULensSolver::PollCalibrationResults()
 		UE_LOG(LogTemp, Log, TEXT("(INFO): Dequeued calibration result of id: \"%s\" for job of id: \"%s\"."), 
 			*queueContainer.calibrationResult.baseParameters.calibrationID, 
 			*queueContainer.calibrationResult.baseParameters.jobID);
-		queueContainer.eventReceiver->OnReceiveCalibrationResult(queueContainer.calibrationResult);
+		queueContainer.eventReceiver->Execute_OnReceiveCalibrationResult(queueContainer.eventReceiver.GetObject(), queueContainer.calibrationResult);
 		isQueued = LensSolverWorkDistributor::GetInstance().CalibrationResultIsQueued();
 	}
 }
@@ -570,7 +571,7 @@ void ULensSolver::PollFinishedJobs()
 		FinishedJobQueueContainer queueContainer;
 		DequeuedFinishedJob(queueContainer);
 		UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *queueContainer.jobInfo.jobID);
-		queueContainer.eventReceiver->OnFinishedJob(queueContainer.jobInfo);
+		queueContainer.eventReceiver->Execute_OnFinishedJob(queueContainer.eventReceiver.GetObject(), queueContainer.jobInfo);
 		isQueued = queuedFinishedJobs.IsEmpty() == false;
 	}
 }
