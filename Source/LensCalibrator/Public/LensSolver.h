@@ -40,10 +40,7 @@ class LENSCALIBRATOR_API ULensSolver : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:
-
 private:
-
 	FTexture2DRHIRef blitRenderTexture;
 	bool blitRenderTextureAllocated;
 
@@ -62,37 +59,6 @@ private:
 
 	TQueue<FString> logQueue;
 
-	void RandomSortTArray(TArray<UTexture2D*>& arr);
-
-	void BeginDetectPoints(
-		const FJobInfo inputJobInfo,
-		const FTextureZoomPair& inputTextureZoomPair,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		const bool inputLatch);
-
-	void BeginDetectPoints(
-		const FJobInfo jobInfo,
-		const TArray<FTextureZoomPair> & inputTextures,
-		FOneTimeProcessParameters oneTimeProcessParameters);
-
-	void BeginDetectPoints(
-		const FJobInfo inputJobInfo,
-		FTextureArrayZoomPair& inputTextures,
-		FOneTimeProcessParameters inputOneTimeProcessParameters);
-
-	void BeginDetectPoints(
-		const FJobInfo jobInfo,
-		TArray<FTextureArrayZoomPair> & inputTextures,
-		FOneTimeProcessParameters oneTimeProcessParameters);
-
-	void DetectPointsRenderThread(
-		FRHICommandListImmediate& RHICmdList,
-		const FJobInfo jobInfo,
-		const FTextureZoomPair textureZoomPair,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		const int latchImageCount,
-		const bool latch);
-
 	void GenerateDistortionCorrectionMapRenderThread(
 		FRHICommandListImmediate& RHICmdList,
 		const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
@@ -104,11 +70,7 @@ private:
 		const FDistortTextureWithTextureParams distortionCorrectionParams,
 		const FString generatedOutputPath);
 
-	bool ValidateZoom(const FJobInfo& jobInfo, const float zoomValue);
-	bool ValidateTexture(const FJobInfo & jobInfo, const UTexture2D* inputTexture, const int textureIndex, const FIntPoint targetResolution);
 	bool ValidateMediaTexture(const UMediaTexture* inputTexture);
-	bool ValidateOneTimeProcessParameters(const FOneTimeProcessParameters& oneTimeProcessParameters);
-	void ReturnErrorSolvedPoints(FJobInfo jobInfo);
 
 	void PollLogs();
 	void PollCalibrationResults ();
@@ -122,7 +84,6 @@ private:
 	void QueueLog(FString msg);
 
 protected:
-
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -154,33 +115,6 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool debug;
-
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	bool ValidateMediaInputs (UMediaPlayer * mediaPlayer, UMediaTexture * mediaTexture, FString url);
-
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	void OneTimeProcessTextureZoomPair(
-		FTextureZoomPair textureZoomPair,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		FJobInfo & ouptutJobInfo);
-
-	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
-		void OneTimeProcessArrayOfTextureZoomPairs(
-		TArray<FTextureZoomPair> textureZoomPairArray,
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		FJobInfo & ouptutJobInfo);
-
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	void OneTimeProcessTextureArrayZoomPair(
-		FTextureArrayZoomPair inputTextures, 
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		FJobInfo & ouptutJobInfo);
-
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	void OneTimeProcessArrayOfTextureArrayZoomPairs(
-		TArray<FTextureArrayZoomPair> inputTextures, 
-		FOneTimeProcessParameters oneTimeProcessParameters,
-		FJobInfo & ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void OneTimeProcessArrayOfTextureFolderZoomPairs(

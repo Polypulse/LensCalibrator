@@ -62,7 +62,6 @@ private:
 		const FString calibrationID,
 		FWorkerCalibrateInterfaceContainer *& outputInterfaceContainerPtr);
 
-	void SetCalibrateWorkerParameters(FCalibrationParameters calibrationParameters);
 	void QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit);
 	void LatchCalibrateWorker(const FCalibrateLatch& latchData);
 	void QueueCalibrationResult(const FCalibrationResult calibrationResult);
@@ -127,6 +126,7 @@ public:
 		const int expectedResultCount,
 		const UJobType jobType);
 
+	void SetCalibrateWorkerParameters(FCalibrationParameters calibrationParameters);
 	void QueueTextureArrayWorkUnit(const FString & jobID, FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit);
 	void QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit);
 	void QueueMediaStreamWorkUnit(const FMediaStreamWorkUnit mediaStreamWorkUnit);
