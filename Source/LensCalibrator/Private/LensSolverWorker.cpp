@@ -13,14 +13,16 @@ FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters& inputPar
 	workerID(inputParameters.inputWorkerID),
 	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%s/"), *workerID))),
 	queueLogOutputDel(inputParameters.inputQueueLogOutputDel),
-	// lockDel(inputParameters.lockDel),
-	// unlockDel(inputParameters.unlockDel),
-	// isFenceDownDel(inputParameters.inputIsFenceDownDel),
 	workerMessage(FString::Printf(TEXT("Worker (%s): "), *inputParameters.inputWorkerID)),
 	debug(inputParameters.debug)
 {
 	inputParameters.inputGetWorkOutputLoadDel->BindRaw(this, &FLensSolverWorker::GetWorkLoad);
 	inputParameters.inputIsClosingOutputDel->BindRaw(this, &FLensSolverWorker::Exit);
+
+	/*
+	isClosingOutputDel = inputParameters.inputIsClosingOutputDel;
+	getWorkOutputLoadDel = inputParameters.inputGetWorkOutputLoadDel;
+	*/
 
 	flagToExit = false;
 }

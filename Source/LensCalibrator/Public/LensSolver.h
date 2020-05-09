@@ -53,8 +53,8 @@ private:
 	FTexture2DRHIRef correctDistortedTextureRenderTexture;
 	bool correctDistortedTextureRenderTextureAllocated;
 
-	QueueLogOutputDel queueLogOutputDel;
-	QueueFinishedJobOutputDel queueFinishedJobOutputDel;
+	QueueLogOutputDel * queueLogOutputDel;
+	QueueFinishedJobOutputDel * queueFinishedJobOutputDel;
 
 	TQueue<FJobInfo> queuedFinishedJobs;
 	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;
@@ -144,7 +144,14 @@ protected:
 
 public:
 
-	// ULensSolver() {}
+	~ULensSolver() 
+	{
+		if (queueLogOutputDel != nullptr)
+			queueLogOutputDel->Unbind();
+		if (queueFinishedJobOutputDel != nullptr)
+			queueFinishedJobOutputDel->Unbind();
+	}
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool debug;
 

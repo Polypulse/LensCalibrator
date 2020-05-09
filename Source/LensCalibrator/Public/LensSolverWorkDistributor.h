@@ -30,8 +30,8 @@ private:
 	// LockDel lockDel;
 	// UnlockDel unlockDel;
 
-	QueueFinishedJobOutputDel* queueFinishedJobOutputDel;
-	QueueLogOutputDel * queueLogOutputDel;
+	QueueFinishedJobOutputDel queueFinishedJobOutputDel;
+	QueueLogOutputDel queueLogOutputDel;
 	bool debug;
 
 	// FThreadSafeBool fenceUp;
@@ -101,12 +101,12 @@ public:
 	static FString FJobToString(const FJob& job, const int tabcount = 0);
 	*/
 
-	void Configure(QueueLogOutputDel* inputQueueLogOutputDel,
-		QueueFinishedJobOutputDel* inputQueueFinishedJobOutputDel,
+	void Configure(QueueLogOutputDel*& inputQueueLogOutputDel,
+		QueueFinishedJobOutputDel*& inputQueueFinishedJobOutputDel,
 		bool debugEnabled = false)
 	{
-		queueFinishedJobOutputDel = inputQueueFinishedJobOutputDel;
-		queueLogOutputDel = inputQueueLogOutputDel;
+		inputQueueFinishedJobOutputDel = &queueFinishedJobOutputDel ;
+		inputQueueLogOutputDel = &queueLogOutputDel ;
 		debug = debugEnabled;
 	}
 

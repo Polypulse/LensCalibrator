@@ -19,8 +19,28 @@ public:
 		QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
 		const QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel);
 
-	~FLensSolverWorkerFindCorners() {}
+	~FLensSolverWorkerFindCorners()
+	{
+		/*
+		queueTextureFileWorkUnitInputDel->Unbind();
+		queuePixelArrayWorkUnitInputDel->Unbind();
 
+		queueTextureFileWorkUnitInputDel = nullptr;
+		queuePixelArrayWorkUnitInputDel = nullptr;
+		/*
+		if (queueTextureFileWorkUnitInputDel != nullptr && queueTextureFileWorkUnitInputDel->IsBound())
+		{
+			queueTextureFileWorkUnitInputDel->Unbind();
+			queueTextureFileWorkUnitInputDel = nullptr;
+		}
+
+		if (queuePixelArrayWorkUnitInputDel != nullptr && queuePixelArrayWorkUnitInputDel->IsBound())
+		{
+			queuePixelArrayWorkUnitInputDel->Unbind();
+			queuePixelArrayWorkUnitInputDel = nullptr;
+		}
+		*/
+	};
 
 private:
 	mutable int workUnitCount;
@@ -32,6 +52,8 @@ private:
 	const QueueTextureFileWorkUnitInputDel* queueTextureFileWorkUnitInputDel;
 	const QueuePixelArrayWorkUnitInputDel* queuePixelArrayWorkUnitInputDel;
 	*/
+	QueueTextureFileWorkUnitInputDel* queueTextureFileWorkUnitInputDel;
+	QueuePixelArrayWorkUnitInputDel* queuePixelArrayWorkUnitInputDel;
 	const QueueFindCornerResultOutputDel* queueFindCornerResultOutputDel;
 
 	void WriteMatToFile(cv::Mat image, FString folder, FString fileName);

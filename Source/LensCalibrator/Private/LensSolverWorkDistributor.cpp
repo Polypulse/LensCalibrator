@@ -39,7 +39,7 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 		FWorkerFindCornersInterfaceContainer & interfaceContainer = findCornersWorkers.Add(guid, FWorkerFindCornersInterfaceContainer());
 
 		FLensSolverWorkerParameters workerParameters(
-			queueLogOutputDel,
+			&queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
 			// &isFenceDownDel,
@@ -86,7 +86,7 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 		FWorkerCalibrateInterfaceContainer & interfaceContainer = calibrateWorkers.Add(guid, FWorkerCalibrateInterfaceContainer());
 
 		FLensSolverWorkerParameters workerParameters(
-			queueLogOutputDel,
+			&queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
 			// &isFenceDownDel,
@@ -345,8 +345,9 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 	}
 
 	Unlock();
-	if (done && queueFinishedJobOutputDel->IsBound())
-		queueFinishedJobOutputDel->Execute(jobInfo);
+
+	if (done && queueFinishedJobOutputDel.IsBound())
+		queueFinishedJobOutputDel.Execute(jobInfo);
 }
 
 bool LensSolverWorkDistributor::CalibrationResultIsQueued()
@@ -426,13 +427,13 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 void LensSolverWorkDistributor::QueueLogAsync(FString msg)
 {
 	msg = FString::Printf(TEXT("Work Distributor: %s"), *msg);
-	if (!queueLogOutputDel->IsBound())
+	if (!queueLogOutputDel.IsBound())
 	{
 		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);
 		return;
 	}
 
-	queueLogOutputDel->Execute(msg);
+	queueLogOutputDel.Execute(msg);
 }
 
 bool LensSolverWorkDistributor::GetFindCornersContainerInterfacePtr(

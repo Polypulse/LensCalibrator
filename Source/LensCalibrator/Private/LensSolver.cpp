@@ -1181,6 +1181,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.baseParameters.jobID						= ouptutJobInfo.jobID;
 			workUnit.baseParameters.calibrationID				= ouptutJobInfo.calibrationIDs[ci];
 			workUnit.baseParameters.zoomLevel					= zoomLevels[ci];
+			workUnit.baseParameters.friendlyName				= FPaths::GetBaseFilename(imageFiles[ci][ii]);
 			workUnit.textureSearchParameters					= oneTimeProcessParameters.textureSearchParameters;
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
@@ -1270,6 +1271,7 @@ void ULensSolver::StartMediaStreamCalibration(
 	FMediaStreamWorkUnit workUnit;
 	workUnit.baseParameters.jobID								= ouptutJobInfo.jobID;
 	workUnit.baseParameters.calibrationID						= ouptutJobInfo.calibrationIDs[0];
+	workUnit.baseParameters.friendlyName						= "stream";
 	workUnit.baseParameters.zoomLevel							= mediaStreamParameters.mediaStreamParameters.zoomLevel;
 	workUnit.textureSearchParameters							= mediaStreamParameters.textureSearchParameters;
 	workUnit.mediaStreamParameters								= mediaStreamParameters.mediaStreamParameters;
@@ -1401,19 +1403,20 @@ void ULensSolver::DistortTextureWithCoefficients(FDistortTextureWithCoefficients
 
 void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
 {
-	if (!queueLogOutputDel.IsBound())
-	{
-		queueLogOutputDel.BindUObject(this, &ULensSolver::QueueLog);
-		UE_LOG(LogTemp, Log, TEXT("Binded log queue."));
-	}
+	LensSolverWorkDistributor::GetInstance().Configure(queueLogOutputDel, queueFinishedJobOutputDel, debug);
 
-	if (!queueFinishedJobOutputDel.IsBound())
-	{
-		queueFinishedJobOutputDel.BindUObject(this, &ULensSolver::QueueFinishedJob);
-		UE_LOG(LogTemp, Log, TEXT("Binded finished queue."));
-	}
+	if (queueLogOutputDel->IsBound())
+		queueLogOutputDel->Unbind();
 
-	LensSolverWorkDistributor::GetInstance().Configure(&queueLogOutputDel, &queueFinishedJobOutputDel, debug);
+	queueLogOutputDel->BindUObject(this, &ULensSolver::QueueLog);
+	UE_LOG(LogTemp, Log, TEXT("Binded log queue."));
+
+	if (queueFinishedJobOutputDel->IsBound())
+		queueFinishedJobOutputDel->Unbind();
+
+	queueFinishedJobOutputDel->BindUObject(this, &ULensSolver::QueueFinishedJob);
+	UE_LOG(LogTemp, Log, TEXT("Binded finished queue."));
+
 
 	LensSolverWorkDistributor::GetInstance().PrepareFindCornerWorkers(findCornersWorkerCount);
 	LensSolverWorkDistributor::GetInstance().PrepareCalibrateWorkers(calibrateWorkerCount);

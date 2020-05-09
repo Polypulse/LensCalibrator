@@ -26,18 +26,12 @@ DECLARE_DELEGATE_OneParam(QueueLogOutputDel, FString)
 DECLARE_DELEGATE_OneParam(QueueFinishedJobOutputDel, FJobInfo)
 DECLARE_DELEGATE_RetVal(int, GetWorkLoadOutputDel)
 DECLARE_DELEGATE_RetVal(bool, IsClosingOutputDel)
-// DECLARE_DELEGATE_RetVal(bool, IsFenceDownDel)
-// DECLARE_DELEGATE(LockDel)
-// DECLARE_DELEGATE(UnlockDel)
 
 struct FLensSolverWorkerParameters 
 {
 	const QueueLogOutputDel * inputQueueLogOutputDel;
 	IsClosingOutputDel * inputIsClosingOutputDel;
 	GetWorkLoadOutputDel * inputGetWorkOutputLoadDel;
-	// const IsFenceDownDel * inputIsFenceDownDel;
-	// const LockDel* lockDel;
-	// const UnlockDel* unlockDel;
 	bool debug;
 
 	const FString inputWorkerID;
@@ -45,19 +39,11 @@ struct FLensSolverWorkerParameters
 		const QueueLogOutputDel* inQueueLogOutputDel,
 		IsClosingOutputDel* inIsClosingOutputDel,
 		GetWorkLoadOutputDel* inGetWorkOutputLoadDel,
-		// const IsFenceDownDel * inIsFenceDownDel,
-		// const LockDel* inLockDel,
-		// const UnlockDel* inUnlockDel,
 		const FString inWorkerID,
 		const bool inDebug) :
 		inputQueueLogOutputDel(inQueueLogOutputDel),
 		inputIsClosingOutputDel(inIsClosingOutputDel),
 		inputGetWorkOutputLoadDel(inGetWorkOutputLoadDel),
-		// inputIsFenceDownDel(inIsFenceDownDel),
-		/*
-		lockDel(inLockDel),
-		unlockDel(inUnlockDel),
-		*/
 		inputWorkerID(inWorkerID),
 		debug(inDebug)
 	{
@@ -76,18 +62,30 @@ private:
 	bool flagToExit;
 
 	const QueueLogOutputDel* queueLogOutputDel;
-	// const IsFenceDownDel* isFenceDownDel;
-	/*
-	const LockDel* lockDel;
-	const UnlockDel* unlockDel;
-	*/
+	IsClosingOutputDel * isClosingOutputDel;
+	GetWorkLoadOutputDel * getWorkOutputLoadDel;
 
 	bool Exit ();
 
 public:
 	static FString JobDataToString(const FBaseParameters & baseParameters);
 	FLensSolverWorker(const FLensSolverWorkerParameters & inputParameters);
-	virtual ~FLensSolverWorker() {};
+	virtual ~FLensSolverWorker() 
+	{
+		/*
+		isClosingOutputDel->Unbind();
+		getWorkOutputLoadDel->Unbind();
+
+		isClosingOutputDel = nullptr;
+		getWorkOutputLoadDel = nullptr;
+		*/
+		/*
+		if (isClosingOutputDel != nullptr && isClosingOutputDel->IsBound())
+			isClosingOutputDel->Unbind();
+		if (getWorkOutputLoadDel != nullptr && getWorkOutputLoadDel->IsBound())
+			getWorkOutputLoadDel->Unbind();
+		*/
+	};
 
 	FORCEINLINE TStatId GetStatId() const
 	{

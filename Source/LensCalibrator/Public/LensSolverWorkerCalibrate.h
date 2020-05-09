@@ -21,10 +21,34 @@ public:
 		QueueLatchInputDel* inputSignalLatch,
 		const QueueCalibrationResultOutputDel* inputOnSolvePointsDel);
 
-	~FLensSolverWorkerCalibrate() {}
+	~FLensSolverWorkerCalibrate()
+	{
+		/*/
+		queueCalibrateWorkUnitDel->Unbind();
+		signalLatch->Unbind();
+
+		queueCalibrateWorkUnitDel = nullptr;
+		signalLatch = nullptr;
+		/*
+		if (queueCalibrateWorkUnitDel != nullptr && queueCalibrateWorkUnitDel->IsBound())
+		{
+			queueCalibrateWorkUnitDel->Unbind();
+			queueCalibrateWorkUnitDel = nullptr;
+		}
+
+		if (signalLatch != nullptr && signalLatch->IsBound())
+		{
+			signalLatch->Unbind();
+			signalLatch = nullptr;
+		}
+		*/
+	};
 
 private:
 	mutable int workUnitCount;
+
+	QueueCalibrateWorkUnitInputDel* queueCalibrateWorkUnitDel;
+	QueueLatchInputDel* signalLatch;
 	const QueueCalibrationResultOutputDel * onSolvePointsDel;
 
 	TMap<FString, TQueue<FLensSolverCalibrationPointsWorkUnit>*> workQueue;

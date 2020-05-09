@@ -11,6 +11,12 @@ FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 {
 	inputQueueTextureFileWorkUnitInputDel->BindRaw(this, &FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit);
 	inputQueuePixelArrayWorkUnitInputDel->BindRaw(this, &FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit);
+
+	/*
+	queueTextureFileWorkUnitInputDel = inputQueueTextureFileWorkUnitInputDel;
+	queuePixelArrayWorkUnitInputDel = inputQueuePixelArrayWorkUnitInputDel;
+	*/
+
 	workUnitCount = 0;
 }
 
@@ -284,7 +290,7 @@ void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString folder,
 		return;
 	}
 
-	QueueLog(FString::Printf(TEXT("(INFO): %sDebug texture written to file at path: \"%s\"."), *outputPath));
+	QueueLog(FString::Printf(TEXT("(INFO): Debug texture written to file at path: \"%s\"."), *outputPath));
 }
 
 void FLensSolverWorkerFindCorners::QueueCalibrationPointsWorkUnit(const FLensSolverCalibrationPointsWorkUnit & calibrationPointsWorkUnit)

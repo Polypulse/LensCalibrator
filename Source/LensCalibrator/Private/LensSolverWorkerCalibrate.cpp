@@ -12,6 +12,12 @@ FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 {
 	inputQueueCalibrateWorkUnitDel->BindRaw(this, &FLensSolverWorkerCalibrate::QueueWorkUnit);
 	inputSignalLatch->BindRaw(this, &FLensSolverWorkerCalibrate::QueueLatch);
+
+	/*
+	queueCalibrateWorkUnitDel = inputQueueCalibrateWorkUnitDel;
+	signalLatch = inputSignalLatch;
+	*/
+
 	workUnitCount = 0;
 }
 
