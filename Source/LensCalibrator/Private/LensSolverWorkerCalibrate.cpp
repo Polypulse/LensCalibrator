@@ -124,6 +124,8 @@ void FLensSolverWorkerCalibrate::Tick()
 		return;
 	}
 
+	std::random_shuffle(std::begin(corners), std::end(corners));
+
 	if (ShouldExit())
 		return;
 

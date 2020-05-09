@@ -266,14 +266,18 @@ bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFile
 
 bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixels, const FIntPoint resolution, cv::Mat& image)
 {
-	QueueLog(FString::Printf(TEXT("(INFO): Copying pixel data of pixel count: %d to image of size: (%d, %d)."), pixels.Num(), resolution.X, resolution.Y));
+	if (debug)
+		QueueLog(FString::Printf(TEXT("(INFO): Copying pixel data of pixel count: %d to image of size: (%d, %d)."), pixels.Num(), resolution.X, resolution.Y));
+
 	image = cv::Mat(resolution.Y, resolution.X, cv::DataType<uint8>::type);
 
 	int pixelCount = resolution.X * resolution.Y;
 	for (int pi = 0; pi < pixelCount; pi++)
 		image.at<uint8>(pi / resolution.X, pi % resolution.X) = pixels[pi].R;
 
-	QueueLog(FString::Printf(TEXT("(INFO): Done copying pixel data."), pixels.Num(), resolution.X, resolution.Y));
+	if (debug)
+		QueueLog(FString::Printf(TEXT("(INFO): Done copying pixel data."), pixels.Num(), resolution.X, resolution.Y));
+
 	return true;
 }
 
@@ -290,7 +294,8 @@ void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString folder,
 		return;
 	}
 
-	QueueLog(FString::Printf(TEXT("(INFO): Debug texture written to file at path: \"%s\"."), *outputPath));
+	if (debug)
+		QueueLog(FString::Printf(TEXT("(INFO): Debug texture written to file at path: \"%s\"."), *outputPath));
 }
 
 void FLensSolverWorkerFindCorners::QueueCalibrationPointsWorkUnit(const FLensSolverCalibrationPointsWorkUnit & calibrationPointsWorkUnit)
