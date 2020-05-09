@@ -10,11 +10,23 @@
 
 #define LOCTEXT_NAMESPACE "FLensCalibratorModule"
 
+void FLensCalibratorModule::Initialize()
+{
+	if (TickDelegate.IsBound())
+		return;
+
+	// Create tick delegate to redirect module tick into lens solver.
+	TickDelegate = FTickerDelegate::CreateRaw(this, &FLensCalibratorModule::Tick);
+	TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(TickDelegate);
+}
+
 bool FLensCalibratorModule::Tick(float deltatime)
 {
-	if (GetLensSolver() == nullptr)
-		return true;
-	GetLensSolver()->Poll();
+	if (GetLensSolver().IsValid())
+		GetLensSolver()->Poll();
+
+	if (GetDistortionProcessor().IsValid())
+		GetDistortionProcessor()->Poll();
 	return true;
 }
 
@@ -25,13 +37,21 @@ TSharedPtr<ULensSolver> FLensCalibratorModule::GetLensSolver()
 		static ULensSolver* staticLensSolver = NewObject<ULensSolver>(GetTransientPackage(), NAME_None, RF_MarkAsRootSet);
 		lensSolver = TSharedPtr<ULensSolver>(staticLensSolver);
 		lensSolver->AddToRoot(); // Prevent lens solver from being garbage collected.
-
-		// Create tick delegate to redirect module tick into lens solver.
-		TickDelegate = FTickerDelegate::CreateRaw(this, &FLensCalibratorModule::Tick);
-		TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(TickDelegate);
 	}
 
 	return lensSolver; 
+}
+
+TSharedPtr<UDistortionProcessor> FLensCalibratorModule::GetDistortionProcessor()
+{ 
+	if (lensSolver == nullptr)
+	{
+		static UDistortionProcessor* staticDistortionProcessor = NewObject<UDistortionProcessor>(GetTransientPackage(), NAME_None, RF_MarkAsRootSet);
+		distortionProcessor = TSharedPtr<UDistortionProcessor>(staticDistortionProcessor);
+		distortionProcessor->AddToRoot(); // Prevent lens solver from being garbage collected.
+	}
+
+	return distortionProcessor; 
 }
 
 void FLensCalibratorModule::StartupModule()

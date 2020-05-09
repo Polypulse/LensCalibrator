@@ -7,11 +7,11 @@
 
 #include "DistortionCorrectionMapGenerationResults.generated.h"
 
-
 USTRUCT(BlueprintType)
 struct FDistortionCorrectionMapGenerationResults
 {
 	GENERATED_BODY()
+	FString id;
 
 	int width;
 	int height;

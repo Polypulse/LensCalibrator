@@ -10,6 +10,7 @@ USTRUCT(BlueprintType)
 struct FCorrectedDistortedImageResults
 {
 	GENERATED_BODY()
+	FString id;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	TArray<FColor> pixels;

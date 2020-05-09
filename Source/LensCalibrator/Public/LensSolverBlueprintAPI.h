@@ -44,18 +44,22 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	static void GenerateDistortionCorrectionMap(
+		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams);
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	static void DistortTextureWithTexture(
+		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		FDistortTextureWithTextureParams distortionCorrectionParams);
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	static void DistortTextureWithTextureFile(
+		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		FDistortTextureWithTextureFileParams distortionCorrectionParams);
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	static void DistortTextureWithCoefficients(
+		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		FDistortTextureWithCoefficientsParams distortionCorrectionParams);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
@@ -64,6 +68,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	static void StopBackgroundImageprocessors();
 
+	/*
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	static void Poll ();
+	*/
 };

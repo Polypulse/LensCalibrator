@@ -33,9 +33,9 @@ struct FLensSolverWorkerParameters
 	const QueueLogOutputDel * inputQueueLogOutputDel;
 	IsClosingOutputDel * inputIsClosingOutputDel;
 	GetWorkLoadOutputDel * inputGetWorkOutputLoadDel;
+	const FString inputWorkerID;
 	bool debug;
 
-	const FString inputWorkerID;
 	FLensSolverWorkerParameters(
 		const QueueLogOutputDel* inQueueLogOutputDel,
 		IsClosingOutputDel* inIsClosingOutputDel,

@@ -716,10 +716,14 @@ void LensSolverWorkDistributor::StopCalibrationWorkers()
 			interfaceContainerPtr->baseContainer.isClosingDel.Execute();
 	}
 
-	Unlock();
 	calibrateWorkers.Empty();
 	workLoadSortedCalibrateWorkers.Empty();
 	workerCalibrationIDLUT.Empty();
+
+	jobs.Empty();
+	workerCalibrationIDLUT.Empty();
+	mediaTextureJobLUT.Empty();
+	Unlock();
 }
 
 void LensSolverWorkDistributor::StopBackgroundWorkers()

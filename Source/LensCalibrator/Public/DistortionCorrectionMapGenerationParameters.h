@@ -11,9 +11,7 @@ USTRUCT(BlueprintType)
 struct FDistortionCorrectionMapGenerationParameters
 {
 	GENERATED_BODY()
-
-	// UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	// FCalibrationResult calibrationResult;
+	FString id;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float zoomLevel;

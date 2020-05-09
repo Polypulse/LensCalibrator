@@ -7,6 +7,7 @@
 #include "Modules/ModuleManager.h"
 
 #include "LensSolver.h"
+#include "DistortionProcessor.h"
 
 class FLensCalibratorModule : public IModuleInterface
 {
@@ -16,14 +17,17 @@ private:
 
 	UPROPERTY(Category = "APTK")
 	TSharedPtr<ULensSolver> lensSolver;
+	TSharedPtr<UDistortionProcessor> distortionProcessor;
 
 	FTickerDelegate TickDelegate;
 	FDelegateHandle TickDelegateHandle;
 
+	void Initialize();
 	bool Tick(float deltatime);
 public:
 	static FLensCalibratorModule& Get() { return FModuleManager::GetModuleChecked<FLensCalibratorModule>(FLensCalibratorModule::ModuleName); };
 	TSharedPtr<ULensSolver> GetLensSolver();
+	TSharedPtr<UDistortionProcessor> GetDistortionProcessor();
 
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;

@@ -11,6 +11,7 @@ USTRUCT(BlueprintType)
 struct FDistortTextureWithCoefficientsParams
 {
 	GENERATED_BODY()
+	FString id;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	UTexture2D* distortedTexture;

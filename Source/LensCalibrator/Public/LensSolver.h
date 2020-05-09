@@ -18,14 +18,6 @@
 #include "OneTimeProcessParameters.h"
 #include "StartMediaStreamParameters.h"
 
-#include "DistortionCorrectionMapGenerationParameters.h"
-#include "DistortionCorrectionMapGenerationResults.h"
-#include "DistortTextureWithCoefficientsParams.h"
-#include "DistortTextureWithTextureFileParams.h"
-#include "DistortTextureWithTextureParams.h"
-
-#include "CorrectedDistortedImageResults.h"
-
 #include "TextureArrayZoomPair.h"
 #include "TextureFolderZoomPair.h"
 #include "TextureZoomPair.h"
@@ -43,25 +35,13 @@ class LENSCALIBRATOR_API ULensSolver : public UObject
 	GENERATED_BODY()
 
 private:
+	ULensSolver() {}
+
 	QueueLogOutputDel * queueLogOutputDel;
 	QueueFinishedJobOutputDel * queueFinishedJobOutputDel;
 
 	TQueue<FinishedJobQueueContainer> queuedFinishedJobs;
-	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;
-	TSharedPtr<TQueue<FCorrectedDistortedImageResults>> queuedCorrectedDistortedImageResults;
-
 	TQueue<FString> logQueue;
-
-	void GenerateDistortionCorrectionMapRenderThread(
-		FRHICommandListImmediate& RHICmdList,
-		const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
-		const FString correctionFilePath,
-		const FString inverseCorrectionFilePath);
-
-	void UndistortImageRenderThread(
-		FRHICommandListImmediate& RHICmdList,
-		const FDistortTextureWithTextureParams distortionCorrectionParams,
-		const FString generatedOutputPath);
 
 	bool ValidateMediaTexture(const UMediaTexture* inputTexture);
 
@@ -78,7 +58,6 @@ private:
 
 public:
 
-	ULensSolver() {}
 	~ULensSolver() 
 	{
 		if (queueLogOutputDel != nullptr)
@@ -100,45 +79,11 @@ public:
 		FStartMediaStreamParameters mediaStreamParameters,
 		FJobInfo& ouptutJobInfo);
 
-	void GenerateDistortionCorrectionMap(
-		FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams);
-
-	void DistortTextureWithTexture(
-		FDistortTextureWithTextureParams distortionCorrectionParams);
-
-	void DistortTextureWithTextureFile(
-		FDistortTextureWithTextureFileParams distortionCorrectionParams);
-
-	void DistortTextureWithCoefficients(
-		FDistortTextureWithCoefficientsParams distortionCorrectionParams);
-
 	void StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount);
 	void StopBackgroundImageprocessors();
 
 	void Poll ();
 
 protected:
-
-	/*
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
-	void OnReceiveCalibrationResult (FCalibrationResult calibrationResult);
-	// void OnReceiveCalibrationResult_Implementation(FCalibrationResult calibrationResult);
-
-	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
-	void OnFinishedJob (FJobInfo jobInfo);
-	// virtual void OnFinishedJob_Implementation (FJobInfo jobInfo) {}
-
-	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
-	void OnGeneratedDistortionMap (UTexture2D * generatedDistortionMap);
-	// virtual void OnGeneratedDistortionMap_Implementation (UTexture2D * generatedDistortionMap) {}
-
-	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
-	void OnDistortedImageCorrected (UTexture2D * correctedDistortedImage);
-	// virtual void OnDistortedImageCorrected_Implementation (UTexture2D * correctedDistortedImage) {}
-	*/
-
 };
 
