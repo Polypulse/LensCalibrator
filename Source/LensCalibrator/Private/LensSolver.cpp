@@ -44,24 +44,21 @@ void ULensSolver::GenerateDistortionCorrectionMapRenderThread(
 	int width = distortionCorrectionMapGenerationParams.outputMapResolution.X;
 	int height = distortionCorrectionMapGenerationParams.outputMapResolution.Y;
 
-	if (!distortionCorrectionRenderTextureAllocated)
-	{
-		FRHIResourceCreateInfo createInfo;
-		FTexture2DRHIRef dummyTexRef;
-		RHICreateTargetableShaderResource2D(
-			width,
-			height,
-			EPixelFormat::PF_FloatRGBA,
-			1,
-			TexCreate_None,
-			TexCreate_RenderTargetable,
-			false,
-			createInfo,
-			distortionCorrectionRenderTexture,
-			dummyTexRef);
+	FTexture2DRHIRef distortionCorrectionRenderTexture;
+	FRHIResourceCreateInfo createInfo;
+	FTexture2DRHIRef dummyTexRef;
 
-		distortionCorrectionRenderTextureAllocated = true;
-	}
+	RHICreateTargetableShaderResource2D(
+		width,
+		height,
+		EPixelFormat::PF_B8G8R8A8,
+		1,
+		TexCreate_SRGB,
+		TexCreate_RenderTargetable,
+		false,
+		createInfo,
+		distortionCorrectionRenderTexture,
+		dummyTexRef);
 
 	FVector2D normalizedPrincipalPoint = FVector2D(
 		distortionCorrectionMapGenerationParams.sourcePrincipalPixelPoint.X / (float)distortionCorrectionMapGenerationParams.sourceResolution.X,
@@ -158,24 +155,22 @@ void ULensSolver::UndistortImageRenderThread(
 {
 	int width = distortionCorrectionParams.distortedTexture->GetSizeX();
 	int height = distortionCorrectionParams.distortedTexture->GetSizeY();
-	if (!correctDistortedTextureRenderTextureAllocated)
-	{
-		FRHIResourceCreateInfo createInfo;
-		FTexture2DRHIRef dummyTexRef;
-		RHICreateTargetableShaderResource2D(
-			width,
-			height,
-			EPixelFormat::PF_B8G8R8A8,
-			1,
-			TexCreate_SRGB,
-			TexCreate_RenderTargetable,
-			false,
-			createInfo,
-			correctDistortedTextureRenderTexture,
-			dummyTexRef);
 
-		correctDistortedTextureRenderTextureAllocated = true;
-	}
+	FTexture2DRHIRef correctDistortedTextureRenderTexture;
+	FRHIResourceCreateInfo createInfo;
+	FTexture2DRHIRef dummyTexRef;
+
+	RHICreateTargetableShaderResource2D(
+		width,
+		height,
+		EPixelFormat::PF_B8G8R8A8,
+		1,
+		TexCreate_SRGB,
+		TexCreate_RenderTargetable,
+		false,
+		createInfo,
+		correctDistortedTextureRenderTexture,
+		dummyTexRef);
 
 	FRHIRenderPassInfo RPInfo(correctDistortedTextureRenderTexture, ERenderTargetActions::Clear_DontStore);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("CorrectImageDistortionPass"));
@@ -253,98 +248,6 @@ bool ULensSolver::ValidateMediaTexture(const UMediaTexture* inputTexture)
 	}
 
 	return true;
-}
-
-void ULensSolver::PollLogs()
-{
-	while (!logQueue.IsEmpty())
-	{
-		FString msg;
-		logQueue.Dequeue(msg);
-		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);
-	}
-}
-
-void ULensSolver::PollCalibrationResults()
-{
-	bool isQueued = LensSolverWorkDistributor::GetInstance().CalibrationResultIsQueued();
-	while (isQueued)
-	{
-		FCalibrationResult calibrationResult;
-		LensSolverWorkDistributor::GetInstance().DequeueCalibrationResult(calibrationResult);
-
-		this->OnReceiveCalibrationResult(calibrationResult);
-
-		isQueued = LensSolverWorkDistributor::GetInstance().CalibrationResultIsQueued();
-	}
-}
-
-void ULensSolver::PollFinishedJobs()
-{
-	bool isQueued = queuedFinishedJobs.IsEmpty() == false;
-	while (isQueued)
-	{
-		FJobInfo jobInfo;
-		DequeuedFinishedJob(jobInfo);
-		UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *jobInfo.jobID);
-		this->OnFinishedJob(jobInfo);
-		isQueued = queuedFinishedJobs.IsEmpty() == false;
-	}
-}
-
-void ULensSolver::PollDistortionCorrectionMapGenerationResults()
-{
-	if (!queuedDistortionCorrectionMapResults.IsValid())
-		return;
-
-	bool isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
-	while (isQueued)
-	{
-		FDistortionCorrectionMapGenerationResults distortionCorrectionMapResult;
-		if (!queuedDistortionCorrectionMapResults.IsValid())
-			return;
-
-		queuedDistortionCorrectionMapResults->Dequeue(distortionCorrectionMapResult);
-
-		UE_LOG(LogTemp, Log, TEXT("Dequeued distortion correction map result from render thread of size: (%d, %d)."), 
-			distortionCorrectionMapResult.width, 
-			distortionCorrectionMapResult.height);
-
-
-		UTexture2D* output = nullptr;
-		if (!LensSolverUtilities::CreateTexture2D((void*)distortionCorrectionMapResult.distortionCorrectionPixels.GetData(), distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true, output, PF_FloatRGBA))
-			return;
-		this->OnGeneratedDistortionMap(output);
-
-		isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
-	}
-}
-
-void ULensSolver::PollCorrectedDistortedImageResults()
-{
-	if (!queuedCorrectedDistortedImageResults.IsValid())
-		return;
-
-	bool isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
-	while (isQueued)
-	{
-		FCorrectedDistortedImageResults correctedDistortedImageResult;
-		if (!queuedCorrectedDistortedImageResults.IsValid())
-			return;
-
-		queuedCorrectedDistortedImageResults->Dequeue(correctedDistortedImageResult);
-
-		UE_LOG(LogTemp, Log, TEXT("Dequeued corrected distorted image result from render thread of size: (%d, %d)."), 
-			correctedDistortedImageResult.width, 
-			correctedDistortedImageResult.height);
-
-		UTexture2D* output = nullptr;
-		if (!LensSolverUtilities::CreateTexture2D((void*)correctedDistortedImageResult.pixels.GetData(), correctedDistortedImageResult.width, correctedDistortedImageResult.height, true, false, output))
-			return;
-		this->OnDistortedImageCorrected(output);
-
-		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
-	}
 }
 
 void ULensSolver::QueueFinishedJob(FJobInfo jobInfo)
@@ -631,6 +534,109 @@ void ULensSolver::StopBackgroundImageprocessors()
 {
 	LensSolverWorkDistributor::GetInstance().StopBackgroundWorkers();
 }
+
+/*
+#pragma optimize("", off)
+void ULensSolver::OnReceiveCalibrationResult_Implementation(FCalibrationResult calibrationResult)
+{
+	UE_LOG(LogTemp, Log, TEXT("On Received Calibration Result Implementation"));
+}
+#pragma optimize("", on)
+*/
+
+void ULensSolver::PollLogs()
+{
+	while (!logQueue.IsEmpty())
+	{
+		FString msg;
+		logQueue.Dequeue(msg);
+		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);
+	}
+}
+
+void ULensSolver::PollCalibrationResults()
+{
+	bool isQueued = LensSolverWorkDistributor::GetInstance().CalibrationResultIsQueued();
+	ULensSolver * lensSolver = this;
+	while (isQueued)
+	{
+		FCalibrationResult calibrationResult;
+		LensSolverWorkDistributor::GetInstance().DequeueCalibrationResult(calibrationResult);
+
+		UE_LOG(LogTemp, Log, TEXT("(INFO): Dequeued calibration result of id: \"%s\" for job of id: \"%s\"."), *calibrationResult.baseParameters.calibrationID, *calibrationResult.baseParameters.jobID);
+		lensSolver->OnReceiveCalibrationResult(calibrationResult);
+		isQueued = LensSolverWorkDistributor::GetInstance().CalibrationResultIsQueued();
+	}
+}
+
+void ULensSolver::PollFinishedJobs()
+{
+	bool isQueued = queuedFinishedJobs.IsEmpty() == false;
+	while (isQueued)
+	{
+		FJobInfo jobInfo;
+		DequeuedFinishedJob(jobInfo);
+		UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *jobInfo.jobID);
+		this->OnFinishedJob(jobInfo);
+		isQueued = queuedFinishedJobs.IsEmpty() == false;
+	}
+}
+
+void ULensSolver::PollDistortionCorrectionMapGenerationResults()
+{
+	if (!queuedDistortionCorrectionMapResults.IsValid())
+		return;
+
+	bool isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
+	while (isQueued)
+	{
+		FDistortionCorrectionMapGenerationResults distortionCorrectionMapResult;
+		if (!queuedDistortionCorrectionMapResults.IsValid())
+			return;
+
+		queuedDistortionCorrectionMapResults->Dequeue(distortionCorrectionMapResult);
+
+		UE_LOG(LogTemp, Log, TEXT("Dequeued distortion correction map result from render thread of size: (%d, %d)."), 
+			distortionCorrectionMapResult.width, 
+			distortionCorrectionMapResult.height);
+
+
+		UTexture2D* output = nullptr;
+		if (!LensSolverUtilities::CreateTexture2D((void*)distortionCorrectionMapResult.distortionCorrectionPixels.GetData(), distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true, output, PF_FloatRGBA))
+			return;
+		this->OnGeneratedDistortionMap(output);
+
+		isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
+	}
+}
+
+void ULensSolver::PollCorrectedDistortedImageResults()
+{
+	if (!queuedCorrectedDistortedImageResults.IsValid())
+		return;
+
+	bool isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
+	while (isQueued)
+	{
+		FCorrectedDistortedImageResults correctedDistortedImageResult;
+		if (!queuedCorrectedDistortedImageResults.IsValid())
+			return;
+
+		queuedCorrectedDistortedImageResults->Dequeue(correctedDistortedImageResult);
+
+		UE_LOG(LogTemp, Log, TEXT("Dequeued corrected distorted image result from render thread of size: (%d, %d)."), 
+			correctedDistortedImageResult.width, 
+			correctedDistortedImageResult.height);
+
+		UTexture2D* output = nullptr;
+		if (!LensSolverUtilities::CreateTexture2D((void*)correctedDistortedImageResult.pixels.GetData(), correctedDistortedImageResult.width, correctedDistortedImageResult.height, true, false, output))
+			return;
+		this->OnDistortedImageCorrected(output);
+
+		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
+	}
+}
+
 
 void ULensSolver::Poll()
 {

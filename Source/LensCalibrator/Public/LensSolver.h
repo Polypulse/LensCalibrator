@@ -41,6 +41,7 @@ class LENSCALIBRATOR_API ULensSolver : public UActorComponent
 	GENERATED_BODY()
 
 private:
+	/*
 	FTexture2DRHIRef blitRenderTexture;
 	bool blitRenderTextureAllocated;
 
@@ -49,6 +50,7 @@ private:
 
 	FTexture2DRHIRef correctDistortedTextureRenderTexture;
 	bool correctDistortedTextureRenderTextureAllocated;
+	*/
 
 	QueueLogOutputDel * queueLogOutputDel;
 	QueueFinishedJobOutputDel * queueFinishedJobOutputDel;
@@ -82,26 +84,6 @@ private:
 	bool FinishedJobIsQueued();
 	void DequeuedFinishedJob(FJobInfo& jobInfo);
 	void QueueLog(FString msg);
-
-protected:
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
-	void OnReceiveCalibrationResult (FCalibrationResult calibrationResult);
-	virtual void OnReceiveCalibrationResult_Implementation (FCalibrationResult calibrationResult) {}
-
-	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
-	void OnFinishedJob (FJobInfo jobInfo);
-	virtual void OnFinishedJob_Implementation (FJobInfo jobInfo) {}
-
-	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
-	void OnGeneratedDistortionMap (UTexture2D * generatedDistortionMap);
-	virtual void OnGeneratedDistortionMap_Implementation (UTexture2D * generatedDistortionMap) {}
-
-	UFUNCTION(BlueprintNativeEvent, Category="Lens Calibrator")
-	void OnDistortedImageCorrected (UTexture2D * correctedDistortedImage);
-	virtual void OnDistortedImageCorrected_Implementation (UTexture2D * correctedDistortedImage) {}
 
 public:
 
@@ -151,5 +133,27 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void Poll ();
+
+protected:
+
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
+	void OnReceiveCalibrationResult (FCalibrationResult calibrationResult);
+	// void OnReceiveCalibrationResult_Implementation(FCalibrationResult calibrationResult);
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
+	void OnFinishedJob (FJobInfo jobInfo);
+	// virtual void OnFinishedJob_Implementation (FJobInfo jobInfo) {}
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
+	void OnGeneratedDistortionMap (UTexture2D * generatedDistortionMap);
+	// virtual void OnGeneratedDistortionMap_Implementation (UTexture2D * generatedDistortionMap) {}
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
+	void OnDistortedImageCorrected (UTexture2D * correctedDistortedImage);
+	// virtual void OnDistortedImageCorrected_Implementation (UTexture2D * correctedDistortedImage) {}
+
 };
 
