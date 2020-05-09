@@ -253,69 +253,11 @@ void ULensSolver::PollFinishedJobs()
 	}
 }
 
-void ULensSolver::PollDistortionCorrectionMapGenerationResults()
-{
-	if (!queuedDistortionCorrectionMapResults.IsValid())
-		return;
-
-	bool isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
-	while (isQueued)
-	{
-		FDistortionCorrectionMapGenerationResults distortionCorrectionMapResult;
-		if (!queuedDistortionCorrectionMapResults.IsValid())
-			return;
-
-		queuedDistortionCorrectionMapResults->Dequeue(distortionCorrectionMapResult);
-
-		UE_LOG(LogTemp, Log, TEXT("Dequeued distortion correction map result from render thread of size: (%d, %d)."), 
-			distortionCorrectionMapResult.width, 
-			distortionCorrectionMapResult.height);
-
-
-		UTexture2D* output = nullptr;
-		if (!LensSolverUtilities::CreateTexture2D((void*)distortionCorrectionMapResult.distortionCorrectionPixels.GetData(), distortionCorrectionMapResult.width, distortionCorrectionMapResult.height, false, true, output, PF_FloatRGBA))
-			return;
-		// this->OnGeneratedDistortionMap(output);
-
-		isQueued = queuedDistortionCorrectionMapResults->IsEmpty() == false;
-	}
-}
-
-void ULensSolver::PollCorrectedDistortedImageResults()
-{
-	if (!queuedCorrectedDistortedImageResults.IsValid())
-		return;
-
-	bool isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
-	while (isQueued)
-	{
-		FCorrectedDistortedImageResults correctedDistortedImageResult;
-		if (!queuedCorrectedDistortedImageResults.IsValid())
-			return;
-
-		queuedCorrectedDistortedImageResults->Dequeue(correctedDistortedImageResult);
-
-		UE_LOG(LogTemp, Log, TEXT("Dequeued corrected distorted image result from render thread of size: (%d, %d)."), 
-			correctedDistortedImageResult.width, 
-			correctedDistortedImageResult.height);
-
-		UTexture2D* output = nullptr;
-		if (!LensSolverUtilities::CreateTexture2D((void*)correctedDistortedImageResult.pixels.GetData(), correctedDistortedImageResult.width, correctedDistortedImageResult.height, true, false, output))
-			return;
-		// this->OnDistortedImageCorrected(output);
-
-		isQueued = queuedCorrectedDistortedImageResults->IsEmpty() == false;
-	}
-}
-
-
 void ULensSolver::Poll()
 {
 	PollLogs();
 	PollCalibrationResults();
 	PollFinishedJobs();
-	PollDistortionCorrectionMapGenerationResults();
-	PollCorrectedDistortedImageResults();
 
 	LensSolverWorkDistributor::GetInstance().PollMediaTextureStreams();
 }

@@ -48,8 +48,6 @@ private:
 	void PollLogs();
 	void PollCalibrationResults ();
 	void PollFinishedJobs();
-	void PollDistortionCorrectionMapGenerationResults ();
-	void PollCorrectedDistortedImageResults ();
 
 	void QueueFinishedJob(FinishedJobQueueContainer queueContainer);
 	bool FinishedJobIsQueued();
