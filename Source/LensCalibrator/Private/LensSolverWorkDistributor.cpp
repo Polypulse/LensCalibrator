@@ -331,7 +331,10 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 		return;
 	}
 
-	CalibrationResultQueueContainer queueContainer(jobPtr->eventReceiver, calibrationResult);
+	CalibrationResultQueueContainer queueContainer;
+	queueContainer.eventReceiver = jobPtr->eventReceiver;
+	queueContainer.calibrationResult = calibrationResult;
+
 	queuedCalibrationResults.Enqueue(queueContainer);
 
 	FJobInfo jobInfo;

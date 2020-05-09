@@ -15,19 +15,8 @@
 #include "MediaAssets/Public/MediaPlayer.h"
 #include "JobInfo.h"
 #include "Job.h"
+#include "QueueContainers.h"
 #include "ILensSolverEventReceiver.h"
-
-struct CalibrationResultQueueContainer
-{
-	const TScriptInterface<ILensSolverEventReceiver> eventReceiver;
-	const FCalibrationResult calibrationResult;
-
-	CalibrationResultQueueContainer (
-	const TScriptInterface<ILensSolverEventReceiver> inputEventReceiver,
-	const FCalibrationResult inputCalibrationResult) :
-		eventReceiver(inputEventReceiver),
-		calibrationResult(inputCalibrationResult) {}
-};
 
 class LensSolverWorkDistributor
 {

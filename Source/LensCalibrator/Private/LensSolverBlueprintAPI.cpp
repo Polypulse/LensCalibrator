@@ -67,8 +67,8 @@ void ULensSolverBlueprintAPI::StartBackgroundImageProcessors(
 {
 	TSharedPtr<ULensSolver> lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->StartBackgroundImageProcessors(
-		findCornersWorkerCount, 
-		calibrateWorkerCount)
+		findCornersWorkerCount,
+		calibrateWorkerCount);
 }
 
 void ULensSolverBlueprintAPI::StopBackgroundImageprocessors()

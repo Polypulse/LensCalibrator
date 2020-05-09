@@ -31,11 +31,13 @@
 #include "TextureZoomPair.h"
 
 #include "LensSolverWorkerInterfaceContainer.h"
+#include "QueueContainers.h"
 
 #include "ILensSolverEventReceiver.h"
 
 #include "LensSolver.generated.h"
 
+UCLASS()
 class LENSCALIBRATOR_API ULensSolver : public UObject
 {
 	GENERATED_BODY()
@@ -44,7 +46,7 @@ private:
 	QueueLogOutputDel * queueLogOutputDel;
 	QueueFinishedJobOutputDel * queueFinishedJobOutputDel;
 
-	TQueue<FJobInfo> queuedFinishedJobs;
+	TQueue<FinishedJobQueueContainer> queuedFinishedJobs;
 	TSharedPtr<TQueue<FDistortionCorrectionMapGenerationResults>> queuedDistortionCorrectionMapResults;
 	TSharedPtr<TQueue<FCorrectedDistortedImageResults>> queuedCorrectedDistortedImageResults;
 
@@ -69,9 +71,9 @@ private:
 	void PollDistortionCorrectionMapGenerationResults ();
 	void PollCorrectedDistortedImageResults ();
 
-	void QueueFinishedJob(FJobInfo jobInfo);
+	void QueueFinishedJob(FinishedJobQueueContainer queueContainer);
 	bool FinishedJobIsQueued();
-	void DequeuedFinishedJob(FJobInfo& jobInfo);
+	void DequeuedFinishedJob(FinishedJobQueueContainer &queueContainer);
 	void QueueLog(FString msg);
 
 public:
