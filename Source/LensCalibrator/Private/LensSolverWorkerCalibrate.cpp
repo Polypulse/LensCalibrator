@@ -133,8 +133,8 @@ void FLensSolverWorkerCalibrate::Tick()
 		QueueLog(FString::Printf(TEXT("(INFO): Done dequeing work units, preparing calibration using %d sets of points."), corners.size()));
 
 	std::vector<cv::Mat> rvecs, tvecs;
-	cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<float>::type);
-	cv::Mat distortionCoefficients = cv::Mat::zeros(5, 1, cv::DataType<float>::type);
+	cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<double>::type);
+	cv::Mat distortionCoefficients = cv::Mat::zeros(5, 1, cv::DataType<double>::type);
 	cv::Size sourceImageSize(latchData.resizeParameters.sourceResolution.X, latchData.resizeParameters.sourceResolution.Y);
 	cv::Point2d principalPoint = cv::Point2d(0.0, 0.0);
 	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
@@ -169,8 +169,8 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	if (flags & cv::CALIB_USE_INTRINSIC_GUESS)
 	{
-		cameraMatrix.at<float>(0, 2) = latchData.calibrationParameters.initialPrincipalPointPixelPosition.X;
-		cameraMatrix.at<float>(1, 2) = latchData.calibrationParameters.initialPrincipalPointPixelPosition.Y;
+		cameraMatrix.at<double>(0, 2) = static_cast<double>(latchData.calibrationParameters.initialPrincipalPointPixelPosition.X);
+		cameraMatrix.at<double>(1, 2) = static_cast<double>(latchData.calibrationParameters.initialPrincipalPointPixelPosition.Y);
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Setting initial principal point to: (%f, %f)"), 
 				latchData.calibrationParameters.initialPrincipalPointPixelPosition.X,
@@ -179,11 +179,11 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 	{
-		cameraMatrix.at<float>(0, 0) = 1.0f / (latchData.resizeParameters.sourceResolution.X * 0.5f);
-		cameraMatrix.at<float>(1, 1) = 1.0f / (latchData.resizeParameters.sourceResolution.Y * 0.5f);
+		cameraMatrix.at<double>(0, 0) = 1.0 / (latchData.resizeParameters.sourceResolution.X * 0.5);
+		cameraMatrix.at<double>(1, 1) = 1.0 / (latchData.resizeParameters.sourceResolution.Y * 0.5);
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Keeping aspect ratio at: %f"), 
-				(latchData.resizeParameters.sourceResolution.X / (float)latchData.resizeParameters.sourceResolution.Y)));
+				(latchData.resizeParameters.sourceResolution.X / (double)latchData.resizeParameters.sourceResolution.Y)));
 	}
 
 	QueueLog("(INFO): Calibrating...");
@@ -241,7 +241,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	TArray<float> outputDistortionCoefficients;
 	outputDistortionCoefficients.SetNum(5);
 	for (int i = 0; i < distortionCoefficients.rows; i++)
-		outputDistortionCoefficients[i] = distortionCoefficients.at<float>(i, 0);
+		outputDistortionCoefficients[i] = static_cast<float>(distortionCoefficients.at<double>(i, 0));
 
 	FCalibrationResult solvedPoints;
 

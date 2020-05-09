@@ -337,7 +337,7 @@ void UDistortionProcessor::DistortTextureWithTextureFile(
 	FDistortTextureWithTextureFileParams distortionCorrectionParams)
 {
 	UTexture2D* texture = nullptr;
-	if (!LensSolverUtilities::LoadTexture(distortionCorrectionParams.absoluteFilePath, false, true, texture, EPixelFormat::PF_FloatRGBA))
+	if (!LensSolverUtilities::LoadTexture16(distortionCorrectionParams.absoluteFilePath, texture))
 		return;
 
 	FDistortTextureWithTextureParams newParams;

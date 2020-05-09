@@ -27,12 +27,14 @@ public:
 		UTexture2D *& output,
 		EPixelFormat pixelFormat = EPixelFormat::PF_B8G8R8A8);
 
-	static bool LoadTexture(
+	static bool LoadTexture16(
 		FString absoluteTexturePath, 
-		bool sRGB,
-		bool isLUT, 
-		UTexture2D*& texture,
-		EPixelFormat pixelFormat = EPixelFormat::PF_B8G8R8A8);
+		UTexture2D*& texture
+	);
+
+	static bool LoadTexture(
+		FString absoluteTexturePath,
+		UTexture2D*& texture);
 
 	static bool WriteTexture16(
 		FString absoluteTexturePath,
