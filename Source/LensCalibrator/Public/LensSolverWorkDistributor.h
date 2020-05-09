@@ -15,6 +15,19 @@
 #include "MediaAssets/Public/MediaPlayer.h"
 #include "JobInfo.h"
 #include "Job.h"
+#include "ILensSolverEventReceiver.h"
+
+struct CalibrationResultQueueContainer
+{
+	const TScriptInterface<ILensSolverEventReceiver> eventReceiver;
+	const FCalibrationResult calibrationResult;
+
+	CalibrationResultQueueContainer (
+	const TScriptInterface<ILensSolverEventReceiver> inputEventReceiver,
+	const FCalibrationResult inputCalibrationResult) :
+		eventReceiver(inputEventReceiver),
+		calibrationResult(inputCalibrationResult) {}
+};
 
 class LensSolverWorkDistributor
 {
@@ -47,7 +60,7 @@ private:
 	TMap<FString, const FString> workerCalibrationIDLUT;
 	TMap<FString, FMediaStreamWorkUnit> mediaTextureJobLUT;
 
-	TQueue<FCalibrationResult> queuedCalibrationResults;
+	TQueue<CalibrationResultQueueContainer> queuedCalibrationResults;
 
 	// FTexture2DRHIRef blitRenderTexture;
 	// bool blitRenderTextureAllocated;
@@ -122,6 +135,7 @@ public:
 	int GetCalibrateCount();
 
 	FJobInfo RegisterJob (
+		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		const TArray<int> & expectedImageCounts,
 		const int expectedResultCount,
 		const UJobType jobType);
@@ -132,7 +146,7 @@ public:
 	void QueueMediaStreamWorkUnit(const FMediaStreamWorkUnit mediaStreamWorkUnit);
 
 	bool CalibrationResultIsQueued();
-	void DequeueCalibrationResult(FCalibrationResult & calibrationResult);
+	void DequeueCalibrationResult(CalibrationResultQueueContainer & queueContainer);
 	void PollMediaTextureStreams();
 
 	// void SetFenceDown();

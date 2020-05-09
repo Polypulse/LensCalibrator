@@ -114,6 +114,7 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 }
 
 FJobInfo LensSolverWorkDistributor::RegisterJob(
+	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	const TArray<int> & expectedImageCounts,
 	const int expectedResultCount,
 	const UJobType jobType)
@@ -137,6 +138,7 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 
 	FJob job;
 	{
+		job.eventReceiver = eventReceiver;
 		job.jobInfo = jobInfo;
 		job.expectedAndCurrentImageCounts = mapOfExpectedAndCurrentImageCounts;
 		job.expectedResultCount = expectedResultCount;
@@ -319,7 +321,6 @@ void LensSolverWorkDistributor::LatchCalibrateWorker(const FCalibrateLatch& latc
 
 void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult calibrationResult)
 {
-	queuedCalibrationResults.Enqueue(calibrationResult);
 	Lock();
 
 	FJob* jobPtr = jobs.Find(calibrationResult.baseParameters.jobID);
@@ -330,6 +331,9 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 		return;
 	}
 
+	CalibrationResultQueueContainer queueContainer(jobPtr->eventReceiver, calibrationResult);
+	queuedCalibrationResults.Enqueue(queueContainer);
+
 	FJobInfo jobInfo;
 	bool done = false;
 
@@ -338,16 +342,22 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 	if (jobPtr->currentResultCount >= jobPtr->expectedResultCount)
 	{
 		jobInfo = jobPtr->jobInfo;
+
 		float duration = (GetTickNow() - jobPtr->startTime) / 1000.0f;
 		QueueLogAsync(FString::Printf(TEXT("Job: \"%s\" took %f seconds."), *jobInfo.jobID, duration));
+
+		jobPtr->eventReceiver->OnFinishedJob(jobInfo);
+
 		jobs.Remove(calibrationResult.baseParameters.jobID);
 		done = true;
 	}
 
 	Unlock();
 
+	/*
 	if (done && queueFinishedJobOutputDel.IsBound())
 		queueFinishedJobOutputDel.Execute(jobInfo);
+	*/
 }
 
 bool LensSolverWorkDistributor::CalibrationResultIsQueued()
@@ -355,9 +365,9 @@ bool LensSolverWorkDistributor::CalibrationResultIsQueued()
 	return queuedCalibrationResults.IsEmpty() == false;
 }
 
-void LensSolverWorkDistributor::DequeueCalibrationResult(FCalibrationResult & calibrationResult)
+void LensSolverWorkDistributor::DequeueCalibrationResult(CalibrationResultQueueContainer & queueContainer)
 {
-	queuedCalibrationResults.Dequeue(calibrationResult);
+	queuedCalibrationResults.Dequeue(queueContainer);
 }
 
 void LensSolverWorkDistributor::PollMediaTextureStreams()

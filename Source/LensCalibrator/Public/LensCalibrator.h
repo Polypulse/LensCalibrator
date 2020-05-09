@@ -3,11 +3,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CoreTypes.h"
 #include "Modules/ModuleManager.h"
+
+#include "LensSolver.h"
 
 class FLensCalibratorModule : public IModuleInterface
 {
+	static constexpr auto ModuleName = TEXT("LensCalibrator");
+
+private:
+
+	UPROPERTY(Category = "APTK")
+	TSharedPtr<ULensSolver> lensSolver;
+
+	FTickerDelegate TickDelegate;
+	FDelegateHandle TickDelegateHandle;
+
+	bool Tick(float deltatime);
 public:
+	static FLensCalibratorModule& Get() { return FModuleManager::GetModuleChecked<FLensCalibratorModule>(FLensCalibratorModule::ModuleName); };
+	TSharedPtr<ULensSolver> GetLensSolver();
 
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;

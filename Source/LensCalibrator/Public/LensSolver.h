@@ -20,7 +20,6 @@
 
 #include "DistortionCorrectionMapGenerationParameters.h"
 #include "DistortionCorrectionMapGenerationResults.h"
-
 #include "DistortTextureWithCoefficientsParams.h"
 #include "DistortTextureWithTextureFileParams.h"
 #include "DistortTextureWithTextureParams.h"
@@ -33,25 +32,15 @@
 
 #include "LensSolverWorkerInterfaceContainer.h"
 
+#include "ILensSolverEventReceiver.h"
+
 #include "LensSolver.generated.h"
 
-UCLASS( Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class LENSCALIBRATOR_API ULensSolver : public UActorComponent
+class LENSCALIBRATOR_API ULensSolver : public UObject
 {
 	GENERATED_BODY()
 
 private:
-	/*
-	FTexture2DRHIRef blitRenderTexture;
-	bool blitRenderTextureAllocated;
-
-	FTexture2DRHIRef distortionCorrectionRenderTexture;
-	bool distortionCorrectionRenderTextureAllocated;
-
-	FTexture2DRHIRef correctDistortedTextureRenderTexture;
-	bool correctDistortedTextureRenderTextureAllocated;
-	*/
-
 	QueueLogOutputDel * queueLogOutputDel;
 	QueueFinishedJobOutputDel * queueFinishedJobOutputDel;
 
@@ -87,6 +76,7 @@ private:
 
 public:
 
+	ULensSolver() {}
 	~ULensSolver() 
 	{
 		if (queueLogOutputDel != nullptr)
@@ -95,47 +85,39 @@ public:
 			queueFinishedJobOutputDel->Unbind();
 	}
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool debug;
 
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void OneTimeProcessArrayOfTextureFolderZoomPairs(
+		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		TArray<FTextureFolderZoomPair> inputTextures, 
 		FOneTimeProcessParameters oneTimeProcessParameters,
 		FJobInfo & ouptutJobInfo);
 
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StartMediaStreamCalibration(
+		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		FStartMediaStreamParameters mediaStreamParameters,
 		FJobInfo& ouptutJobInfo);
 
-	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void GenerateDistortionCorrectionMap(
 		FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams);
 
-	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void DistortTextureWithTexture(
 		FDistortTextureWithTextureParams distortionCorrectionParams);
 
-	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void DistortTextureWithTextureFile(
 		FDistortTextureWithTextureFileParams distortionCorrectionParams);
 
-	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	void DistortTextureWithCoefficients(
 		FDistortTextureWithCoefficientsParams distortionCorrectionParams);
 
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount);
-
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void StopBackgroundImageprocessors();
 
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	void Poll ();
 
 protected:
 
+	/*
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -154,6 +136,7 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
 	void OnDistortedImageCorrected (UTexture2D * correctedDistortedImage);
 	// virtual void OnDistortedImageCorrected_Implementation (UTexture2D * correctedDistortedImage) {}
+	*/
 
 };
 

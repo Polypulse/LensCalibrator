@@ -6,7 +6,33 @@
 #include "CoreTypes.h"
 #include "Engine.h"
 
+#include "LensSolver.h"
+
 #define LOCTEXT_NAMESPACE "FLensCalibratorModule"
+
+bool FLensCalibratorModule::Tick(float deltatime)
+{
+	if (GetLensSolver() == nullptr)
+		return true;
+	GetLensSolver()->Poll();
+	return true;
+}
+
+TSharedPtr<ULensSolver> FLensCalibratorModule::GetLensSolver()
+{ 
+	if (lensSolver == nullptr)
+	{
+		static ULensSolver* staticLensSolver = NewObject<ULensSolver>(GetTransientPackage(), NAME_None, RF_MarkAsRootSet);
+		lensSolver = TSharedPtr<ULensSolver>(staticLensSolver);
+		lensSolver->AddToRoot(); // Prevent lens solver from being garbage collected.
+
+		// Create tick delegate to redirect module tick into lens solver.
+		TickDelegate = FTickerDelegate::CreateRaw(this, &FLensCalibratorModule::Tick);
+		TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(TickDelegate);
+	}
+
+	return lensSolver; 
+}
 
 void FLensCalibratorModule::StartupModule()
 {

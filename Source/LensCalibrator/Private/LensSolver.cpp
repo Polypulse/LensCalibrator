@@ -271,6 +271,7 @@ void ULensSolver::QueueLog(FString msg)
 }
 
 void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
+	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	TArray<FTextureFolderZoomPair> inputTextures, 
 	FOneTimeProcessParameters oneTimeProcessParameters, 
 	FJobInfo& ouptutJobInfo)
@@ -344,6 +345,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 }
 
 void ULensSolver::StartMediaStreamCalibration(
+	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	FStartMediaStreamParameters mediaStreamParameters,
 	FJobInfo& ouptutJobInfo)
 {
@@ -560,11 +562,11 @@ void ULensSolver::PollCalibrationResults()
 	ULensSolver * lensSolver = this;
 	while (isQueued)
 	{
-		FCalibrationResult calibrationResult;
-		LensSolverWorkDistributor::GetInstance().DequeueCalibrationResult(calibrationResult);
+		CalibrationResultQueueContainer queueContainer;
+		LensSolverWorkDistributor::GetInstance().DequeueCalibrationResult(queueContainer);
 
 		UE_LOG(LogTemp, Log, TEXT("(INFO): Dequeued calibration result of id: \"%s\" for job of id: \"%s\"."), *calibrationResult.baseParameters.calibrationID, *calibrationResult.baseParameters.jobID);
-		lensSolver->OnReceiveCalibrationResult(calibrationResult);
+		queueContainer.eventReceiver->OnReceiveCalibrationResult(queueContainer.calibrationResult);
 		isQueued = LensSolverWorkDistributor::GetInstance().CalibrationResultIsQueued();
 	}
 }

@@ -6,7 +6,9 @@
 #include "CoreTypes.h"
 #include "Engine.h"
 
+#include "ILensSolverEventReceiver.h"
 #include "JobInfo.h"
+
 #include "Job.generated.h"
 
 USTRUCT(BlueprintType)
@@ -32,6 +34,8 @@ USTRUCT(BlueprintType)
 struct FJob
 {
 	GENERATED_BODY()
+
+	TScriptInterface<ILensSolverEventReceiver> eventReceiver;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FJobInfo jobInfo;
