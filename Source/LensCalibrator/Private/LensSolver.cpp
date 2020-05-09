@@ -59,6 +59,14 @@ void ULensSolver::QueueLog(FString msg)
 	logQueue.Enqueue(msg);
 }
 
+bool ULensSolver::Debug()
+{
+	static IConsoleVariable* variable = IConsoleManager::Get().FindConsoleVariable(TEXT("LensCalibrator.Debug"));
+	if (variable != nullptr && variable->GetInt() == 0)
+		return false;
+	return true;
+}
+
 void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	TArray<FTextureFolderZoomPair> inputTextures, 
@@ -181,7 +189,7 @@ void ULensSolver::StartMediaStreamCalibration(
 
 void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
 {
-	LensSolverWorkDistributor::GetInstance().Configure(queueLogOutputDel, queueFinishedJobOutputDel, debug);
+	LensSolverWorkDistributor::GetInstance().Configure(queueLogOutputDel, queueFinishedJobOutputDel);
 
 	if (queueLogOutputDel->IsBound())
 		queueLogOutputDel->Unbind();
@@ -235,7 +243,10 @@ void ULensSolver::PollCalibrationResults()
 		UE_LOG(LogTemp, Log, TEXT("(INFO): Dequeued calibration result of id: \"%s\" for job of id: \"%s\"."), 
 			*queueContainer.calibrationResult.baseParameters.calibrationID, 
 			*queueContainer.calibrationResult.baseParameters.jobID);
-		queueContainer.eventReceiver->Execute_OnReceiveCalibrationResult(queueContainer.eventReceiver.GetObject(), queueContainer.calibrationResult);
+
+		if (queueContainer.eventReceiver.GetObject()->IsValidLowLevel())
+			ILensSolverEventReceiver::Execute_OnReceiveCalibrationResult(queueContainer.eventReceiver.GetObject(), queueContainer.calibrationResult);
+
 		isQueued = LensSolverWorkDistributor::GetInstance().CalibrationResultIsQueued();
 	}
 }
@@ -248,7 +259,10 @@ void ULensSolver::PollFinishedJobs()
 		FinishedJobQueueContainer queueContainer;
 		DequeuedFinishedJob(queueContainer);
 		UE_LOG(LogTemp, Log, TEXT("Completed job: \"%s\", job will be unregistered."), *queueContainer.jobInfo.jobID);
-		queueContainer.eventReceiver->Execute_OnFinishedJob(queueContainer.eventReceiver.GetObject(), queueContainer.jobInfo);
+
+		if (queueContainer.eventReceiver.GetObject()->IsValidLowLevel())
+			ILensSolverEventReceiver::Execute_OnFinishedJob(queueContainer.eventReceiver.GetObject(), queueContainer.jobInfo);
+
 		isQueued = queuedFinishedJobs.IsEmpty() == false;
 	}
 }

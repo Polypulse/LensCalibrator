@@ -45,13 +45,12 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 			// &isFenceDownDel,
 			// &lockDel,
 			// &unlockDel,
-			guid,
-			debug
+			guid
 		);
 
 		interfaceContainer.baseContainer.workerID = guid;
 
-		if (debug)
+		if (Debug())
 			QueueLogAsync(FString::Printf(TEXT("(INFO): Starting FindCorner worker: %d"), i));
 
 		interfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners>(
@@ -59,11 +58,15 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 			&interfaceContainer.queueTextureFileWorkUnitInputDel,
 			&interfaceContainer.queuePixelArrayWorkUnitInputDel,
 			&queueCalibrateWorkUnitInputDel);
-
-		interfaceContainer.worker->StartBackgroundTask();
 	}
 
+	TArray<FWorkerFindCornersInterfaceContainer> interfaces;
+	findCornersWorkers.GenerateValueArray(interfaces);
 	Unlock();
+
+	for (int i = 0; i < interfaces.Num(); i++)
+		interfaces[i].worker->StartBackgroundTask();
+
 	QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d FindCorner workers"), findCornerWorkerCount));
 }
 
@@ -92,12 +95,11 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 			// &isFenceDownDel,
 			// &lockDel,
 			// &unlockDel,
-			guid,
-			debug
+			guid
 		);
 
 		interfaceContainer.baseContainer.workerID = guid;
-		if (debug)
+		if (Debug())
 			QueueLogAsync(FString::Printf(TEXT("(INFO): Starting Calibrate worker: %d"), i));
 
 		interfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorkerCalibrate>(
@@ -105,11 +107,15 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 			&interfaceContainer.queueCalibrateWorkUnitDel,
 			&interfaceContainer.signalLatch,
 			&queueCalibrationResultOutputDel);
-
-		interfaceContainer.worker->StartBackgroundTask();
 	}
 
+	TArray<FWorkerCalibrateInterfaceContainer> interfaces;
+	calibrateWorkers.GenerateValueArray(interfaces);
 	Unlock();
+
+	for (int i = 0; i < interfaces.Num(); i++)
+		interfaces[i].worker->StartBackgroundTask();
+
 	QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d Calibrate workers"), calibrateWorkerCount));
 }
 
@@ -240,7 +246,7 @@ void LensSolverWorkDistributor::QueueMediaStreamWorkUnit(const FMediaStreamWorkU
 		return;
 	}
 
-	if (debug)
+	if (Debug())
 		QueueLogAsync(FString::Printf(TEXT("Queued MediaStreamWorkUnit for calibration"), *mediaStreamWorkUnit.baseParameters.calibrationID));
 
 	mediaTextureJobLUT.Add(mediaStreamWorkUnit.baseParameters.jobID, mediaStreamWorkUnit);
@@ -438,6 +444,14 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 	}
 
 	Unlock();
+}
+
+bool LensSolverWorkDistributor::Debug()
+{
+	static IConsoleVariable * variable = IConsoleManager::Get().FindConsoleVariable(TEXT("APTK.EnableBlending"));
+	if (variable != nullptr && variable->GetInt() == 0)
+		return false;
+	return true;
 }
 
 void LensSolverWorkDistributor::QueueLogAsync(FString msg)

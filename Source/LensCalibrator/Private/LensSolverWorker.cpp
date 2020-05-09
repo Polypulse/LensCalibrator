@@ -13,8 +13,7 @@ FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters& inputPar
 	workerID(inputParameters.inputWorkerID),
 	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%s/"), *workerID))),
 	queueLogOutputDel(inputParameters.inputQueueLogOutputDel),
-	workerMessage(FString::Printf(TEXT("Worker (%s): "), *inputParameters.inputWorkerID)),
-	debug(inputParameters.debug)
+	workerMessage(FString::Printf(TEXT("Worker (%s): "), *inputParameters.inputWorkerID))
 {
 	inputParameters.inputGetWorkOutputLoadDel->BindRaw(this, &FLensSolverWorker::GetWorkLoad);
 	inputParameters.inputIsClosingOutputDel->BindRaw(this, &FLensSolverWorker::Exit);
@@ -67,7 +66,7 @@ void FLensSolverWorker::DoWork()
 	{
 		if (ShouldExit())
 		{
-			if (debug)
+			if (Debug())
 				QueueLog("Exiting DoWork loop.");
 			break;
 		}
@@ -94,7 +93,7 @@ bool FLensSolverWorker::Exit()
 	Lock();
 	flagToExit = true;
 	Unlock();
-	if (debug)
+	if (Debug())
 		QueueLog("Exiting worker.");
 	return true;
 }
@@ -106,6 +105,14 @@ bool FLensSolverWorker::ShouldExit()
 	shouldExit = flagToExit;
 	Unlock();
 	return shouldExit;
+}
+
+bool FLensSolverWorker::Debug()
+{
+	static IConsoleVariable * variable = IConsoleManager::Get().FindConsoleVariable(TEXT("APTK.EnableBlending"));
+	if (variable != nullptr && variable->GetInt() == 0)
+		return true;
+	return false;
 }
 
 void FLensSolverWorker::Lock()

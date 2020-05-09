@@ -28,7 +28,7 @@ int FLensSolverWorkerFindCorners::GetWorkLoad()
 	Unlock();
 
 	/*
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): Retrieving FindCorners worker work load: %d"), count));
 	*/
 
@@ -48,7 +48,7 @@ void FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit(FLensSolverTextureFi
 	workUnitCount++;
 	Unlock();
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued TextureFileWorkUnit with path: \"%s\", total currently queued: %d."), *JobDataToString(workUnit.baseParameters), *workUnit.textureFileParameters.absoluteFilePath, workUnitCount));
 }
 
@@ -59,7 +59,7 @@ void FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit(FLensSolverPixelArray
 	workUnitCount++;
 	Unlock();
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued PixelArrayWorkUnit of resolution: (%d, %d), total currently queued: %d."), *JobDataToString(workUnit.baseParameters), workUnit.resizeParameters.sourceResolution.X, workUnit.resizeParameters.sourceResolution.Y, workUnitCount));
 }
 
@@ -70,7 +70,7 @@ void FLensSolverWorkerFindCorners::DequeueTextureFileWorkUnit(FLensSolverTexture
 	workUnitCount--;
 	Unlock();
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Dequeued TextureFileWorkUnit with path: \"%s\"."), *JobDataToString(workUnit.baseParameters), *workUnit.textureFileParameters.absoluteFilePath));
 }
 
@@ -81,7 +81,7 @@ void FLensSolverWorkerFindCorners::DequeuePixelArrayWorkUnit(FLensSolverPixelArr
 	workUnitCount--;
 	Unlock();
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Dequeued PixelArrayWorkUnit of resolution: (%d, %d)."), *JobDataToString(workUnit.baseParameters), workUnit.resizeParameters.sourceResolution.X, workUnit.resizeParameters.sourceResolution.Y));
 }
 
@@ -124,7 +124,7 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	else return;
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Preparing search for calibration pattern using source image of size: (%d, %d)."), 
 			*JobDataToString(baseParameters), 
 			resizeParameters.sourceResolution.X,
@@ -152,7 +152,7 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	if (resize && resizePercentage != 1.0f)
 	{
-		if (debug)
+		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): %s: Resizing image from: (%d, %d) to: (%d, %d)."),
 				*JobDataToString(baseParameters),
 				resizeParameters.sourceResolution.X,
@@ -196,7 +196,7 @@ void FLensSolverWorkerFindCorners::Tick()
 	if (textureSearchParameters.exhaustiveSearch)
 		findFlags |= cv::CALIB_CB_EXHAUSTIVE;
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Beginning calibration pattern detection for image: \"%s\"."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
 	patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
 
@@ -207,7 +207,7 @@ void FLensSolverWorkerFindCorners::Tick()
 		return;
 	}
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Found calibration pattern in image: \"%s\"."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
 
 	cv::TermCriteria cornerSubPixCriteria(
@@ -251,7 +251,7 @@ bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFile
 
 	if (image.data == NULL)
 	{
-		if (debug)
+		if (Debug())
 			QueueLog(FString::Printf(TEXT("(ERROR) Unable texture from path: \"%s\""), *absoluteFilePath));
 		return false;
 	}
@@ -259,14 +259,14 @@ bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFile
 	cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
 	sourceResolution = FIntPoint(image.cols, image.rows);
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): Loaded texture from path: \"%s\" at resolution: (%d, %d)."), *absoluteFilePath, sourceResolution.X, sourceResolution.Y));
 	return true;
 }
 
 bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixels, const FIntPoint resolution, cv::Mat& image)
 {
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): Copying pixel data of pixel count: %d to image of size: (%d, %d)."), pixels.Num(), resolution.X, resolution.Y));
 
 	image = cv::Mat(resolution.Y, resolution.X, cv::DataType<uint8>::type);
@@ -275,7 +275,7 @@ bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixe
 	for (int pi = 0; pi < pixelCount; pi++)
 		image.at<uint8>(pi / resolution.X, pi % resolution.X) = pixels[pi].R;
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): Done copying pixel data."), pixels.Num(), resolution.X, resolution.Y));
 
 	return true;
@@ -290,11 +290,11 @@ void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString folder,
 	
 	if (!cv::imwrite(TCHAR_TO_UTF8(*outputPath), image))
 	{
-		QueueLog(FString::Printf(TEXT("(INFO): Unable to write debug texture result to path: \"%s\", check your permissions."), *outputPath));
+		QueueLog(FString::Printf(TEXT("(INFO): Unable to write Debug() texture result to path: \"%s\", check your permissions."), *outputPath));
 		return;
 	}
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): Debug texture written to file at path: \"%s\"."), *outputPath));
 }
 
@@ -302,7 +302,7 @@ void FLensSolverWorkerFindCorners::QueueCalibrationPointsWorkUnit(const FLensSol
 {
 	if (!queueFindCornerResultOutputDel->IsBound())
 		return;
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Queuing calibration points work unit."), *JobDataToString(calibrationPointsWorkUnit.baseParameters)));
 	queueFindCornerResultOutputDel->Execute(calibrationPointsWorkUnit);
 }
@@ -312,7 +312,7 @@ void FLensSolverWorkerFindCorners::QueueEmptyCalibrationPointsWorkUnit(const FBa
 	if (!queueFindCornerResultOutputDel->IsBound())
 		return;
 
-	if (debug)
+	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Queuing EMPTY calibration points work unit."), *JobDataToString(baseParameters)));
 
 	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;

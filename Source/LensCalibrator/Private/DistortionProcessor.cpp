@@ -224,7 +224,10 @@ void UDistortionProcessor::PollDistortionCorrectionMapGenerationResults()
 		{
 			UTexture2D* map = nullptr;
 			if (LensSolverUtilities::CreateTexture2D(result.distortionCorrectionPixels.GetData(), result.width, result.height, false, true, map, EPixelFormat::PF_FloatRGBA))
-				job->eventReceiver->Execute_OnGeneratedDistortionMap(job->eventReceiver.GetObject(), map);
+			{
+				if (job->eventReceiver.GetObject()->IsValidLowLevel())
+					job->eventReceiver->Execute_OnGeneratedDistortionMap(job->eventReceiver.GetObject(), map);
+			}
 
 			else
 				UE_LOG(LogTemp, Error, TEXT("Unable to create texture for distortion correction map."));
@@ -255,7 +258,10 @@ void UDistortionProcessor::PollCorrectedDistortedImageResults()
 		{
 			UTexture2D* map = nullptr;
 			if (LensSolverUtilities::CreateTexture2D(result.pixels.GetData(), result.width, result.height, true, false, map))
-				job->eventReceiver->Execute_OnDistortedImageCorrected(job->eventReceiver.GetObject(), map);
+			{
+				if (job->eventReceiver.GetObject()->IsValidLowLevel())
+					job->eventReceiver->Execute_OnDistortedImageCorrected(job->eventReceiver.GetObject(), map);
+			}
 
 			else
 				UE_LOG(LogTemp, Error, TEXT("Unable to create texture for corrected distorted image."));
@@ -272,7 +278,7 @@ void UDistortionProcessor::PollCorrectedDistortedImageResults()
 
 void UDistortionProcessor::DistortTextureWithTexture(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
-	const FDistortTextureWithTextureParams distortionCorrectionParams)
+	FDistortTextureWithTextureParams distortionCorrectionParams)
 {
 	if (distortionCorrectionParams.distortedTexture == nullptr || distortionCorrectionParams.distortionCorrectionTexture == nullptr)
 	{
@@ -297,6 +303,15 @@ void UDistortionProcessor::DistortTextureWithTexture(
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, unable to create folder path: \"%s\"."), *targetOutputPath);
 		return;
 	}
+
+	FString guid = FGuid::NewGuid().ToString();
+
+	DistortionJob job;
+	job.eventReceiver = eventReceiver;
+	job.id = guid;
+
+	distortionCorrectionParams.id = guid;
+	cachedEvents.Add(guid, job);
 
 	UDistortionProcessor * distortionProcessor = this;
 	const FDistortTextureWithTextureParams tempDistortionCorrectionParams = distortionCorrectionParams;
@@ -349,7 +364,7 @@ void UDistortionProcessor::Poll()
 
 void UDistortionProcessor::GenerateDistortionCorrectionMap(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
-	const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams)
+	FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams)
 {
 	if (distortionCorrectionMapGenerationParams.distortionCoefficients.Num() != 5)
 	{
@@ -377,6 +392,15 @@ void UDistortionProcessor::GenerateDistortionCorrectionMap(
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate inverse distortion correction map, unable to create folder path: \"%s\"."), *inverseCorrectionOutputPath);
 		return;
 	}
+
+	FString guid = FGuid::NewGuid().ToString();
+
+	DistortionJob job;
+	job.eventReceiver = eventReceiver;
+	job.id = guid;
+
+	cachedEvents.Add(guid, job);
+	distortionCorrectionMapGenerationParams.id = guid;
 
 	UDistortionProcessor * distortionProcessor = this;
 	const FDistortionCorrectionMapGenerationParameters temp = distortionCorrectionMapGenerationParams;

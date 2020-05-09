@@ -34,7 +34,7 @@ private:
 
 	QueueFinishedJobOutputDel queueFinishedJobOutputDel;
 	QueueLogOutputDel queueLogOutputDel;
-	bool debug;
+	bool Debug();
 
 	// FThreadSafeBool fenceUp;
 
@@ -103,12 +103,10 @@ public:
 	*/
 
 	void Configure(QueueLogOutputDel*& inputQueueLogOutputDel,
-		QueueFinishedJobOutputDel*& inputQueueFinishedJobOutputDel,
-		bool debugEnabled = false)
+		QueueFinishedJobOutputDel*& inputQueueFinishedJobOutputDel)
 	{
-		inputQueueFinishedJobOutputDel = &queueFinishedJobOutputDel ;
-		inputQueueLogOutputDel = &queueLogOutputDel ;
-		debug = debugEnabled;
+		inputQueueFinishedJobOutputDel = &queueFinishedJobOutputDel;
+		inputQueueLogOutputDel = &queueLogOutputDel;
 	}
 
 	void PrepareFindCornerWorkers(

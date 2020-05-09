@@ -26,8 +26,6 @@ class LENSCALIBRATOR_API ULensSolverBlueprintAPI : public UObject
 private:
 protected:
 public:
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	bool debug;
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	static void OneTimeProcessArrayOfTextureFolderZoomPairs(

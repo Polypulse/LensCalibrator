@@ -17,6 +17,7 @@ class LENSCALIBRATOR_API ILensSolverEventReceiver
 {
 	GENERATED_BODY()
 public:
+
 	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
 	void OnReceiveCalibrationResult (FCalibrationResult calibrationResult);
 

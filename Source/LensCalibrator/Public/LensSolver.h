@@ -35,8 +35,6 @@ class LENSCALIBRATOR_API ULensSolver : public UObject
 	GENERATED_BODY()
 
 private:
-	ULensSolver() {}
-
 	QueueLogOutputDel * queueLogOutputDel;
 	QueueFinishedJobOutputDel * queueFinishedJobOutputDel;
 
@@ -53,18 +51,12 @@ private:
 	bool FinishedJobIsQueued();
 	void DequeuedFinishedJob(FinishedJobQueueContainer &queueContainer);
 	void QueueLog(FString msg);
+	bool Debug();
 
 public:
 
-	~ULensSolver() 
-	{
-		if (queueLogOutputDel != nullptr)
-			queueLogOutputDel->Unbind();
-		if (queueFinishedJobOutputDel != nullptr)
-			queueFinishedJobOutputDel->Unbind();
-	}
-
-	bool debug;
+	ULensSolver()  {}
+	~ULensSolver() {}
 
 	void OneTimeProcessArrayOfTextureFolderZoomPairs(
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,

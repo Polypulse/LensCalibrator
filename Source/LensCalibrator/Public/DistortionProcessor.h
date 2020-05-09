@@ -26,19 +26,22 @@ private:
 
 	void GenerateDistortionCorrectionMapRenderThread(
 		FRHICommandListImmediate& RHICmdList,
-		const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
+		FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
 		const FString correctionFilePath,
 		const FString inverseCorrectionFilePath);
 
 	void UndistortImageRenderThread(
 		FRHICommandListImmediate& RHICmdList,
-		const FDistortTextureWithTextureParams distortionCorrectionParams,
+		FDistortTextureWithTextureParams distortionCorrectionParams,
 		const FString generatedOutputPath);
 
 	void PollDistortionCorrectionMapGenerationResults();
 	void PollCorrectedDistortedImageResults();
 
 public:
+
+	UDistortionProcessor() {}
+	~UDistortionProcessor() {}
 
 	void GenerateDistortionCorrectionMap(
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,

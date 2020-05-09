@@ -11,7 +11,7 @@ public class LensCalibrator : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		bool isDebug = Target.Configuration == UnrealTargetConfiguration.Debug;
-		Console.WriteLine(isDebug ? "Compiling debug build." : "Compiling release build.");
+		Console.WriteLine(isDebug ? "Compiling Debug() build." : "Compiling release build.");
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
