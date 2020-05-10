@@ -222,15 +222,17 @@ void UDistortionProcessor::PollDistortionCorrectionMapGenerationResults()
 		DistortionJob* job = cachedEvents.Find(result.id);
 		if (job != nullptr)
 		{
-			UTexture2D* map = nullptr;
-			if (LensSolverUtilities::CreateTexture2D(result.distortionCorrectionPixels.GetData(), result.width, result.height, false, true, map, EPixelFormat::PF_FloatRGBA))
+			UTexture2D* correctionMap = nullptr;
+			UTexture2D* unCorrectionMap = nullptr;
+			if (LensSolverUtilities::CreateTexture2D(result.distortionCorrectionPixels.GetData(), result.width, result.height, false, true, correctionMap, EPixelFormat::PF_FloatRGBA) &&
+				LensSolverUtilities::CreateTexture2D(result.inverseDistortionCorrectionPixels.GetData(), result.width, result.height, false, true, unCorrectionMap, EPixelFormat::PF_FloatRGBA))
 			{
 				if (job->eventReceiver.GetObject()->IsValidLowLevel())
-					job->eventReceiver->Execute_OnGeneratedDistortionMap(job->eventReceiver.GetObject(), map);
+					ILensSolverEventReceiver::Execute_OnGeneratedDistortionMaps(job->eventReceiver.GetObject(), correctionMap, unCorrectionMap);
 			}
 
 			else
-				UE_LOG(LogTemp, Error, TEXT("Unable to create texture for distortion correction map."));
+				UE_LOG(LogTemp, Error, TEXT("Unable to create textures for distortion correction maps."));
 		}
 
 		else
@@ -260,7 +262,7 @@ void UDistortionProcessor::PollCorrectedDistortedImageResults()
 			if (LensSolverUtilities::CreateTexture2D(result.pixels.GetData(), result.width, result.height, true, false, map))
 			{
 				if (job->eventReceiver.GetObject()->IsValidLowLevel())
-					job->eventReceiver->Execute_OnDistortedImageCorrected(job->eventReceiver.GetObject(), map);
+					ILensSolverEventReceiver::Execute_OnDistortedImageCorrected(job->eventReceiver.GetObject(), map);
 			}
 
 			else
