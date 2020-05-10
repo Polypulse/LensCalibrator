@@ -69,6 +69,44 @@ void ULensSolverBlueprintAPI::DistortTextureWithCoefficients(
 		distortionCorrectionParams);
 }
 
+bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTexture(
+		TArray<UTexture2D*> distortionCorrectionMaps,
+		UVolumeTexture * volumeTexture)
+{
+	int width = distortionCorrectionMaps[0]->GetSizeX();
+	int height = distortionCorrectionMaps[0]->GetSizeY();
+
+	TArray<FFloat16Color*> dataArray;
+	dataArray.SetNum(distortionCorrectionMaps.Num());
+	for (int i = 0; i < distortionCorrectionMaps.Num(); i++)
+		dataArray[i] = static_cast<FFloat16Color*>(distortionCorrectionMaps[0]->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_ONLY));
+
+	bool success = volumeTexture->UpdateSourceFromFunction([width, height, dataArray](int ix, int iy, int iz, void* value)
+	{
+		FFloat16* const voxel = static_cast<FFloat16*>(value);
+		const FFloat16Color * data = dataArray[iz];
+
+		voxel[0] = data[iy * width + ix].R;
+		voxel[1] = data[iy * width + ix].G;
+		voxel[2] = FFloat16(0.0f);
+		voxel[3] = FFloat16(0.0f);
+
+	}, width, height, distortionCorrectionMaps.Num(), TSF_RGBA16F);
+
+	for (int i = 0; i < distortionCorrectionMaps.Num(); i++)
+		distortionCorrectionMaps[i]->PlatformData->Mips[0].BulkData.Unlock();
+
+	if (!success)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Unable to update VolumeTexture source."));
+		return false;
+	}
+
+	volumeTexture->MarkPackageDirty();
+
+	return true;
+}
+
 void ULensSolverBlueprintAPI::StartBackgroundImageProcessors(
 	int findCornersWorkerCount,
 	int calibrateWorkerCount)

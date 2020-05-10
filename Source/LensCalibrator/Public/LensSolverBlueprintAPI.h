@@ -5,6 +5,8 @@
 #include "UObject/UObjectGlobals.h"
 #include "UObject/ScriptInterface.h"
 
+#include "Engine/VolumeTexture.h"
+
 #include "DistortionCorrectionMapGenerationParameters.h"
 #include "DistortTextureWithCoefficientsParams.h"
 #include "DistortTextureWithTextureFileParams.h"
@@ -59,6 +61,11 @@ public:
 	static void DistortTextureWithCoefficients(
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		FDistortTextureWithCoefficientsParams distortionCorrectionParams);
+
+	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
+	static bool PackArrayOfDistortionCorrectionMapsIntoVolumeTexture(
+		TArray<UTexture2D*> distortionCorrectionMaps,
+		UVolumeTexture * volumeTexture);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	static void StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount);
