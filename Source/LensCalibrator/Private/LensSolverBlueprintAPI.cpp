@@ -113,7 +113,7 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 	TArray<FFloat16Color*> dataArray;
 	dataArray.SetNum(distortionCorrectionMaps.Num());
 	for (int i = 0; i < distortionCorrectionMaps.Num(); i++)
-		dataArray[i] = static_cast<FFloat16Color*>(distortionCorrectionMaps[0]->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_ONLY));
+		dataArray[i] = static_cast<FFloat16Color*>(distortionCorrectionMaps[i]->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_ONLY));
 
 	bool success = volumeTexture->UpdateSourceFromFunction([width, height, dataArray](int ix, int iy, int iz, void* value)
 	{
