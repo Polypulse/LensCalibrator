@@ -108,6 +108,8 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 		}
 	}
 
+	UE_LOG(LogTemp, Log, TEXT("Attempting to pack: %d textures of size: (%d, %d) into volume texture."), distortionCorrectionMaps.Num(), width, height);
+
 	TArray<FFloat16Color*> dataArray;
 	dataArray.SetNum(distortionCorrectionMaps.Num());
 	for (int i = 0; i < distortionCorrectionMaps.Num(); i++)
@@ -135,6 +137,7 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 	}
 
 	volumeTexture->MarkPackageDirty();
+	UE_LOG(LogTemp, Log, TEXT("Successfully packed volume texture with: %d textures."), distortionCorrectionMaps.Num());
 
 	return true;
 }
