@@ -73,8 +73,40 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 		TArray<UTexture2D*> distortionCorrectionMaps,
 		UVolumeTexture * volumeTexture)
 {
+	if (distortionCorrectionMaps.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Input array of distortion correction maps is empty."));
+		return false;
+	}
+
+	if (volumeTexture == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Input VolumeTexture is NULL."));
+		return false;
+	}
+
 	int width = distortionCorrectionMaps[0]->GetSizeX();
 	int height = distortionCorrectionMaps[0]->GetSizeY();
+
+	for (int i = 0; i < distortionCorrectionMaps.Num(); i++)
+	{
+		if (distortionCorrectionMaps[i] == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("The texture at index: %d within the input array is NULL."));
+			return false;
+		}
+
+		if (distortionCorrectionMaps[i]->GetSizeX() != width || distortionCorrectionMaps[i]->GetSizeY() != height)
+		{
+			UE_LOG(LogTemp, Error, TEXT("All textures in the input array should have the same resolution, the texture at index: %d has a resolution of: (%d, %d). The expected resolution is: (%d, %d)."),
+				i,
+				distortionCorrectionMaps[i]->GetSizeX(),
+				distortionCorrectionMaps[i]->GetSizeY(),
+				width,
+				height);
+			return false;
+		}
+	}
 
 	TArray<FFloat16Color*> dataArray;
 	dataArray.SetNum(distortionCorrectionMaps.Num());
