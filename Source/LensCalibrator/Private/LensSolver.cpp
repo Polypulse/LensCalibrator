@@ -173,6 +173,7 @@ void ULensSolver::StartMediaStreamCalibration(
 	TArray<int> expectedImageCounts;
 	expectedImageCounts.Add(mediaStreamParameters.mediaStreamParameters.expectedStreamSnapshotCount);
 
+	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(mediaStreamParameters.calibrationParameters);
 	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, 1, OneTime);
 
 	FMediaStreamWorkUnit workUnit;
