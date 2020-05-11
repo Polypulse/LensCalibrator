@@ -189,6 +189,17 @@ void FLensSolverWorkerCalibrate::Tick()
 	QueueLog("(INFO): Calibrating...");
 
 	double error = 0.0;
+	error = cv::calibrateCamera(
+		objectPoints,
+		corners,
+		sourceImageSize,
+		cameraMatrix,
+		distortionCoefficients,
+		rvecs,
+		tvecs,
+		flags,
+		termCriteria);
+	/*
 	try
 	{
 		error = cv::calibrateCamera(
@@ -203,13 +214,16 @@ void FLensSolverWorkerCalibrate::Tick()
 			termCriteria);
 	}
 
-	catch (const cv::Exception& exception)
+	// catch (const cv::Exception& exception)
+	catch (...)
 	{
-		FString exceptionMsg = UTF8_TO_TCHAR(exception.msg.c_str());
-		QueueLog(FString::Printf(TEXT("(ERROR): OpenCV exception: \"%s\"."), *exceptionMsg));
+		// FString exceptionMsg = UTF8_TO_TCHAR(exception.msg.c_str());
+		// QueueLog(FString::Printf(TEXT("(ERROR): OpenCV exception: \"%s\"."), *exceptionMsg));
+		QueueLog("(ERROR): OpenCV exception occurred.");
 		QueueCalibrationResultError(latchData.baseParameters);
 		return;
 	}
+	*/
 
 	if (ShouldExit())
 		return;

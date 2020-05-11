@@ -198,18 +198,24 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Beginning calibration pattern detection for image: \"%s\"."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
+
+	patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
+	/*
 	try
 	{
 		patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
 	}
 
-	catch (const cv::Exception& exception)
+	// catch (const cv::Exception& exception)
+	catch (...)
 	{
-		FString exceptionMsg = UTF8_TO_TCHAR(exception.msg.c_str());
-		QueueLog(FString::Printf(TEXT("(ERROR): OpenCV exception: \"%s\"."), *exceptionMsg));
+		// FString exceptionMsg = UTF8_TO_TCHAR(exception.msg.c_str());
+		// QueueLog(FString::Printf(TEXT("(ERROR): OpenCV exception: \"%s\"."), *exceptionMsg));
+		QueueLog("(ERROR): OpenCV exception occurred.");
 		QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 		return;
 	}
+	*/
 
 	if (!patternFound)
 	{
@@ -227,18 +233,23 @@ void FLensSolverWorkerFindCorners::Tick()
 		0.0001
 	);
 
+	cv::cornerSubPix(image, imageCorners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
+	/*
 	try
 	{
 		cv::cornerSubPix(image, imageCorners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
 	}
 
-	catch (const cv::Exception& exception)
+	// catch (const cv::Exception& exception)
+	catch (...)
 	{
-		FString exceptionMsg = UTF8_TO_TCHAR(exception.msg.c_str());
-		QueueLog(FString::Printf(TEXT("(ERROR): OpenCV exception: \"%s\"."), *exceptionMsg));
+		// FString exceptionMsg = UTF8_TO_TCHAR(exception.msg.c_str());
+		// QueueLog(FString::Printf(TEXT("(ERROR): OpenCV exception: \"%s\"."), *exceptionMsg));
+		QueueLog("(ERROR): OpenCV exception occurred.");
 		QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 		return;
 	}
+	*/
 
 	if (textureSearchParameters.writeDebugTextureToFile)
 	{
