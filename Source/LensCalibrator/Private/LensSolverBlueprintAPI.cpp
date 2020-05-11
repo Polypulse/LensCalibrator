@@ -8,7 +8,7 @@ void ULensSolverBlueprintAPI::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	FOneTimeProcessParameters oneTimeProcessParameters,
 	FJobInfo& ouptutJobInfo)
 {
-	TSharedPtr<ULensSolver> lensSolver = FLensCalibratorModule::Get().GetLensSolver();
+	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->OneTimeProcessArrayOfTextureFolderZoomPairs(
 		eventReceiver,
 		inputTextures,
@@ -22,7 +22,7 @@ void ULensSolverBlueprintAPI::StartMediaStreamCalibration(
 	FStartMediaStreamParameters mediaStreamParameters, 
 	FJobInfo& ouptutJobInfo)
 {
-	TSharedPtr<ULensSolver> lensSolver = FLensCalibratorModule::Get().GetLensSolver();
+	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->StartMediaStreamCalibration(
 		eventReceiver,
 		mediaStreamParameters,
@@ -33,7 +33,7 @@ void ULensSolverBlueprintAPI::GenerateDistortionCorrectionMap(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams)
 {
-	TSharedPtr<UDistortionProcessor> distortionProcessor = FLensCalibratorModule::Get().GetDistortionProcessor();
+	UDistortionProcessor* distortionProcessor = FLensCalibratorModule::Get().GetDistortionProcessor();
 	distortionProcessor->GenerateDistortionCorrectionMap(
 		eventReceiver,
 		distortionCorrectionMapGenerationParams);
@@ -43,7 +43,7 @@ void ULensSolverBlueprintAPI::DistortTextureWithTexture(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	FDistortTextureWithTextureParams distortionCorrectionParams)
 {
-	TSharedPtr<UDistortionProcessor> distortionProcessor = FLensCalibratorModule::Get().GetDistortionProcessor();
+	UDistortionProcessor* distortionProcessor = FLensCalibratorModule::Get().GetDistortionProcessor();
 	distortionProcessor->DistortTextureWithTexture(
 		eventReceiver,
 		distortionCorrectionParams);
@@ -53,7 +53,7 @@ void ULensSolverBlueprintAPI::DistortTextureWithTextureFile(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	FDistortTextureWithTextureFileParams distortionCorrectionParams)
 {
-	TSharedPtr<UDistortionProcessor> distortionProcessor = FLensCalibratorModule::Get().GetDistortionProcessor();
+	UDistortionProcessor* distortionProcessor = FLensCalibratorModule::Get().GetDistortionProcessor();
 	distortionProcessor->DistortTextureWithTextureFile(
 		eventReceiver,
 		distortionCorrectionParams);
@@ -63,7 +63,7 @@ void ULensSolverBlueprintAPI::DistortTextureWithCoefficients(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	FDistortTextureWithCoefficientsParams distortionCorrectionParams)
 {
-	TSharedPtr<UDistortionProcessor> distortionProcessor = FLensCalibratorModule::Get().GetDistortionProcessor();
+	UDistortionProcessor* distortionProcessor = FLensCalibratorModule::Get().GetDistortionProcessor();
 	distortionProcessor->DistortTextureWithCoefficients(
 		eventReceiver,
 		distortionCorrectionParams);
@@ -146,7 +146,7 @@ void ULensSolverBlueprintAPI::StartBackgroundImageProcessors(
 	int findCornersWorkerCount,
 	int calibrateWorkerCount)
 {
-	TSharedPtr<ULensSolver> lensSolver = FLensCalibratorModule::Get().GetLensSolver();
+	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->StartBackgroundImageProcessors(
 		findCornersWorkerCount,
 		calibrateWorkerCount);
@@ -154,14 +154,14 @@ void ULensSolverBlueprintAPI::StartBackgroundImageProcessors(
 
 void ULensSolverBlueprintAPI::StopBackgroundImageprocessors()
 {
-	TSharedPtr<ULensSolver> lensSolver = FLensCalibratorModule::Get().GetLensSolver();
+	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->StopBackgroundImageprocessors();
 }
 
 /*
 void ULensSolverBlueprintAPI::Poll()
 {
-	TSharedPtr<ULensSolver> lensSolver = FLensCalibratorModule::Get().GetLensSolver();
+	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->Poll();
 }
 */

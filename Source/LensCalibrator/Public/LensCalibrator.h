@@ -16,8 +16,8 @@ class FLensCalibratorModule : public IModuleInterface
 private:
 
 	UPROPERTY(Category = "APTK")
-	TSharedPtr<ULensSolver> lensSolver;
-	TSharedPtr<UDistortionProcessor> distortionProcessor;
+	ULensSolver * lensSolver;
+	UDistortionProcessor * distortionProcessor;
 
 	FTickerDelegate TickDelegate;
 	FDelegateHandle TickDelegateHandle;
@@ -26,8 +26,8 @@ private:
 	bool Tick(float deltatime);
 public:
 	static FLensCalibratorModule& Get() { return FModuleManager::GetModuleChecked<FLensCalibratorModule>(FLensCalibratorModule::ModuleName); };
-	TSharedPtr<ULensSolver> GetLensSolver();
-	TSharedPtr<UDistortionProcessor> GetDistortionProcessor();
+	ULensSolver * GetLensSolver();
+	UDistortionProcessor* GetDistortionProcessor();
 
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;

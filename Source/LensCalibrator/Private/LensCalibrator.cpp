@@ -22,34 +22,32 @@ void FLensCalibratorModule::Initialize()
 
 bool FLensCalibratorModule::Tick(float deltatime)
 {
-	if (GetLensSolver().IsValid())
-		GetLensSolver()->Poll();
+	GetLensSolver()->Poll();
+	GetDistortionProcessor()->Poll();
 
-	if (GetDistortionProcessor().IsValid())
-		GetDistortionProcessor()->Poll();
 	return true;
 }
 
-TSharedPtr<ULensSolver> FLensCalibratorModule::GetLensSolver()
+ULensSolver* FLensCalibratorModule::GetLensSolver()
 { 
 	if (lensSolver == nullptr)
 	{
 		Initialize();
 		static ULensSolver* staticLensSolver = NewObject<ULensSolver>(GetTransientPackage(), NAME_None, RF_MarkAsRootSet);
-		lensSolver = TSharedPtr<ULensSolver>(staticLensSolver);
+		lensSolver = staticLensSolver;
 		lensSolver->AddToRoot(); // Prevent lens solver from being garbage collected.
 	}
 
 	return lensSolver; 
 }
 
-TSharedPtr<UDistortionProcessor> FLensCalibratorModule::GetDistortionProcessor()
+UDistortionProcessor* FLensCalibratorModule::GetDistortionProcessor()
 { 
 	if (distortionProcessor == nullptr)
 	{
 		Initialize();
 		static UDistortionProcessor* staticDistortionProcessor = NewObject<UDistortionProcessor>(GetTransientPackage(), NAME_None, RF_MarkAsRootSet);
-		distortionProcessor = TSharedPtr<UDistortionProcessor>(staticDistortionProcessor);
+		distortionProcessor = staticDistortionProcessor;
 		distortionProcessor->AddToRoot(); // Prevent lens solver from being garbage collected.
 	}
 
@@ -58,6 +56,8 @@ TSharedPtr<UDistortionProcessor> FLensCalibratorModule::GetDistortionProcessor()
 
 void FLensCalibratorModule::StartupModule()
 {
+	lensSolver = nullptr;
+	distortionProcessor = nullptr;
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
     AddShaderSourceDirectoryMapping("/LensCalibratorShaders", FPaths::Combine(FPaths::ProjectDir(), TEXT("Plugins/LensCalibrator/Shaders")));
 	IConsoleManager::Get().RegisterConsoleVariable(TEXT("LensCalibrator.Debug"), 0, TEXT("Output more log information for Debug()ging."));
@@ -65,6 +65,8 @@ void FLensCalibratorModule::StartupModule()
 
 void FLensCalibratorModule::ShutdownModule()
 {
+	// delete GetLensSolver();
+	// delete GetDistortionProcessor();
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
 }
