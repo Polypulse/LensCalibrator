@@ -8,7 +8,7 @@
 	"CreatedBy": "Polypulse LLC",
 	"CreatedByURL": "https://www.polypulse.io",
 	"DocsURL": "https://docs.google.com/document/d/1HNYupII7wy-lZkVENv9LS7f7xqjnMhFPVWmATGc8Xoc/edit?usp=sharing",
-	"MarketplaceURL": "",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/a6b9427b39bd419999f77b45df7805c0",
 	"SupportURL": "https://forms.gle/K5TPTtTiPdnEHRHZ9",
 	"CanContainContent": true,
 	"IsBetaVersion": true,
@@ -18,7 +18,8 @@
 		{
 			"Name": "LensCalibrator",
 			"Type": "Runtime",
-			"LoadingPhase": "PostConfigInit"
+			"LoadingPhase": "PostConfigInit",
+			"WhitelistPlatforms": [ "Win64" ]
 		}
 	]
 }

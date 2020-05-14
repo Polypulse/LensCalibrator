@@ -23,7 +23,7 @@ public class LensCalibrator : ModuleRules
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
-				Path.Combine(ModuleDirectory, "../../ThirdParty/OpenCV/Include")
+				Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Include")
 			}
 			);
 			
@@ -60,9 +60,15 @@ public class LensCalibrator : ModuleRules
 			}
 			);
 
-		string[] files = Directory.GetFiles(Path.Combine(ModuleDirectory, isDebug ? "../../ThirdParty/OpenCV/Binaries/Debug/Static" : "../../ThirdParty/OpenCV/Binaries/Release/Static"));
+		string[] files = Directory.GetFiles(Path.Combine(ModuleDirectory, isDebug ? "../../Source/ThirdParty/OpenCV/Binaries/Debug/Static" : "../../Source/ThirdParty/OpenCV/Binaries/Release/Static"));
 		files = files.Where(f => Path.GetExtension(f) == ".lib").ToArray();
+		files = files.Where(s => !s.Contains("libpng.lib")).ToArray();
+		for (int i = 0; i < files.Length; i++)
+			Console.WriteLine(string.Format("Including lib: {0}", files[i]));
 		PublicAdditionalLibraries.AddRange(files);
+
+		string libPNGPath = Path.Combine(EngineDirectory, "Source/ThirdParty/libPNG/libPNG-1.5.2/lib/Win64/VS2015/libpng_64.lib");
+		PublicAdditionalLibraries.Add(libPNGPath);
 
 		/*
 		files = Directory.GetFiles(Path.Combine(ModuleDirectory, "../../ThirdParty/OpenCV/Binaries/Release/Dynamic"));

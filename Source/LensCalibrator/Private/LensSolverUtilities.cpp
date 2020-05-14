@@ -256,6 +256,8 @@ bool LensSolverUtilities::LoadTexture16(FString absoluteTexturePath, UTexture2D*
 		return false;
 	}
 
+	UE_LOG(LogTemp, Log, TEXT("Loading in 16-bit pixel data into memory from file: \"%s\"."), *absoluteTexturePath);
+
 	if (!imageWrapper->SetCompressed(fileData.GetData(), fileData.Num()))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to decompress texture data in file: \"%s\"."), *absoluteTexturePath);
@@ -342,6 +344,8 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, UTexture2D*& 
 		UE_LOG(LogTemp, Error, TEXT("Failed to create image wrapper for texture: \"%s\"."), *absoluteTexturePath);
 		return false;
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("Loading in 8-bit pixel data into memory from file: \"%s\"."), *absoluteTexturePath);
 
 	if (!imageWrapper->SetCompressed(fileData.GetData(), fileData.Num()))
 	{
