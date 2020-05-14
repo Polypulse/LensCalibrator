@@ -52,7 +52,7 @@ struct FCalibrationWorkerParameters
 	bool writeCalibrationResultsToFile;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString calibrationResultsFolderPath;
+	FString calibrationResultsOutputPath;
 
 	FCalibrationWorkerParameters()
 	{
@@ -71,6 +71,6 @@ struct FCalibrationWorkerParameters
 		fixRadialDistortionCoefficientK6 = false;
 
 		writeCalibrationResultsToFile = false;
-		calibrationResultsFolderPath = "";
+		calibrationResultsOutputPath = "";
 	}
 };

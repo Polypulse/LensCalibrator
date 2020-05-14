@@ -858,7 +858,7 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
 	if (mediaStreamWorkUnit.mediaStreamParameters.writePostBlitRenderTextureToFile)
 	{
-		FString outputPath = mediaStreamWorkUnit.mediaStreamParameters.postBlitRenderTextureFileOutputPath;
+		FString outputPath = mediaStreamWorkUnit.mediaStreamParameters.postBlitRenderTextureOutputPath;
 		if (LensSolverUtilities::ValidateFilePath(outputPath, FPaths::Combine(FPaths::GameSavedDir(), "PostBlitRenderTextureOutput"), "PostBlitRenderTexture", "bmp"))
 		{
 			FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());

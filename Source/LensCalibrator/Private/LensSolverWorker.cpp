@@ -111,8 +111,8 @@ bool FLensSolverWorker::Debug()
 {
 	static IConsoleVariable * variable = IConsoleManager::Get().FindConsoleVariable(TEXT("LensCalibrator.Debug"));
 	if (variable != nullptr && variable->GetInt() == 0)
-		return true;
-	return false;
+		return false;
+	return true;
 }
 
 void FLensSolverWorker::Lock()

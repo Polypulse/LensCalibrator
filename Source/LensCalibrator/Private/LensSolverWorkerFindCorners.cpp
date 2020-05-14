@@ -263,7 +263,7 @@ void FLensSolverWorkerFindCorners::Tick()
 	if (textureSearchParameters.writeDebugTextureToFile)
 	{
 		cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
-		WriteMatToFile(image, textureSearchParameters.debugTextureFolderPath);
+		WriteMatToFile(image, textureSearchParameters.debugTextureOutputPath);
 	}
 
 	for (int y = 0; y < checkerBoardCornerCount.Y; y++)

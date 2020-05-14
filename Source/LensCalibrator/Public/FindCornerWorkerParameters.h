@@ -37,7 +37,7 @@ struct FFindCornerWorkerParameters
 	bool writeDebugTextureToFile;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString debugTextureFolderPath;
+	FString debugTextureOutputPath;
 
 	FFindCornerWorkerParameters()
 	{
@@ -49,7 +49,7 @@ struct FFindCornerWorkerParameters
 		flipX = false;
 		flipY = false;
 		writeDebugTextureToFile = false;
-		debugTextureFolderPath = "";
+		debugTextureOutputPath = "";
 	};
 };
 

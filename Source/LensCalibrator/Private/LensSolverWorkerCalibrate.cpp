@@ -284,7 +284,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	solvedPoints.distortionCoefficients = outputDistortionCoefficients;
 
 	if (latchData.calibrationParameters.writeCalibrationResultsToFile)
-		WriteSolvedPointsToJSONFile(solvedPoints, latchData.calibrationParameters.calibrationResultsFolderPath, "result");
+		WriteSolvedPointsToJSONFile(solvedPoints, latchData.calibrationParameters.calibrationResultsOutputPath);
 
 	if (Debug())
 		QueueLog(FString("(INFO): Finished with work unit."));
@@ -371,10 +371,9 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 	return true;
 }
 
-void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, const FString fileName)
+void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString outputPath)
 {
-	FString outputPath = FPaths::Combine(folder, fileName);
-	if (!LensSolverUtilities::ValidateFilePath(outputPath, folder, calibrationVisualizationOutputPath, "json"))
+	if (!LensSolverUtilities::ValidateFilePath(outputPath, calibrationVisualizationOutputPath, "CalibrationResults", "json"))
 		return;
 
 	TSharedPtr<FJsonObject> obj = MakeShareable(new FJsonObject);

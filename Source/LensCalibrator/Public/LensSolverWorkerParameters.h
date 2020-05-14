@@ -68,7 +68,7 @@ struct FCalibrationParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool writeCalibrationResultsToFile;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString calibrationResultsFolderPath;
+	FString calibrationResultsOutputPath;
 
 	FCalibrationParameters()
 	{
@@ -87,7 +87,7 @@ struct FCalibrationParameters
 		fixRadialDistortionCoefficientK6 = false;
 
 		writeCalibrationResultsToFile = false;
-		calibrationResultsFolderPath = "";
+		calibrationResultsOutputPath = "";
 	}
 };
 
@@ -115,7 +115,7 @@ struct FTextureSearchParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool writeDebugTextureToFile;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString debugTextureFolderPath;
+	FString debugTextureOutputPath;
 
 	FTextureSearchParameters()
 	{
@@ -126,7 +126,7 @@ struct FTextureSearchParameters
 		checkerBoardSquareSizeMM = 12.7f;
 		checkerBoardCornerCount = FIntPoint(12, 8);
 		writeDebugTextureToFile = false;
-		debugTextureFolderPath = "";
+		debugTextureOutputPath = "";
 	}
 };
 
@@ -167,7 +167,7 @@ struct FMediaStreamParameters
 	bool writePostBlitRenderTextureToFile;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString postBlitRenderTextureFileOutputPath;
+	FString postBlitRenderTextureOutputPath;
 
 	FMediaStreamParameters()
 	{
