@@ -163,6 +163,12 @@ struct FMediaStreamParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float zoomLevel;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	bool writePostBlitRenderTextureToFile;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FString postBlitRenderTextureFileOutputPath;
+
 	FMediaStreamParameters()
 	{
 		mediaTexture = nullptr;

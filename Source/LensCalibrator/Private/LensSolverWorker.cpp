@@ -109,7 +109,7 @@ bool FLensSolverWorker::ShouldExit()
 
 bool FLensSolverWorker::Debug()
 {
-	static IConsoleVariable * variable = IConsoleManager::Get().FindConsoleVariable(TEXT("APTK.EnableBlending"));
+	static IConsoleVariable * variable = IConsoleManager::Get().FindConsoleVariable(TEXT("LensCalibrator.Debug"));
 	if (variable != nullptr && variable->GetInt() == 0)
 		return true;
 	return false;

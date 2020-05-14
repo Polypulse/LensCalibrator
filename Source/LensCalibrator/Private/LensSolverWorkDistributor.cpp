@@ -448,7 +448,7 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 
 bool LensSolverWorkDistributor::Debug()
 {
-	static IConsoleVariable * variable = IConsoleManager::Get().FindConsoleVariable(TEXT("APTK.EnableBlending"));
+	static IConsoleVariable * variable = IConsoleManager::Get().FindConsoleVariable(TEXT("LensCalibrator.Debug"));
 	if (variable != nullptr && variable->GetInt() == 0)
 		return false;
 	return true;
@@ -854,6 +854,17 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 
 	// UE_LOG(LogTemp, Log, TEXT("Reading pixels from rect: (%d, %d, %d, %d)."), 0, 0, width, height);
 	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), surfaceData, ReadDataFlags);
+
+	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
+	if (mediaStreamWorkUnit.mediaStreamParameters.writePostBlitRenderTextureToFile)
+	{
+		FString outputPath = mediaStreamWorkUnit.mediaStreamParameters.postBlitRenderTextureFileOutputPath;
+		if (LensSolverUtilities::ValidateFilePath(outputPath, FPaths::Combine(FPaths::GameSavedDir(), "PostBlitRenderTextureOutput"), "PostBlitRenderTexture", "bmp"))
+		{
+			FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
+			UE_LOG(LogTemp, Log, TEXT("Wrote blit render texture to file: \"%s\"."), *outputPath);
+		}
+	}
 
 	QueueLogAsync(FString::Printf(TEXT("(INFO): Completed snapshot blit of media stream on render thread of count %d/%d for calibration: \"%s\", queuing resulting pixel array."), 
 			mediaStreamWorkUnit.mediaStreamParameters.currentStreamSnapshotCount, 
