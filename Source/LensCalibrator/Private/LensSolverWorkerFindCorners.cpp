@@ -1,5 +1,6 @@
 #include "LensSolverWorkerFindCorners.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
+#include "MatQueueWriter.h"
 
 FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	const FLensSolverWorkerParameters & inputParameters,
@@ -99,6 +100,7 @@ void FLensSolverWorkerFindCorners::Tick()
 		DequeueTextureFileWorkUnit(textureFileWorkUnit);
 		baseParameters = textureFileWorkUnit.baseParameters;
 		textureSearchParameters = textureFileWorkUnit.textureSearchParameters;
+		resizeParameters.nativeResolution = textureSearchParameters.nativeFullResolution;
 
 		if (!GetImageFromFile(textureFileWorkUnit.textureFileParameters.absoluteFilePath, image, resizeParameters.sourceResolution))
 		{
@@ -114,6 +116,7 @@ void FLensSolverWorkerFindCorners::Tick()
 		baseParameters = texturePixelArrayUnit.baseParameters;
 		textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
 		resizeParameters = texturePixelArrayUnit.resizeParameters;
+		resizeParameters.nativeResolution = textureSearchParameters.nativeFullResolution;
 
 		if (!GetImageFromArray(texturePixelArrayUnit.pixelArrayParameters.pixels, resizeParameters.resizeResolution, image))
 		{
@@ -145,10 +148,16 @@ void FLensSolverWorkerFindCorners::Tick()
 		resizeParameters.resizeResolution.Y = FMath::FloorToInt(resizeParameters.sourceResolution.Y * resizePercentage);
 	}
 
+	else
+	{
+		resizeParameters.resizeResolution.X = resizeParameters.sourceResolution.X;
+		resizeParameters.resizeResolution.Y = resizeParameters.sourceResolution.Y;
+	}
+
 	cv::Size sourceImageSize(resizeParameters.sourceResolution.X, resizeParameters.sourceResolution.Y);
 	cv::Size resizedImageSize(resizeParameters.resizeResolution.X, resizeParameters.resizeResolution.Y);
 
-	float inverseResizeRatio = 1.0f / resizePercentage;
+	float inverseResizeRatio = resizeParameters.nativeResolution.X / (float)resizeParameters.resizeResolution.X;
 
 	if (resize && resizePercentage != 1.0f)
 	{
@@ -254,7 +263,7 @@ void FLensSolverWorkerFindCorners::Tick()
 	if (textureSearchParameters.writeDebugTextureToFile)
 	{
 		cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
-		WriteMatToFile(image, textureSearchParameters.debugTextureFolderPath, "CheckerboardVisualization");
+		WriteMatToFile(image, textureSearchParameters.debugTextureFolderPath);
 	}
 
 	for (int y = 0; y < checkerBoardCornerCount.Y; y++)
@@ -271,8 +280,8 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	calibrationPointsWorkUnit.baseParameters								= baseParameters;
 	calibrationPointsWorkUnit.calibrationPointParameters.corners			= imageCorners;
-	calibrationPointsWorkUnit.calibrationPointParameters.objectPoints	= imageObjectPoints;
-	calibrationPointsWorkUnit.resizeParameters							= resizeParameters;
+	calibrationPointsWorkUnit.calibrationPointParameters.objectPoints		= imageObjectPoints;
+	calibrationPointsWorkUnit.resizeParameters								= resizeParameters;
 
 	QueueCalibrationPointsWorkUnit(calibrationPointsWorkUnit);
 }
@@ -314,21 +323,11 @@ bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixe
 	return true;
 }
 
-void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString folder, FString fileName)
+void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString outputPath)
 {
-	if (!LensSolverUtilities::ValidateFolder(folder, calibrationVisualizationOutputPath, workerMessage))
-		return;
-
-	FString outputPath = LensSolverUtilities::GenerateIndexedFilePath(folder, fileName, "jpg");
-	
-	if (!cv::imwrite(TCHAR_TO_UTF8(*outputPath), image))
-	{
-		QueueLog(FString::Printf(TEXT("(INFO): Unable to write Debug() texture result to path: \"%s\", check your permissions."), *outputPath));
-		return;
-	}
-
+	MatQueueWriter::Get().QueueMat(outputPath, image);
 	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): Debug texture written to file at path: \"%s\"."), *outputPath));
+		QueueLog(FString::Printf(TEXT("(INFO): Queued texture: \'%s\" to be written to file."), *outputPath));
 }
 
 void FLensSolverWorkerFindCorners::QueueCalibrationPointsWorkUnit(const FLensSolverCalibrationPointsWorkUnit & calibrationPointsWorkUnit)

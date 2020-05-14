@@ -50,10 +50,13 @@ struct FResizeParameters
 {
 	FIntPoint sourceResolution;
 	FIntPoint resizeResolution;
+	FIntPoint nativeResolution;
+
 	FResizeParameters()
 	{
 		sourceResolution = FIntPoint(0, 0);
 		resizeResolution = FIntPoint(0, 0);
+		nativeResolution = FIntPoint(0, 0);
 	}
 };
 

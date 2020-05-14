@@ -53,8 +53,8 @@ OutputPS MainPS(OutputVS IN)
 
 	float r = sqrt(cx * cx + cy * cy);
 
-	half x = uvx + cx * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0))/* + p1 * (pow(r, 2.0) + 2 * pow(cx, 2.0)) + 2 * p2 * (cx * cy)*/;
-	half y = uvy + cy * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0))/* + p2 * (pow(r, 2.0) + 2 * pow(cy, 2.0)) + 2 * p1 * (cx * cy)*/;
+	half x = uvx + cx * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0)) + p1 * (pow(r, 2.0) + 2 * pow(cx, 2.0)) + 2 * p2 * (cx * cy);
+	half y = uvy + cy * (k1 * pow(r, 2.0) + k2 * pow(r, 4.0) + k3 * pow(r, 6.0)) + p2 * (pow(r, 2.0) + 2 * pow(cy, 2.0)) + 2 * p1 * (cx * cy);
 
 	// float d = length(float2(ppx, ppy) - IN.UV.xy);
 	// Out.Color = float4(d, d, d, 1.0);

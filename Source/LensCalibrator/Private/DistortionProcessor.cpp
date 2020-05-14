@@ -300,7 +300,7 @@ void UDistortionProcessor::DistortTextureWithTexture(
 	static const FString backupOutputPath = LensSolverUtilities::GenerateGenericOutputPath(FString("CorrectedDistortedImages/"));
 	FString targetOutputPath = distortionCorrectionParams.outputPath;
 
-	if (!LensSolverUtilities::ValidatePath(targetOutputPath, backupOutputPath, FString("CorrectedDistortedImage"), FString("bmp"), FString("Distortion Correction: ")))
+	if (!LensSolverUtilities::ValidateFilePath(targetOutputPath, backupOutputPath, FString("CorrectedDistortedImage"), FString("bmp")))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, unable to create folder path: \"%s\"."), *targetOutputPath);
 		return;
@@ -382,14 +382,14 @@ void UDistortionProcessor::GenerateDistortionCorrectionMap(
 
 	static const FString backupOutputPath = LensSolverUtilities::GenerateGenericOutputPath(FString("DistortionCorrectionMaps/"));
 	FString correctionOutputPath = distortionCorrectionMapGenerationParams.correctionOutputPath;
-	if (!LensSolverUtilities::ValidatePath(correctionOutputPath, backupOutputPath, FString("DistortionCorrectionMap"), FString("png"), FString("Distortion Correction: ")))
+	if (!LensSolverUtilities::ValidateFilePath(correctionOutputPath, backupOutputPath, FString("DistortionCorrectionMap"), FString("png")))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, unable to create folder path: \"%s\"."), *correctionOutputPath);
 		return;
 	}
 
 	FString inverseCorrectionOutputPath = distortionCorrectionMapGenerationParams.inverseCorrectionOutputPath;
-	if (!LensSolverUtilities::ValidatePath(inverseCorrectionOutputPath, backupOutputPath, FString("InverseDistortionCorrectionMap"), FString("png"), FString("Distortion Correction: ")))
+	if (!LensSolverUtilities::ValidateFilePath(inverseCorrectionOutputPath, backupOutputPath, FString("InverseDistortionCorrectionMap"), FString("png")))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate inverse distortion correction map, unable to create folder path: \"%s\"."), *inverseCorrectionOutputPath);
 		return;

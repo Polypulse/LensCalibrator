@@ -20,6 +20,7 @@
 
 #include "LensSolverUtilities.h"
 #include "BlitShader.h"
+#include "MatQueueWriter.h"
 
 bool ULensSolver::ValidateMediaTexture(const UMediaTexture* inputTexture)
 {
@@ -275,4 +276,6 @@ void ULensSolver::Poll()
 	PollFinishedJobs();
 
 	LensSolverWorkDistributor::GetInstance().PollMediaTextureStreams();
+
+	MatQueueWriter::Get().Poll();
 }

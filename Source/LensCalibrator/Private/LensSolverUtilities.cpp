@@ -1,5 +1,4 @@
 #include "..\Public\LensSolverUtilities.h"
-
 #include "Engine.h"
 #include "IImageWrapperModule.h"
 #include "IImageWrapper.h"
@@ -7,40 +6,38 @@
 
 class FDirectoryVisitor;
 
-FString LensSolverUtilities::GenerateIndexedFilePath(const FString& folder, const FString& fileName, const FString& extension)
+FString LensSolverUtilities::GenerateIndexedFilePath(const FString& filePathWithoutExtension, const FString& extension)
 {
-	FString partialOutputPath = folder + fileName;
-
 	int index = 0;
-	while (FPaths::FileExists(FString::Printf(TEXT("%s-%d.%s"), *partialOutputPath, index, *extension)))
+	while (FPaths::FileExists(FString::Printf(TEXT("%s-%d.%s"), *filePathWithoutExtension, index, *extension)))
 		index++;
-	return FString::Printf(TEXT("%s-%d.%s"), *partialOutputPath, index, *extension);
+	return FString::Printf(TEXT("%s-%d.%s"), *filePathWithoutExtension, index, *extension);
 }
 
-bool LensSolverUtilities::ValidateFolder(FString& path, const FString & backupFolder, const FString& logMessageHeader)
+bool LensSolverUtilities::ValidateFolder(FString& folderPath, const FString & backupFolder, const FString& logMessageHeader)
 {
-	if (path.IsEmpty())
+	if (folderPath.IsEmpty())
 	{
-		path = backupFolder;
-		if (!FPaths::DirectoryExists(path))
+		folderPath = backupFolder;
+		if (!FPaths::DirectoryExists(folderPath))
 		{
-			FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*path);
-			UE_LOG(LogTemp, Log, TEXT("%sCreated directory at path: \"%s\"."), *logMessageHeader, *path);
+			FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*folderPath);
+			UE_LOG(LogTemp, Log, TEXT("%sCreated directory at path: \"%s\"."), *logMessageHeader, *folderPath);
 		}
 	}
 
 	else
 	{
-		if (!FPaths::ValidatePath(path))
+		if (!FPaths::ValidatePath(folderPath))
 		{
-			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is not a valid."), *logMessageHeader, *path);
+			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is not a valid."), *logMessageHeader, *folderPath);
 			return false;
 		}
 
-		FString extension = FPaths::GetExtension(path);
+		FString extension = FPaths::GetExtension(folderPath);
 		if (!extension.IsEmpty())
 		{
-			FString containingFolderPath = FPaths::GetPathLeaf(path);
+			FString containingFolderPath = FPaths::GetPathLeaf(folderPath);
 			if (!FPaths::DirectoryExists(containingFolderPath))
 			{
 				FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*containingFolderPath);
@@ -52,22 +49,49 @@ bool LensSolverUtilities::ValidateFolder(FString& path, const FString & backupFo
 	return true;
 }
 
-bool LensSolverUtilities::ValidatePath(FString& path, const FString& backupFolder, const FString & backupName, const FString & backupExtension, const FString& logMessageHeader)
+bool LensSolverUtilities::ValidateFilePath(FString& filePath, const FString& absoluteBackupFolderPath, const FString & backupFileName, const FString & backupExtension)
 {
-	if (path.IsEmpty())
-		return ValidateFolder(path, backupFolder, logMessageHeader);
-
-	if (FPaths::FileExists(path))
-		return true;
-
-	FString extension = FPaths::GetExtension(path);
-	if (extension.IsEmpty())
+	if (filePath.IsEmpty() || !FPaths::ValidatePath(filePath))
 	{
-		if (!ValidateFolder(path, backupFolder, logMessageHeader))
-			return false;
-		path = LensSolverUtilities::GenerateIndexedFilePath(path, backupName, backupExtension);
+		filePath = FPaths::Combine(absoluteBackupFolderPath, backupFileName);
+		filePath = LensSolverUtilities::GenerateIndexedFilePath(filePath, backupExtension);
+		return true;
 	}
 
+	FString folder = FPaths::GetPath(filePath);
+	if (folder.IsEmpty())
+		folder = absoluteBackupFolderPath;
+
+	if (FPaths::IsRelative(filePath))
+		filePath = FPaths::ConvertRelativePathToFull(filePath);
+
+	if (FPaths::IsDrive(filePath))
+	{
+		filePath = FPaths::Combine(filePath, backupFileName);
+		filePath = LensSolverUtilities::GenerateIndexedFilePath(filePath, backupExtension);
+		return true;
+	}
+
+	FString fileName = FPaths::GetBaseFilename(filePath);
+	FString extension = FPaths::GetExtension(filePath);
+
+	FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*folder);
+
+	if (extension.IsEmpty())
+	{
+		if (FPaths::FileExists(folder))
+		{
+			UE_LOG(LogTemp, Error, TEXT("Cannot create path to file: \"%s\", the folder: \"%s\" is a file."), *filePath, *folder);
+			return false;
+		}
+
+		filePath = FPaths::Combine(folder, backupFileName);
+		filePath = LensSolverUtilities::GenerateIndexedFilePath(filePath, backupExtension);
+		return true;
+	}
+
+	filePath = FPaths::Combine(folder, fileName);
+	filePath = LensSolverUtilities::GenerateIndexedFilePath(filePath, extension);
 	return true;
 }
 
@@ -122,7 +146,7 @@ bool LensSolverUtilities::GetFilesInFolder(const FString& folder, TArray<FString
 
 FString LensSolverUtilities::GenerateGenericOutputPath(const FString & subFolder)
 {
-	return FPaths::ConvertRelativePathToFull(FPaths::GameDevelopersDir() + subFolder);
+	return FPaths::ConvertRelativePathToFull(FPaths::GameSavedDir() + subFolder);
 }
 
 bool LensSolverUtilities::CreateTexture2D(

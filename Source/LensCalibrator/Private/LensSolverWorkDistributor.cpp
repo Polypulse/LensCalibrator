@@ -905,7 +905,7 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 			oneTimeProcessParameters.cornerCount,
 			oneTimeProcessParameters.squareSizeMM,
 			oneTimeProcessParameters.sensorDiagonalSizeMM,
-			oneTimeProcessParameters.initialPrincipalPointPixelPosition
+			oneTimeProcessParameters.initialPrincipalPointNativePixelPosition
 		};
 
 		UE_LOG(LogTemp, Log, TEXT("Latching worker."))

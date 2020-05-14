@@ -40,8 +40,9 @@ struct FCalibrationParameters
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float sensorDiagonalSizeMM;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FIntPoint initialPrincipalPointPixelPosition;
+	FIntPoint initialPrincipalPointNativePixelPosition;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool useInitialIntrinsicValues;
@@ -72,7 +73,7 @@ struct FCalibrationParameters
 	FCalibrationParameters()
 	{
 		sensorDiagonalSizeMM = 9.960784f;
-		initialPrincipalPointPixelPosition = FIntPoint(0, 0);
+		initialPrincipalPointNativePixelPosition = FIntPoint(0, 0);
 
 		useInitialIntrinsicValues = false;
 		keepPrincipalPixelPositionFixed = false;
@@ -96,6 +97,8 @@ struct FTextureSearchParameters
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FIntPoint nativeFullResolution;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float resizePercentage;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool resize;
@@ -116,6 +119,7 @@ struct FTextureSearchParameters
 
 	FTextureSearchParameters()
 	{
+		nativeFullResolution = FIntPoint(1920, 1080);
 		resizePercentage = 0.5f;
 		resize = true;
 		exhaustiveSearch = false;

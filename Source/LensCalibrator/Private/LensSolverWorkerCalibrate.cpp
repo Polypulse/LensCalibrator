@@ -135,12 +135,12 @@ void FLensSolverWorkerCalibrate::Tick()
 	std::vector<cv::Mat> rvecs, tvecs;
 	cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<double>::type);
 	cv::Mat distortionCoefficients = cv::Mat::zeros(5, 1, cv::DataType<double>::type);
-	cv::Size sourceImageSize(latchData.resizeParameters.sourceResolution.X, latchData.resizeParameters.sourceResolution.Y);
+	cv::Size sourceImageSize(latchData.resizeParameters.nativeResolution.X, latchData.resizeParameters.nativeResolution.Y);
 	cv::Point2d principalPoint = cv::Point2d(0.0, 0.0);
 	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
-	int sourcePixelWidth = latchData.resizeParameters.sourceResolution.X;
-	int sourcePixelHeight = latchData.resizeParameters.sourceResolution.Y;
+	int sourcePixelWidth = latchData.resizeParameters.nativeResolution.X;
+	int sourcePixelHeight = latchData.resizeParameters.nativeResolution.Y;
 	
 	float sensorHeight = latchData.calibrationParameters.sensorDiagonalSizeMM / FMath::Sqrt(FMath::Square(sourcePixelWidth / (float)sourcePixelHeight) + 1.0f);
 	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
@@ -169,21 +169,21 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	if (flags & cv::CALIB_USE_INTRINSIC_GUESS)
 	{
-		cameraMatrix.at<double>(0, 2) = static_cast<double>(latchData.calibrationParameters.initialPrincipalPointPixelPosition.X);
-		cameraMatrix.at<double>(1, 2) = static_cast<double>(latchData.calibrationParameters.initialPrincipalPointPixelPosition.Y);
+		cameraMatrix.at<double>(0, 2) = static_cast<double>(latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.X);
+		cameraMatrix.at<double>(1, 2) = static_cast<double>(latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.Y);
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Setting initial principal point to: (%f, %f)"), 
-				latchData.calibrationParameters.initialPrincipalPointPixelPosition.X,
-				latchData.calibrationParameters.initialPrincipalPointPixelPosition.Y));
+				latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.X,
+				latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.Y));
 	}
 
 	else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 	{
-		cameraMatrix.at<double>(0, 0) = 1.0 / (latchData.resizeParameters.sourceResolution.X * 0.5);
-		cameraMatrix.at<double>(1, 1) = 1.0 / (latchData.resizeParameters.sourceResolution.Y * 0.5);
+		cameraMatrix.at<double>(0, 0) = 1.0 / (latchData.resizeParameters.nativeResolution.X * 0.5);
+		cameraMatrix.at<double>(1, 1) = 1.0 / (latchData.resizeParameters.nativeResolution.Y * 0.5);
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Keeping aspect ratio at: %f"), 
-				(latchData.resizeParameters.sourceResolution.X / (double)latchData.resizeParameters.sourceResolution.Y)));
+				(latchData.resizeParameters.nativeResolution.X / (double)latchData.resizeParameters.nativeResolution.Y)));
 	}
 
 	QueueLog("(INFO): Calibrating...");
@@ -279,7 +279,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	solvedPoints.aspectRatio = aspectRatio;
 	solvedPoints.sensorSizeMM = FVector2D(sensorWidth, sensorHeight);
 	solvedPoints.principalPixelPoint = FVector2D(principalPoint.x, principalPoint.y);
-	solvedPoints.resolution = latchData.resizeParameters.sourceResolution;
+	solvedPoints.resolution = latchData.resizeParameters.nativeResolution;
 	solvedPoints.perspectiveMatrix = perspectiveMatrix;
 	solvedPoints.distortionCoefficients = outputDistortionCoefficients;
 
@@ -373,10 +373,9 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 
 void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString folder, const FString fileName)
 {
-	if (!LensSolverUtilities::ValidateFolder(folder, calibrationVisualizationOutputPath, workerMessage))
+	FString outputPath = FPaths::Combine(folder, fileName);
+	if (!LensSolverUtilities::ValidateFilePath(outputPath, folder, calibrationVisualizationOutputPath, "json"))
 		return;
-
-	FString outputPath = LensSolverUtilities::GenerateIndexedFilePath(folder, fileName, "json");
 
 	TSharedPtr<FJsonObject> obj = MakeShareable(new FJsonObject);
 	TSharedPtr<FJsonObject> result = MakeShareable(new FJsonObject);

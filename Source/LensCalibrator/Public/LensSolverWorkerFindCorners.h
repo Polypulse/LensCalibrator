@@ -56,7 +56,7 @@ private:
 	QueuePixelArrayWorkUnitInputDel* queuePixelArrayWorkUnitInputDel;
 	const QueueFindCornerResultOutputDel* queueFindCornerResultOutputDel;
 
-	void WriteMatToFile(cv::Mat image, FString folder, FString fileName);
+	void WriteMatToFile(cv::Mat image, FString outputPath);
 	void DequeueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit& workUnit);
 	void DequeuePixelArrayWorkUnit(FLensSolverPixelArrayWorkUnit & workUnit);
 	void QueueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit workUnit);

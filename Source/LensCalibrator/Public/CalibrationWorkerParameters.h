@@ -16,7 +16,7 @@ struct FCalibrationWorkerParameters
 	float sensorDiagonalSizeMM;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FIntPoint initialPrincipalPointPixelPosition;
+	FIntPoint initialPrincipalPointNativePixelPosition;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool useInitialIntrinsicValues;
@@ -57,7 +57,7 @@ struct FCalibrationWorkerParameters
 	FCalibrationWorkerParameters()
 	{
 		sensorDiagonalSizeMM = 9.960784f;
-		initialPrincipalPointPixelPosition = FIntPoint(0, 0);
+		initialPrincipalPointNativePixelPosition = FIntPoint(0, 0);
 
 		useInitialIntrinsicValues = false;
 		keepPrincipalPixelPositionFixed = false;

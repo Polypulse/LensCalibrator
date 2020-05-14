@@ -11,9 +11,9 @@
 class LensSolverUtilities
 {
 public:
-	static FString GenerateIndexedFilePath(const FString& folder, const FString& fileName, const FString & extension);
+	static FString GenerateIndexedFilePath(const FString& fileName, const FString & extension);
 	static bool ValidateFolder(FString& folder, const FString & backupFolder, const FString& logMessageHeader);
-	static bool ValidatePath(FString& path, const FString& backupFolder, const FString & backupName, const FString & backupExtension, const FString& logMessageHeader);
+	static bool ValidateFilePath(FString& path, const FString& backupFolder, const FString & backupName, const FString & backupExtension);
 	static bool GetFilesInFolder(const FString& folder, TArray<FString>& files);
 
 	static FString GenerateGenericOutputPath(const FString & subFolder);
