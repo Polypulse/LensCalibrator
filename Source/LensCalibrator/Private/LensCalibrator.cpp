@@ -33,9 +33,11 @@ ULensSolver* FLensCalibratorModule::GetLensSolver()
 	if (lensSolver == nullptr)
 	{
 		Initialize();
+
 		static ULensSolver* staticLensSolver = NewObject<ULensSolver>(GetTransientPackage(), NAME_None, RF_MarkAsRootSet);
 		lensSolver = staticLensSolver;
 		lensSolver->AddToRoot(); // Prevent lens solver from being garbage collected.
+		UE_LOG(LogTemp, Log, TEXT("Initialized Lens Solver."));
 	}
 
 	return lensSolver; 
@@ -49,6 +51,7 @@ UDistortionProcessor* FLensCalibratorModule::GetDistortionProcessor()
 		static UDistortionProcessor* staticDistortionProcessor = NewObject<UDistortionProcessor>(GetTransientPackage(), NAME_None, RF_MarkAsRootSet);
 		distortionProcessor = staticDistortionProcessor;
 		distortionProcessor->AddToRoot(); // Prevent lens solver from being garbage collected.
+		UE_LOG(LogTemp, Log, TEXT("Initialized Distortion Processor."));
 	}
 
 	return distortionProcessor; 
@@ -60,7 +63,7 @@ void FLensCalibratorModule::StartupModule()
 	distortionProcessor = nullptr;
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
     AddShaderSourceDirectoryMapping("/LensCalibratorShaders", FPaths::Combine(FPaths::ProjectDir(), TEXT("Plugins/LensCalibrator/Shaders")));
-	IConsoleManager::Get().RegisterConsoleVariable(TEXT("LensCalibrator.Debug"), 0, TEXT("Output more log information for Debug()ging."));
+	IConsoleManager::Get().RegisterConsoleVariable(TEXT("LensCalibrator.Debug"), 0, TEXT("Output more log information for debugging."));
 }
 
 void FLensCalibratorModule::ShutdownModule()
