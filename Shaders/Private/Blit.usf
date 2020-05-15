@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "/Engine/Public/Platform.ush"
+
 Texture2D InTexture;
 SamplerState InTextureSampler;
 float2 InFlipDirection;

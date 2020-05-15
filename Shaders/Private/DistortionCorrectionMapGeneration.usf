@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "/Engine/Public/Platform.ush"
+
 float2 InNormalizedPrincipalPoint;
 float InDistortionCoefficients[5];
 int InGenerateInverseMap;

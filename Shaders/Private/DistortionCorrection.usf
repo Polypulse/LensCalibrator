@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "/Engine/Public/Platform.ush"
+
 Texture2D InDistortedTexture;
 SamplerState InDistortedTextureSampler;
 

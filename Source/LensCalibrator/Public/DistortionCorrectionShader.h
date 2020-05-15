@@ -13,7 +13,7 @@
 
 class FDistortionCorrectionShaderVS : public FGlobalShader
 {
-	DECLARE_GLOBAL_SHADER(FDistortionCorrectionShaderVS);
+	DECLARE_SHADER_TYPE(FDistortionCorrectionShaderVS, Global);
 
 public:
 	FDistortionCorrectionShaderVS();
@@ -26,16 +26,14 @@ public:
 
 class FDistortionCorrectionShaderPS : public FGlobalShader
 {
-	DECLARE_GLOBAL_SHADER(FDistortionCorrectionShaderPS);
+	DECLARE_SHADER_TYPE(FDistortionCorrectionShaderPS, Global);
 
 private:
-	FShaderResourceParameter InputDistortedTextureParameter;
-	FShaderResourceParameter InputDistortedTextureSamplerParameter;
-
-	FShaderResourceParameter InputDistortionCorrectionTextureParameter;
-	FShaderResourceParameter InputDistortionCorrectionTextureSamplerParameter;
-
-	FShaderParameter reverseParameter;
+	LAYOUT_FIELD(FShaderResourceParameter, InputDistortedTextureParameter);
+	LAYOUT_FIELD(FShaderResourceParameter, InputDistortedTextureSamplerParameter);
+	LAYOUT_FIELD(FShaderResourceParameter, InputDistortionCorrectionTextureParameter);
+	LAYOUT_FIELD(FShaderResourceParameter, InputDistortionCorrectionTextureSamplerParameter);
+	LAYOUT_FIELD(FShaderParameter, reverseParameter);
 
 public:
 	FDistortionCorrectionShaderPS();

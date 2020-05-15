@@ -13,7 +13,7 @@
 
 class FDistortionCorrectionMapGenerationVS : public FGlobalShader
 {
-	DECLARE_GLOBAL_SHADER(FDistortionCorrectionMapGenerationVS);
+	DECLARE_SHADER_TYPE(FDistortionCorrectionMapGenerationVS, Global);
 
 public:
 	FDistortionCorrectionMapGenerationVS();
@@ -26,7 +26,7 @@ public:
 
 class FDistortionCorrectionMapGenerationPS : public FGlobalShader
 {
-	DECLARE_GLOBAL_SHADER(FDistortionCorrectionMapGenerationPS);
+	DECLARE_SHADER_TYPE(FDistortionCorrectionMapGenerationPS, Global);
 
 private:
 	/*
@@ -34,9 +34,9 @@ private:
 	FShaderResourceParameter InputTextureSamplerParameter;
 	FShaderParameter flipDirectionParameter;
 	*/
-	FShaderParameter distortionCoefficientsParameter;
-	FShaderParameter normalizedPrincipalPointParameter;
-	FShaderParameter generateInverseMapParameter;
+	LAYOUT_FIELD(FShaderParameter, distortionCoefficientsParameter);
+	LAYOUT_FIELD(FShaderParameter, normalizedPrincipalPointParameter);
+	LAYOUT_FIELD(FShaderParameter, generateInverseMapParameter);
 
 public:
 	FDistortionCorrectionMapGenerationPS();

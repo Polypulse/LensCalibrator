@@ -9,7 +9,7 @@ public class LensCalibrator : ModuleRules
 {
 	public LensCalibrator(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		// PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		bool isDebug = Target.Configuration == UnrealTargetConfiguration.Debug;
 		Console.WriteLine(isDebug ? "Compiling Debug() build." : "Compiling release build.");
 		
@@ -38,33 +38,38 @@ public class LensCalibrator : ModuleRules
 			
 		
 		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore",
-				"MediaAssets",
-				"RenderCore",
-				"ImageWrapper",
-				"ImageWriteQueue",
-				"RHI",
-				"Json",
-				"JsonUtilities"
-			}
+                new string[]
+                {
+                    "Core",
+                    "CoreUObject",
+                    "Engine",
+                    "Slate",
+                    "SlateCore",
+                    "MediaAssets",
+                    "RenderCore",
+                    "ImageWrapper",
+                    "ImageWriteQueue",
+                    "RHI",
+                    "Json",
+                    "JsonUtilities"
+                }
 			);
 		
 		
-		string[] files = Directory.GetFiles(Path.Combine(ModuleDirectory, isDebug ? "../../Source/ThirdParty/OpenCV/Binaries/Debug/Static" : "../../Source/ThirdParty/OpenCV/Binaries/Release/Static"));
+		string[] files = Directory.GetFiles(Path.Combine(ModuleDirectory, 
+			isDebug ? 
+			"../../Source/ThirdParty/OpenCV/Binaries/Debug/Static" : 
+			"../../Source/ThirdParty/OpenCV/Binaries/Release/Static"));
 
 		files = files.Where(f => {
-			return Path.GetExtension(f) == ".lib" && !f.Contains("libpng.lib");
+			return Path.GetExtension(f) == ".lib"/* && !f.Contains("libpng.lib")*/;
         }).ToArray();
 
 		PublicAdditionalLibraries.AddRange(files);
+		foreach (string publicLib in PublicAdditionalLibraries)
+			Console.WriteLine(string.Format("Including additional public library: \"{0}\".", publicLib));
 
-		string libPNGPath = Path.Combine(EngineDirectory, "Source/ThirdParty/libPNG/libPNG-1.5.2/lib/Win64-llvm/Release/libpng15_static.lib");
-		PublicAdditionalLibraries.Add(libPNGPath);
+		// string libPNGPath = Path.Combine(EngineDirectory, "Source/ThirdParty/libPNG/libPNG-1.5.2/lib/Win64-llvm/Release/libpng15_static.lib");
+		// PublicAdditionalLibraries.Add(libPNGPath);
 	}
 }

@@ -14,7 +14,7 @@
 
 class FBlitShaderVS : public FGlobalShader
 {
-	DECLARE_GLOBAL_SHADER(FBlitShaderVS);
+	DECLARE_SHADER_TYPE(FBlitShaderVS, Global);
 
 public:
 	FBlitShaderVS();
@@ -27,12 +27,12 @@ public:
 
 class FBlitShaderPS : public FGlobalShader
 {
-	DECLARE_GLOBAL_SHADER(FBlitShaderPS);
+	DECLARE_SHADER_TYPE(FBlitShaderPS, Global);
 
 private:
-	FShaderResourceParameter InputTextureParameter;
-	FShaderResourceParameter InputTextureSamplerParameter;
-	FShaderParameter flipDirectionParameter;
+	LAYOUT_FIELD(FShaderResourceParameter, InputTextureParameter);
+	LAYOUT_FIELD(FShaderResourceParameter, InputTextureSamplerParameter);
+	LAYOUT_FIELD(FShaderParameter, flipDirectionParameter);
 
 public:
 	FBlitShaderPS();
