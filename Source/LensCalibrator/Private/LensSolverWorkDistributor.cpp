@@ -859,7 +859,10 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	if (mediaStreamWorkUnit.mediaStreamParameters.writePostBlitRenderTextureToFile)
 	{
 		FString outputPath = mediaStreamWorkUnit.mediaStreamParameters.postBlitRenderTextureOutputPath;
-		if (LensSolverUtilities::ValidateFilePath(outputPath, FPaths::Combine(FPaths::ProjectSavedDir(), "PostBlitRenderTextureOutput"), "PostBlitRenderTexture", "bmp"))
+		FString backupOutputDir = FPaths::ProjectSavedDir();
+		FString folder("PostBlitRenderTextureOutput");
+		backupOutputDir = FPaths::Combine(backupOutputDir, folder);
+		if (LensSolverUtilities::ValidateFilePath(outputPath, backupOutputDir, "PostBlitRenderTexture", "bmp"))
 		{
 			FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
 			UE_LOG(LogTemp, Log, TEXT("Wrote blit render texture to file: \"%s\"."), *outputPath);

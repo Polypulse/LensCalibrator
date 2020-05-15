@@ -53,6 +53,7 @@ bool LensSolverUtilities::ValidateFilePath(FString& filePath, const FString& abs
 {
 	if (filePath.IsEmpty() || !FPaths::ValidatePath(filePath))
 	{
+		FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*absoluteBackupFolderPath);
 		filePath = FPaths::Combine(absoluteBackupFolderPath, backupFileName);
 		filePath = LensSolverUtilities::GenerateIndexedFilePath(filePath, backupExtension);
 		return true;
