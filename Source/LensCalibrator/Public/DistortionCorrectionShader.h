@@ -21,7 +21,7 @@ public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters);
 	template<typename TShaderRHIParamRef>
 	void SetParameters(FRHICommandList& RHICmdList, const TShaderRHIParamRef ShaderRHI, const FGlobalShaderPermutationParameters& ShaderInputData);
-	virtual bool Serialize(FArchive& Ar) override;
+	// virtual bool Serialize(FArchive& Ar) override;
 };
 
 class FDistortionCorrectionShaderPS : public FGlobalShader
@@ -49,7 +49,7 @@ public:
 		FTextureRHIRef InputDistortionCorrectionTexture,
 		bool reverse);
 
-	virtual bool Serialize(FArchive& Ar) override;
+	// virtual bool Serialize(FArchive& Ar) override;
 };
 
 IMPLEMENT_GLOBAL_SHADER(FDistortionCorrectionShaderVS, "/LensCalibratorShaders/Private/DistortionCorrection.usf", "MainVS", SF_Vertex);

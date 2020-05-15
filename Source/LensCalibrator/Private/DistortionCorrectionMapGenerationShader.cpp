@@ -32,10 +32,12 @@ void FDistortionCorrectionMapGenerationVS::SetParameters(FRHICommandList& RHICmd
 {
 }
 
+/*
 bool FDistortionCorrectionMapGenerationVS::Serialize(FArchive& Ar) 
 {
 	return FGlobalShader::Serialize(Ar);
 }
+*/
 
 FDistortionCorrectionMapGenerationPS::FDistortionCorrectionMapGenerationPS() {}
 
@@ -63,11 +65,13 @@ void FDistortionCorrectionMapGenerationPS::SetParameters(
 
 	SetShaderValue(RHICmdList, GetPixelShader(), flipDirectionParameter, flipDirection);
 	*/
-	SetShaderValue(RHICmdList, GetPixelShader(), normalizedPrincipalPointParameter, normalizedPrincipalPoint);
-	SetShaderValue(RHICmdList, GetPixelShader(), distortionCoefficientsParameter, inputDistortionCoefficients);
-	SetShaderValue(RHICmdList, GetPixelShader(), generateInverseMapParameter, generateInverseMap ? 1 : 0);
+
+	SetShaderValue(RHICmdList, RHICmdList.GetBoundPixelShader(), normalizedPrincipalPointParameter, normalizedPrincipalPoint);
+	SetShaderValue(RHICmdList, RHICmdList.GetBoundPixelShader(), distortionCoefficientsParameter, inputDistortionCoefficients);
+	SetShaderValue(RHICmdList, RHICmdList.GetBoundPixelShader(), generateInverseMapParameter, generateInverseMap ? 1 : 0);
 }
 
+/*
 bool FDistortionCorrectionMapGenerationPS::Serialize(FArchive& Ar) 
 {
 	bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
@@ -78,3 +82,4 @@ bool FDistortionCorrectionMapGenerationPS::Serialize(FArchive& Ar)
 
 	return bShaderHasOutdatedParameters;
 }
+*/

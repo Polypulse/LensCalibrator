@@ -240,7 +240,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	principalPoint.x = sourcePixelWidth * (principalPoint.x / sensorWidth);
 	principalPoint.y = sourcePixelHeight * (principalPoint.y / sensorHeight);
 
-	FString format = FString("(INFO): Completed camera calibration at zoom level: %f "
+	QueueLog(FString::Printf(TEXT("(INFO): Completed camera calibration at zoom level: %f "
 		"with solve error: %f "
 		"with results: ("
 		"\n\tField of View in degrees: (%f, %f)"
@@ -248,9 +248,7 @@ void FLensSolverWorkerCalibrate::Tick()
 		"\n\tSensor height in MM: %f,"
 		"\n\tFocal Length in MM: %f,"
 		"\n\tPrincipal Point Pixel: (%f, %f),"
-		"\n\tAspect Ratio: %f\n)");
-
-	QueueLog(FString::Printf(*format,
+		"\n\tAspect Ratio: %f\n)"),
 		latchData.baseParameters.zoomLevel,
 		error,
 		fovX,

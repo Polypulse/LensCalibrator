@@ -32,10 +32,12 @@ void FDistortionCorrectionShaderVS::SetParameters(FRHICommandList& RHICmdList, c
 {
 }
 
+/*
 bool FDistortionCorrectionShaderVS::Serialize(FArchive& Ar) 
 {
 	return FGlobalShader::Serialize(Ar);
 }
+*/
 
 FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS() {}
 
@@ -61,15 +63,16 @@ void FDistortionCorrectionShaderPS::SetParameters(
 	FTextureRHIRef InputDistortionCorrectionTexture,
 	bool reverse)
 {
-	SetTextureParameter(RHICmdList, GetPixelShader(), InputDistortedTextureParameter, InputDistortedTexture);
-	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortedTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
+	SetTextureParameter(RHICmdList, RHICmdList.GetBoundPixelShader(), InputDistortedTextureParameter, InputDistortedTexture);
+	RHICmdList.SetShaderSampler(RHICmdList.GetBoundPixelShader(), InputDistortedTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
 
-	SetTextureParameter(RHICmdList, GetPixelShader(), InputDistortionCorrectionTextureParameter, InputDistortionCorrectionTexture);
-	RHICmdList.SetShaderSampler(GetPixelShader(), InputDistortionCorrectionTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
+	SetTextureParameter(RHICmdList, RHICmdList.GetBoundPixelShader(), InputDistortionCorrectionTextureParameter, InputDistortionCorrectionTexture);
+	RHICmdList.SetShaderSampler(RHICmdList.GetBoundPixelShader(), InputDistortionCorrectionTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
 
-	SetShaderValue(RHICmdList, GetPixelShader(), reverseParameter, (reverse ? 1 : 0));
+	SetShaderValue(RHICmdList, RHICmdList.GetBoundPixelShader(), reverseParameter, (reverse ? 1 : 0));
 }
 
+/*
 bool FDistortionCorrectionShaderPS::Serialize(FArchive& Ar) 
 {
 	bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
@@ -82,3 +85,4 @@ bool FDistortionCorrectionShaderPS::Serialize(FArchive& Ar)
 
 	return bShaderHasOutdatedParameters;
 }
+*/

@@ -146,7 +146,7 @@ bool LensSolverUtilities::GetFilesInFolder(const FString& folder, TArray<FString
 
 FString LensSolverUtilities::GenerateGenericOutputPath(const FString & subFolder)
 {
-	return FPaths::ConvertRelativePathToFull(FPaths::GameSavedDir() + subFolder);
+	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), subFolder));
 }
 
 bool LensSolverUtilities::CreateTexture2D(
@@ -264,7 +264,7 @@ bool LensSolverUtilities::LoadTexture16(FString absoluteTexturePath, UTexture2D*
 		return false;
 	}
 
-	const TArray<uint8> * rawData = nullptr;
+	TArray64<uint8> rawData;
 	if (!imageWrapper->GetRaw(ERGBFormat::RGBA, 16, rawData))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to get raw data in file: \"%s\"."), *absoluteTexturePath);
@@ -291,7 +291,7 @@ bool LensSolverUtilities::LoadTexture16(FString absoluteTexturePath, UTexture2D*
 	texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 	texture->PlatformData->Mips[0].SizeX = imageWrapper->GetWidth();
 	texture->PlatformData->Mips[0].SizeY = imageWrapper->GetHeight();
-	texture->PlatformData->Mips[0].BulkData.Realloc(rawData->Num());
+	texture->PlatformData->Mips[0].BulkData.Realloc(rawData.Num());
 	texture->PlatformData->Mips[0].BulkData.Unlock();
 
 	uint8 * textureData = (uint8*)texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
@@ -302,7 +302,7 @@ bool LensSolverUtilities::LoadTexture16(FString absoluteTexturePath, UTexture2D*
 		return false;
 	}
 	
-	FMemory::Memcpy(textureData, rawData->GetData(), rawData->Num());
+	FMemory::Memcpy(textureData, rawData.GetData(), rawData.Num());
 	texture->PlatformData->Mips[0].BulkData.Unlock();
 
 	texture->UpdateResource();
@@ -353,7 +353,7 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, UTexture2D*& 
 		return false;
 	}
 
-	const TArray<uint8>* rawData = nullptr;
+	TArray64<uint8> rawData;
 	if (!imageWrapper->GetRaw(ERGBFormat::RGBA, 8, rawData))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to get raw data in file: \"%s\"."), *absoluteTexturePath);
@@ -377,7 +377,7 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, UTexture2D*& 
 	texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 	texture->PlatformData->Mips[0].SizeX = imageWrapper->GetWidth();
 	texture->PlatformData->Mips[0].SizeY = imageWrapper->GetHeight();
-	texture->PlatformData->Mips[0].BulkData.Realloc(rawData->Num());
+	texture->PlatformData->Mips[0].BulkData.Realloc(rawData.Num());
 	texture->PlatformData->Mips[0].BulkData.Unlock();
 
 	uint8 * textureData = (uint8*)texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
@@ -388,7 +388,7 @@ bool LensSolverUtilities::LoadTexture(FString absoluteTexturePath, UTexture2D*& 
 		return false;
 	}
 	
-	FMemory::Memcpy(textureData, rawData->GetData(), rawData->Num());
+	FMemory::Memcpy(textureData, rawData.GetData(), rawData.Num());
 	texture->PlatformData->Mips[0].BulkData.Unlock();
 
 	texture->UpdateResource();

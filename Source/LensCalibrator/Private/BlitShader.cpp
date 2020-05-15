@@ -32,10 +32,12 @@ void FBlitShaderVS::SetParameters(FRHICommandList& RHICmdList, const TShaderRHIP
 {
 }
 
+/*
 bool FBlitShaderVS::Serialize(FArchive& Ar) 
 {
 	return FGlobalShader::Serialize(Ar);
 }
+*/
 
 FBlitShaderPS::FBlitShaderPS() {}
 
@@ -56,12 +58,13 @@ void FBlitShaderPS::SetParameters(
 	FTextureRHIRef InputTexture,
 	FVector2D flipDirection)
 {
-	SetTextureParameter(RHICmdList, GetPixelShader(), InputTextureParameter, InputTexture);
-	RHICmdList.SetShaderSampler(GetPixelShader(), InputTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
+	SetTextureParameter(RHICmdList, RHICmdList.GetBoundPixelShader(), InputTextureParameter, InputTexture);
+	RHICmdList.SetShaderSampler(RHICmdList.GetBoundPixelShader(), InputTextureSamplerParameter.GetBaseIndex(), TStaticSamplerState<SF_Trilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI());
 
-	SetShaderValue(RHICmdList, GetPixelShader(), flipDirectionParameter, flipDirection);
+	SetShaderValue(RHICmdList, RHICmdList.GetBoundPixelShader(), flipDirectionParameter, flipDirection);
 }
 
+/*
 bool FBlitShaderPS::Serialize(FArchive& Ar) 
 {
 	bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
@@ -72,3 +75,4 @@ bool FBlitShaderPS::Serialize(FArchive& Ar)
 
 	return bShaderHasOutdatedParameters;
 }
+*/

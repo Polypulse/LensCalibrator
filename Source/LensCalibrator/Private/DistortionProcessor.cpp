@@ -66,8 +66,8 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
 	GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
 	GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
-	GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
-	GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+	GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+	GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 	GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_DontStore);
@@ -82,12 +82,15 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	RHICmdList.EndRenderPass();
 
 	FRHITexture2D * texture2D = distortionCorrectionRenderTexture->GetTexture2D();
-	TUniquePtr<TImagePixelData<FFloat16Color>> pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
+	TArray<FFloat16Color> pixels;
 
-	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixelData->Pixels, (ECubeFace)0, 0, 0);
+	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixels, (ECubeFace)0, 0, 0);
+
+	TUniquePtr<TImagePixelData<FFloat16Color>> pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
+	pixelData->Pixels = pixels;
 	check(pixelData->IsDataWellFormed());
 
-	TArray<FFloat16Color> distortionCorrectionPixels = pixelData->Pixels;
+	TArray<FFloat16Color> distortionCorrectionPixels(pixels);
 	if (!LensSolverUtilities::WriteTexture16(correctionFilePath, width, height, MoveTemp(pixelData)))
 		return;
 
@@ -104,12 +107,13 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	RHICmdList.EndRenderPass();
 
 	texture2D = distortionCorrectionRenderTexture->GetTexture2D();
-	pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
+	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixels, (ECubeFace)0, 0, 0);
 
-	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixelData->Pixels, (ECubeFace)0, 0, 0);
+	pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
+	pixelData->Pixels = pixels;
 	check(pixelData->IsDataWellFormed());
 
-	TArray<FFloat16Color> inverseDistortionCorrectionPixels = pixelData->Pixels;
+	TArray<FFloat16Color> inverseDistortionCorrectionPixels(pixels);
 	if (!LensSolverUtilities::WriteTexture16(inverseCorrectionFilePath, width, height, MoveTemp(pixelData)))
 	{
 
@@ -168,8 +172,8 @@ void UDistortionProcessor::UndistortImageRenderThread(
 		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
 		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
 		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
-		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
-		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);

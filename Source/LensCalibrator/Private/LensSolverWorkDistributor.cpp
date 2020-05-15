@@ -832,8 +832,8 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
 		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
 		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
-		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = GETSAFERHISHADER_VERTEX(*VertexShader);
-		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = GETSAFERHISHADER_PIXEL(*PixelShader);
+		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
@@ -859,7 +859,7 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	if (mediaStreamWorkUnit.mediaStreamParameters.writePostBlitRenderTextureToFile)
 	{
 		FString outputPath = mediaStreamWorkUnit.mediaStreamParameters.postBlitRenderTextureOutputPath;
-		if (LensSolverUtilities::ValidateFilePath(outputPath, FPaths::Combine(FPaths::GameSavedDir(), "PostBlitRenderTextureOutput"), "PostBlitRenderTexture", "bmp"))
+		if (LensSolverUtilities::ValidateFilePath(outputPath, FPaths::Combine(FPaths::ProjectSavedDir(), "PostBlitRenderTextureOutput"), "PostBlitRenderTexture", "bmp"))
 		{
 			FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
 			UE_LOG(LogTemp, Log, TEXT("Wrote blit render texture to file: \"%s\"."), *outputPath);
