@@ -1,0 +1,16 @@
+{
+    "driver_null": {
+        "enable": true,
+        "loadPriority": -999,
+        "serialNumber": "Null Serial Number",
+        "modelNumber": "Null Model Number",
+        "windowX": 0,
+        "windowY": 0,
+        "windowWidth": 2160,
+        "windowHeight": 1200,
+        "renderWidth": 1512,
+        "renderHeight": 1680,
+        "secondsFromVsyncToPhotons": 0.01111111,
+        "displayFrequency": 90.0
+    }
+}

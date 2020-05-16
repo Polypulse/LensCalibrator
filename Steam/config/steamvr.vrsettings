@@ -1,0 +1,28 @@
+{
+   "DesktopUI" : {
+      "pairing" : "568,271,800,600,0",
+      "settings_desktop" : "584,333,800,600,0"
+   },
+   "GpuSpeed" : {
+      "gpuSpeed0" : 117,
+      "gpuSpeed1" : 117,
+      "gpuSpeedCount" : 2,
+      "gpuSpeedDriver" : "26.21.14.4587",
+      "gpuSpeedHorsepower" : 117,
+      "gpuSpeedRenderTargetScale" : 0.8399999737739563,
+      "gpuSpeedVendor" : "NVIDIA Quadro P1000",
+      "gpuSpeedVersion" : 2
+   },
+   "LastKnown" : {
+      "HMDModel" : "Null Model Number"
+   },
+   "steamvr" : {
+      "activateMultipleDrivers" : true,
+      "enableHomeApp" : false,
+      "forcedDriver" : "null",
+      "installID" : "15061286652222420807",
+      "lastVersionNotice" : "1.11.12",
+      "lastVersionNoticeDate" : "1589495196",
+      "requireHMD" : false
+   }
+}

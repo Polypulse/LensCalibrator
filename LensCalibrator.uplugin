@@ -21,5 +21,11 @@
 			"LoadingPhase": "PostConfigInit",
 			"WhitelistPlatforms": [ "Win64" ]
 		}
+	],
+	"Plugins" : [
+		{
+			"Name": "Composure",
+			"Enabled": true
+		}
 	]
 }
