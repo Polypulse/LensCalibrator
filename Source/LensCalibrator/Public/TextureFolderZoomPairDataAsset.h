@@ -6,6 +6,7 @@
 
 #include "GenericLensSolverParameters.h"
 #include "OneTimeProcessParameters.h"
+#include "TextureFolderZoomPair.h"
 
 #include "TextureFolderZoomPairDataAsset.generated.h"
 
@@ -19,4 +20,7 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FOneTimeProcessParameters oneTimeProcessParameters;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	TArray<FTextureFolderZoomPair> inputs;
 };
