@@ -66,10 +66,9 @@ public class LensCalibrator : ModuleRules
         }).ToArray();
 
 		PublicAdditionalLibraries.AddRange(files);
+		/*
 		foreach (string publicLib in PublicAdditionalLibraries)
 			Console.WriteLine(string.Format("Including additional public library: \"{0}\".", publicLib));
-
-		// string libPNGPath = Path.Combine(EngineDirectory, "Source/ThirdParty/libPNG/libPNG-1.5.2/lib/Win64-llvm/Release/libpng15_static.lib");
-		// PublicAdditionalLibraries.Add(libPNGPath);
+        */
 	}
 }
