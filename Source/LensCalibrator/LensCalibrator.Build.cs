@@ -62,7 +62,7 @@ public class LensCalibrator : ModuleRules
 			"../../Source/ThirdParty/OpenCV/Binaries/Release/Static"));
 
 		files = files.Where(f => {
-			return Path.GetExtension(f) == ".lib"/* && !f.Contains("libpng.lib")*/;
+			return Path.GetExtension(f) == ".lib" && !f.Contains("libpng.lib");
         }).ToArray();
 
 		PublicAdditionalLibraries.AddRange(files);
