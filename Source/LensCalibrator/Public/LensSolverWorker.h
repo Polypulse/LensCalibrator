@@ -30,16 +30,16 @@ DECLARE_DELEGATE_RetVal(bool, IsClosingOutputDel)
 
 struct FLensSolverWorkerParameters 
 {
-	const QueueLogOutputDel * inputQueueLogOutputDel;
+	QueueLogOutputDel * inputQueueLogOutputDel;
 	IsClosingOutputDel * inputIsClosingOutputDel;
 	GetWorkLoadOutputDel * inputGetWorkOutputLoadDel;
-	const FString inputWorkerID;
+	FString inputWorkerID;
 
 	FLensSolverWorkerParameters(
-		const QueueLogOutputDel* inQueueLogOutputDel,
+		QueueLogOutputDel* inQueueLogOutputDel,
 		IsClosingOutputDel* inIsClosingOutputDel,
 		GetWorkLoadOutputDel* inGetWorkOutputLoadDel,
-		const FString inWorkerID) :
+		FString inWorkerID) :
 		inputQueueLogOutputDel(inQueueLogOutputDel),
 		inputIsClosingOutputDel(inIsClosingOutputDel),
 		inputGetWorkOutputLoadDel(inGetWorkOutputLoadDel),
@@ -56,10 +56,10 @@ public:
 
 private:
 	FCriticalSection threadLock;
-	const FString workerID;
+	FString workerID;
 	bool flagToExit;
 
-	const QueueLogOutputDel* queueLogOutputDel;
+	QueueLogOutputDel* queueLogOutputDel;
 	IsClosingOutputDel * isClosingOutputDel;
 	GetWorkLoadOutputDel * getWorkOutputLoadDel;
 
@@ -67,7 +67,7 @@ private:
 
 public:
 	static FString JobDataToString(const FBaseParameters & baseParameters);
-	FLensSolverWorker(const FLensSolverWorkerParameters & inputParameters);
+	FLensSolverWorker(FLensSolverWorkerParameters & inputParameters);
 	virtual ~FLensSolverWorker() 
 	{
 		/*

@@ -20,6 +20,7 @@
 #include "BlitShader.h"
 #include "MatQueueWriter.h"
 
+#include "WorkerRegistry.h"
 #include "LensSolver.h"
 
 bool ULensSolver::ValidateMediaTexture(const UMediaTexture* inputTexture)
@@ -191,18 +192,27 @@ void ULensSolver::StartMediaStreamCalibration(
 
 void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
 {
+	if (WorkerRegistry::Get().WorkersRunning())
+	{
+		UE_LOG(LogTemp, Error, TEXT("You already have workers running, stop them before starting more."));
+		return;
+	}
+
 	LensSolverWorkDistributor::GetInstance().Configure(queueLogOutputDel, queueFinishedJobOutputDel);
 
 	if (queueLogOutputDel->IsBound())
 		queueLogOutputDel->Unbind();
 
 	queueLogOutputDel->BindUObject(this, &ULensSolver::QueueLog);
+
 	UE_LOG(LogTemp, Log, TEXT("Binded log queue."));
 
+	// queueFinishedJobOutputDel->Unbind();
 	if (queueFinishedJobOutputDel->IsBound())
 		queueFinishedJobOutputDel->Unbind();
 
 	queueFinishedJobOutputDel->BindUObject(this, &ULensSolver::QueueFinishedJob);
+
 	UE_LOG(LogTemp, Log, TEXT("Binded finished queue."));
 
 	LensSolverWorkDistributor::GetInstance().PrepareFindCornerWorkers(findCornersWorkerCount);

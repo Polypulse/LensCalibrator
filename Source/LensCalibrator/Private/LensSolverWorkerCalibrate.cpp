@@ -3,10 +3,10 @@
 #include "GenericPlatform/GenericPlatformProcess.h"
 
 FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
-	const FLensSolverWorkerParameters & inputParameters,
+	FLensSolverWorkerParameters & inputParameters,
 	QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
 	QueueLatchInputDel* inputSignalLatch,
-	const QueueCalibrationResultOutputDel* inputOnSolvePointsDel) :
+	QueueCalibrationResultOutputDel* inputOnSolvePointsDel) :
 	FLensSolverWorker(inputParameters),
 	onSolvePointsDel(inputOnSolvePointsDel)
 {

@@ -14,10 +14,10 @@ class FLensSolverWorkerFindCorners : public FLensSolverWorker
 {
 public:
 	FLensSolverWorkerFindCorners(
-		const FLensSolverWorkerParameters & inputParameters,
+		FLensSolverWorkerParameters & inputParameters,
 		QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
 		QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
-		const QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel);
+		QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel);
 
 	~FLensSolverWorkerFindCorners()
 	{
@@ -45,8 +45,8 @@ public:
 private:
 	mutable int workUnitCount;
 
-	TQueue<FLensSolverPixelArrayWorkUnit> pixelArrayWorkQueue;
-	TQueue<FLensSolverTextureFileWorkUnit> textureFileWorkQueue;
+	TQueue<FLensSolverPixelArrayWorkUnit, EQueueMode::Mpsc> pixelArrayWorkQueue;
+	TQueue<FLensSolverTextureFileWorkUnit, EQueueMode::Mpsc> textureFileWorkQueue;
 
 	/*
 	const QueueTextureFileWorkUnitInputDel* queueTextureFileWorkUnitInputDel;

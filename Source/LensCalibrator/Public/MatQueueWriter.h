@@ -31,7 +31,7 @@ public:
 	}
 
 private:
-	TQueue<MatQueueContainer> matQueue;
+	TQueue<MatQueueContainer, EQueueMode::Mpsc> matQueue;
 	MatQueueWriter() {}
 
 public:

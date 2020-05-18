@@ -22,8 +22,8 @@ class LENSCALIBRATOR_API UDistortionProcessor : public UObject
 	GENERATED_BODY()
 private:
 
-	TQueue<FDistortionCorrectionMapGenerationResults> queuedDistortionCorrectionMapResults;
-	TQueue<FCorrectedDistortedImageResults> queuedCorrectedDistortedImageResults;
+	TQueue<FDistortionCorrectionMapGenerationResults, EQueueMode::Mpsc> queuedDistortionCorrectionMapResults;
+	TQueue<FCorrectedDistortedImageResults, EQueueMode::Mpsc> queuedCorrectedDistortedImageResults;
 	TMap<FString, DistortionJob> cachedEvents;
 
 	void GenerateDistortionCorrectionMapRenderThread(

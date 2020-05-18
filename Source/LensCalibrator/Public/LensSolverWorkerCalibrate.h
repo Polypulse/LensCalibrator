@@ -16,10 +16,10 @@ class FLensSolverWorkerCalibrate : public FLensSolverWorker
 public:
 
 	FLensSolverWorkerCalibrate(
-		const FLensSolverWorkerParameters & inputParameters,
+		FLensSolverWorkerParameters & inputParameters,
 		QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
 		QueueLatchInputDel* inputSignalLatch,
-		const QueueCalibrationResultOutputDel* inputOnSolvePointsDel);
+		QueueCalibrationResultOutputDel* inputOnSolvePointsDel);
 
 	~FLensSolverWorkerCalibrate()
 	{
@@ -52,7 +52,7 @@ private:
 	const QueueCalibrationResultOutputDel * onSolvePointsDel;
 
 	TMap<FString, TQueue<FLensSolverCalibrationPointsWorkUnit>*> workQueue;
-	TQueue<FCalibrateLatch> latchQueue;
+	TQueue<FCalibrateLatch, EQueueMode::Mpsc> latchQueue;
 
 	FMatrix GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength);
 	FTransform GenerateTransformFromRAndTVecs(std::vector<cv::Mat>& rvecs, std::vector<cv::Mat>& tvecs);

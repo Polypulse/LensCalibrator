@@ -49,7 +49,7 @@ private:
 	TMap<FString, const FString> workerCalibrationIDLUT;
 	TMap<FString, FMediaStreamWorkUnit> mediaTextureJobLUT;
 
-	TQueue<CalibrationResultQueueContainer> queuedCalibrationResults;
+	TQueue<CalibrationResultQueueContainer, EQueueMode::Mpsc> queuedCalibrationResults;
 
 	// FTexture2DRHIRef blitRenderTexture;
 	// bool blitRenderTextureAllocated;

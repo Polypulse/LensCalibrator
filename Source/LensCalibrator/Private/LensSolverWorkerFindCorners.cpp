@@ -3,10 +3,10 @@
 #include "MatQueueWriter.h"
 
 FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
-	const FLensSolverWorkerParameters & inputParameters,
+	FLensSolverWorkerParameters & inputParameters,
 	QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
 	QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
-	const QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel) :
+	QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel) :
 	FLensSolverWorker(inputParameters),
 	queueFindCornerResultOutputDel(inputQueueFindCornerResultOutputDel)
 {

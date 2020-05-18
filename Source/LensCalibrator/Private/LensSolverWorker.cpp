@@ -8,8 +8,9 @@
 #include "IImageWrapper.h"
 #include "RenderUtils.h"
 #include "Engine/Texture2D.h"
+#include "WorkerRegistry.h"
 
-FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters& inputParameters) :
+FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters& inputParameters) :
 	workerID(inputParameters.inputWorkerID),
 	calibrationVisualizationOutputPath(LensSolverUtilities::GenerateGenericOutputPath(FString::Printf(TEXT("CalibrationVisualizations/Worker-%s/"), *workerID))),
 	queueLogOutputDel(inputParameters.inputQueueLogOutputDel),
@@ -24,6 +25,7 @@ FLensSolverWorker::FLensSolverWorker(const FLensSolverWorkerParameters& inputPar
 	*/
 
 	flagToExit = false;
+	WorkerRegistry::Get().CountWorker();
 }
 
 void FLensSolverWorker::QueueLog(FString log)
@@ -85,7 +87,9 @@ void FLensSolverWorker::DoWork()
 	}
 
 	QueueLog("Exited loop.");
+
 	flagToExit = true;
+	WorkerRegistry::Get().UncountWorker();
 }
 
 bool FLensSolverWorker::Exit()

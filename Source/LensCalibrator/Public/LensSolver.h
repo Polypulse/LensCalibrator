@@ -38,8 +38,8 @@ private:
 	QueueLogOutputDel * queueLogOutputDel;
 	QueueFinishedJobOutputDel * queueFinishedJobOutputDel;
 
-	TQueue<FinishedJobQueueContainer> queuedFinishedJobs;
-	TQueue<FString> logQueue;
+	TQueue<FinishedJobQueueContainer, EQueueMode::Mpsc> queuedFinishedJobs;
+	TQueue<FString, EQueueMode::Mpsc> logQueue;
 
 	bool ValidateMediaTexture(const UMediaTexture* inputTexture);
 
@@ -55,7 +55,7 @@ private:
 
 public:
 
-	ULensSolver()  {}
+	ULensSolver() {}
 	~ULensSolver() {}
 
 	void OneTimeProcessArrayOfTextureFolderZoomPairs(
