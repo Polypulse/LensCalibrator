@@ -1,3 +1,6 @@
+/* Copyright (C) Polypulse LLC - All Rights Reserved
+ * Written by Sean Connor <sean@polypulse.io>, April 2020 */
+
 #include "LensSolverWorkerFindCorners.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 #include "MatQueueWriter.h"
