@@ -65,7 +65,12 @@ public class LensCalibrator : ModuleRules
 			return Path.GetExtension(f) == ".lib" && !f.Contains("libpng.lib");
         }).ToArray();
 
+
 		PublicAdditionalLibraries.AddRange(files);
+
+		Console.WriteLine("Linking against libPNG provided by Unreal Engine instead of the one provided by OpenCV.");
+		string libPNGPath = Path.Combine(EngineDirectory, "Source/ThirdParty/libPNG/libPNG-1.5.2/lib/Win64-llvm/Release/libpng15_static.lib");
+		PublicAdditionalLibraries.Add(libPNGPath);
 		/*
 		foreach (string publicLib in PublicAdditionalLibraries)
 			Console.WriteLine(string.Format("Including additional public library: \"{0}\".", publicLib));

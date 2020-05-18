@@ -1,6 +1,8 @@
 /* Copyright (C) Polypulse LLC - All Rights Reserved
  * Written by Sean Connor <sean@polypulse.io>, April 2020 */
 
+#include "LensSolver.h"
+
 #include <Runtime\Engine\Classes\Engine\Texture.h>
 #include <Runtime\Engine\Classes\Engine\Texture2D.h>
 
@@ -21,7 +23,6 @@
 #include "MatQueueWriter.h"
 
 #include "WorkerRegistry.h"
-#include "LensSolver.h"
 
 bool ULensSolver::ValidateMediaTexture(const UMediaTexture* inputTexture)
 {
