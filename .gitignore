@@ -80,3 +80,5 @@ DerivedDataCache/*
 PluginPackaged/*
 
 Content/TestImages/*
+
+Source/ThirdParty/*
