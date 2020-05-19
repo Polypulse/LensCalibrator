@@ -3,7 +3,7 @@ echo "Editor path: $editorCmd"
 
 $projectRoot = Get-Location
 $currentLocation = $projectRoot
-$outputPath = "D:\Distribution\"
+$outputPath = "D:\Distribution\Source\"
 
 echo "Packaging LensCalibrator plugin..."
 & "$editorCmd\Build\BatchFiles\RunUAT.bat" BuildPlugin -Plugin="$currentLocation/LensCalibrator.uplugin" -TargetPlatforms=Win64 -Package="$outputPath/LensCalibrator" -Rocket
