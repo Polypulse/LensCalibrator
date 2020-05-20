@@ -115,13 +115,13 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		if (!LensSolverUtilities::GetFilesInFolder(inputTextures[ti].absoluteFolderPath, imageFiles[useIndex]))
 			return;
 
-		if (imageFiles[ti].Num() == 0)
+		if (imageFiles[useIndex].Num() == 0)
 		{
 			UE_LOG(LogTemp, Error, TEXT("No textures in directory: \"%s\", canceled job."), *inputTextures[ti].absoluteFolderPath);
 			return;
 		}
 
-		expectedImageCounts[useIndex] = imageFiles[ti].Num();
+		expectedImageCounts[useIndex] = imageFiles[useIndex].Num();
 		zoomLevels[useIndex] = inputTextures[ti].zoomLevel;
 	}
 
