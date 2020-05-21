@@ -17,7 +17,7 @@
 	"Modules": [
 		{
 			"Name": "LensCalibrator",
-			"Type": "Runtime",
+			"Type": "Editor",
 			"LoadingPhase": "PostConfigInit",
 			"WhitelistPlatforms": [ "Win64" ]
 		}
