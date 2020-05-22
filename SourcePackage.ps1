@@ -18,10 +18,10 @@ Copy-Item -Recurse -Force -Path .\Source\ThirdParty\OpenCV\OpenCV.txt -Destinati
 Copy-Item -Recurse -Force -Path .\Source\ThirdParty\OpenCV\Include\ -Destination "$outputPath\LensCalibrator\Source\ThirdParty\OpenCV\Include\"
 # Copy-Item -Recurse -Force -Path .\Source\ThirdParty\OpenCV\Binaries\Debug\Dynamic\* -Destination "$outputPath\LensCalibrator\Binaries\Win64\"
 # Copy-Item -Recurse -Force -Path .\Source\ThirdParty\OpenCV\Binaries\Release\Dynamic\* -Destination "$outputPath\LensCalibrator\Binaries\Win64\"
-Copy-Item -Recurse -Force -Path .\Source\ThirdParty\OpenCV\Binaries\* -Destination "$outputPath\LensCalibrator\Binaries\Win64\"
+Copy-Item -Recurse -Force -Path .\Source\ThirdParty\OpenCV\Binaries\ -Destination "$outputPath\Source\ThirdParty\OpenCV\Binaries\"
 
 # Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Source\LensCalibrator\Private"
-Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Intermediate"
-Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Binaries\Win64\UE4Editor-LensCalibrator.pdb"
+# Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Intermediate"
+# Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Binaries\Win64\UE4Editor-LensCalibrator.pdb"
 
 pause
