@@ -11,99 +11,72 @@ public class LensCalibrator : ModuleRules
 	{
 		// PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		bool isDebug = Target.Configuration == UnrealTargetConfiguration.Debug;
-		Console.WriteLine(isDebug ? "Compiling Debug() build." : "Compiling release build.");
-		
+
+		string logLabel = "[Lens Calibrator]";
+		Console.WriteLine(string.Format("{0}: {1}", logLabel, isDebug ? "Compiling debug build." : "Compiling release build."));
+
 		PublicIncludePaths.AddRange(
-			new string[] 
+			new string[]
 			{
 				"Runtime/MediaAssets/Public",
 				"Runtime/ImageWriteQueue/Public"
 			}
-			);
-				
-		
-		PrivateIncludePaths.AddRange(
-                new string[] 
-				{
-                    Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Include")
-                }
-			);
-			
-		
+		);
+
+
 		PublicDependencyModuleNames.AddRange(
-                new string[]
-                {
-                }
-			);
-			
-		
+			new string[]
+			{
+			}
+		);
+
+
 		PrivateDependencyModuleNames.AddRange(
-                new string[]
-                {
-                    "Core",
-                    "CoreUObject",
-                    "Engine",
-                    "Slate",
-                    "SlateCore",
-                    "MediaAssets",
-                    "RenderCore",
-                    "ImageWrapper",
-                    "ImageWriteQueue",
-                    "RHI",
-                    "Json",
-                    "JsonUtilities"
-                }
-			);
+			new string[]
+			{
+				"Core",
+				"CoreUObject",
+				"Engine",
+				"Slate",
+				"SlateCore",
+				"MediaAssets",
+				"RenderCore",
+				"ImageWrapper",
+				"ImageWriteQueue",
+				"RHI",
+				"Json",
+				"JsonUtilities"
+			}
+		);
 
-		string dllName = isDebug ? "opencv_world430d.dll" : "opencv_world430.dll";
-		string libName = isDebug ? "opencv_world430d.lib" : "opencv_world430.lib";
+		PrivateIncludePaths.AddRange(
+			new string[]
+			{
+				Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Include")
+			}
+		);
 
-		PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, isDebug ?
-			Path.Combine("../../Source/ThirdParty/OpenCV/Binaries/Debug/Static/", libName) :
-			Path.Combine("../../Source/ThirdParty/OpenCV/Binaries/Release/Static/", libName)));
+		string libFolderPath = isDebug ? 
+			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Binaries/Debug/Static/")) :
+			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Binaries/Release/Static/"));
 
-		PublicDelayLoadDLLs.Add(dllName);
+		string dllFolderPath = isDebug ? 
+			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Binaries/Debug/Dynamic/")) :
+			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Binaries/Release/Dynamic/"));
 
-		string binaryDir = Path.Combine(ModuleDirectory, "../../Binaries/Win64/");
-		if (!Directory.Exists(binaryDir))
-			Directory.CreateDirectory(binaryDir);
+		string libFileName = isDebug ? "opencv_world430d.lib" : "opencv_world430.lib"; 
+		string dllFileName = isDebug ? "opencv_world430d.dll" : "opencv_world430.dll";
 
-		string targetDLL = isDebug ?
-			Path.Combine("../../Source/ThirdParty/OpenCV/Binaries/Debug/Dynamic/", dllName) :
-			Path.Combine("../../Source/ThirdParty/OpenCV/Binaries/Release/Dynamic/", dllName);
+		string libFullPath = Path.Combine(libFolderPath, libFileName);
+		string dllFullPath = Path.Combine(dllFolderPath, dllFileName);
 
-		string copyPath = Path.Combine(binaryDir, dllName);
+		Console.WriteLine(string.Format("{0}: Registering library for linking: \"{1}\".", logLabel, libFullPath));
+		PublicAdditionalLibraries.Add(libFullPath);
 
-		if (!File.Exists(copyPath))
-		{
-			string from = Path.Combine(ModuleDirectory, targetDLL);
-			File.Copy(from, copyPath, true);
+		Console.WriteLine(string.Format("{0}: Registering runtime DLL: \"{1}\".", logLabel, dllFullPath));
+		PublicDelayLoadDLLs.Add(dllFullPath);
 
-			Console.WriteLine(string.Format("Copied from: \"{0}\" to: \"{1}\".", from, copyPath));
-		}
-
-		RuntimeDependencies.Add(Path.Combine(ModuleDirectory, targetDLL));
-
-		/*
-		string[] files = Directory.GetFiles(Path.Combine(ModuleDirectory, 
-			isDebug ? 
-			"../../Source/ThirdParty/OpenCV/Binaries/Debug/Static" : 
-			"../../Source/ThirdParty/OpenCV/Binaries/Release/Static"));
-
-		files = files.Where(f => {
-			return Path.GetExtension(f) == ".lib" && !f.Contains("libpng.lib");
-        }).ToArray();
-
-
-		PublicAdditionalLibraries.AddRange(files);
-
-		Console.WriteLine("Linking against libPNG provided by Unreal Engine instead of the one provided by OpenCV.");
-		string libPNGPath = Path.Combine(EngineDirectory, "Source/ThirdParty/libPNG/libPNG-1.5.2/lib/Win64-llvm/Release/libpng15_static.lib");
-		PublicAdditionalLibraries.Add(libPNGPath);
-		*/
-		/*
-		foreach (string publicLib in PublicAdditionalLibraries)
-			Console.WriteLine(string.Format("Including additional public library: \"{0}\".", publicLib));
-        */
+		Console.WriteLine(string.Format("{0}: Registering runtime dependency: \"{1}\".", logLabel, dllFullPath));
+		RuntimeDependencies .Add(dllFullPath);
 	}
 }
