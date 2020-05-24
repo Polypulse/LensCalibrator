@@ -65,14 +65,36 @@ void FLensCalibratorModule::StartupModule()
 {
 	const FString pluginName("LensCalibrator/");
 	const FString openCVDLLFolder = FPaths::Combine(FPaths::ProjectPluginsDir(), pluginName, TEXT(PREPROCESSOR_TO_STRING(LENS_CALIBRATOR_OPENCV_DLL_PATH)));
-	const FString openCVDLLFullPath = FPaths::Combine(openCVDLLFolder, TEXT(PREPROCESSOR_TO_STRING(LENS_CALIBRATOR_OPENCV_DLL_NAME)));
+	const FString dllNames = TEXT(PREPROCESSOR_TO_STRING(LENS_CALIBRATOR_OPENCV_DLL_NAMES));
+
+	if (dllNames.IsEmpty())
+	{
+		UE_LOG(LogTemp, Fatal, TEXT("Preprocessor defintion \"LENS_CALIBRATOR_OPENCV_DLL_NAMES\" has 0 DLL names."));
+		return;
+	}
+
+	TArray<FString> split;
+	int splitCount = dllNames.ParseIntoArray(split, TEXT(" "), true);
 
 	FPlatformProcess::PushDllDirectory(*openCVDLLFolder);
-	openCVDLLHandle = FPlatformProcess::GetDllHandle(*openCVDLLFullPath);
-	if (openCVDLLHandle == NULL)
+	for (int i = 0; i < split.Num(); i++)
 	{
-		UE_LOG(LogTemp, Fatal, TEXT("Missing OpenCV DLL at path: \"%s\"."), *openCVDLLFullPath);
-		return;
+		FString dllFullPath = FPaths::Combine(openCVDLLFolder, split[i]) + ".dll";
+		void * dllHandle = FPlatformProcess::GetDllHandle(*dllFullPath);
+		if (dllHandle == NULL)
+		{
+			UE_LOG(LogTemp, Fatal, TEXT("Missing OpenCV DLL at path: \"%s\"."), *dllFullPath);
+			return;
+		}
+
+		if (dllHandles.Contains(split[i]))
+		{
+			UE_LOG(LogTemp, Fatal, TEXT("Attempted to load DLL handle: \"%s\" more than once"), *dllFullPath);
+			return;
+		}
+
+		dllHandles.Add(split[i], dllHandle);
+		UE_LOG(LogTemp, Log, TEXT("Found handle to DLL: \"%s\"."), *dllFullPath);
 	}
 
 	FPlatformProcess::PopDllDirectory(*openCVDLLFolder);

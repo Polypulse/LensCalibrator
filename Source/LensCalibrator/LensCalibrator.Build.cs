@@ -4,6 +4,7 @@ using UnrealBuildTool;
 using System.IO;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 public class LensCalibrator : ModuleRules
 {
@@ -63,42 +64,73 @@ public class LensCalibrator : ModuleRules
 			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Binaries/Debug/Dynamic/")) :
 			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Binaries/Release/Dynamic/"));
 
-		string targetDLLFolderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Binaries/ThirdParty/Win64/")); 
+		string targetDLLFolderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Binaries/ThirdParty/Win64/"));
 
-		string libFileName = isDebug ? "opencv_world430d.lib" : "opencv_world430.lib"; 
-		string dllFileName = isDebug ? "opencv_world430d.dll" : "opencv_world430.dll";
+		string[] libFiles = Directory.GetFiles(libFolderPath).Where(f => Path.GetExtension(f) == ".lib").ToArray();
+		string[] dllFiles = Directory.GetFiles(dllFolderPath).Where(f => Path.GetExtension(f) == ".dll").ToArray();
 
-		string libFullPath = Path.Combine(libFolderPath, libFileName);
+		if (libFiles.Length == 0)
+			throw new Exception(string.Format("{0}: Missing libraries at path: \"{1}\".", libFolderPath));
 
-		string dllFullPath = Path.Combine(dllFolderPath, dllFileName);
-		string targetDLLFullPath = Path.Combine(targetDLLFolderPath, dllFileName);
+		if (dllFiles.Length == 0)
+			throw new Exception(string.Format("{0}: Missing libraries at path: \"{1}\".", dllFolderPath));
 
-		if (!Directory.Exists(targetDLLFolderPath))
+		for (int i = 0; i < libFiles.Length; i++)
 		{
-			Console.WriteLine(string.Format("{0}: Creating directory at path: \"{1}\".", logLabel, targetDLLFolderPath));
-			Directory.CreateDirectory(targetDLLFolderPath);
+			string libFileName = libFiles[i];
+			string libFullPath = Path.Combine(libFolderPath, libFileName);
+
+			Console.WriteLine(string.Format("{0}: Registering library for linking: \"{1}\".", logLabel, libFullPath));
+			PublicAdditionalLibraries.Add(libFullPath);
 		}
 
-		if (!File.Exists(targetDLLFullPath))
+		string dllNamesDef = "";
+		for (int i = 0; i < dllFiles.Length; i++)
 		{
-			Console.WriteLine(string.Format("{0}: Copying DLL from: \"{1}\" to: \"{2}\".", logLabel, dllFullPath, targetDLLFullPath));
+			string dllFullPath = dllFiles[i];
+			string dllFileName = Path.GetFileName(dllFullPath);
+			string targetDLLFullPath = Path.Combine(targetDLLFolderPath, dllFileName);
 
-			if (!File.Exists(dllFullPath))
-				throw new Exception(string.Format("{0}: Missing DLL at path: \"{1}\".", dllFullPath));
+			if (!Directory.Exists(targetDLLFolderPath))
+			{
+				Console.WriteLine(string.Format("{0}: Creating directory at path: \"{1}\".", logLabel, targetDLLFolderPath));
+				Directory.CreateDirectory(targetDLLFolderPath);
+			}
 
-			File.Copy(dllFullPath, targetDLLFullPath, true);
+			if (!File.Exists(targetDLLFullPath))
+			{
+				Console.WriteLine(string.Format("{0}: Copying DLL from: \"{1}\" to: \"{2}\".", logLabel, dllFullPath, targetDLLFullPath));
+
+				if (!File.Exists(dllFullPath))
+					throw new Exception(string.Format("{0}: Missing DLL at path: \"{1}\".", dllFullPath));
+
+				File.Copy(dllFullPath, targetDLLFullPath, true);
+			}
+
+			Console.WriteLine(string.Format("{0}: Registering runtime DLL: \"{1}\".", logLabel, targetDLLFullPath));
+			PublicDelayLoadDLLs.Add(dllFileName);
+
+			if (i < dllFiles.Length - 1)
+				dllNamesDef += Path.GetFileNameWithoutExtension(dllFileName) + " ";
+			else dllNamesDef += Path.GetFileNameWithoutExtension(dllFileName);
+
+			Console.WriteLine(string.Format("{0}: Registering runtime dependency: \"{1}\".", logLabel, targetDLLFullPath));
+			RuntimeDependencies.Add(targetDLLFullPath);
 		}
 
-		Console.WriteLine(string.Format("{0}: Registering library for linking: \"{1}\".", logLabel, libFullPath));
-		PublicAdditionalLibraries.Add(libFullPath);
+		System.Collections.Generic.Dictionary<string, string> definitions = new System.Collections.Generic.Dictionary<string, string>()
+		{
+			{ "LENS_CALIBRATOR_OPENCV_DLL_PATH", "Binaries/ThirdParty/Win64/" },
+			{ "LENS_CALIBRATOR_OPENCV_DLL_NAMES", dllNamesDef },
+		};
 
-		Console.WriteLine(string.Format("{0}: Registering runtime DLL: \"{1}\".", logLabel, targetDLLFullPath));
-		PublicDelayLoadDLLs.Add(dllFileName);
+		string msg = string.Format("{0}: Setting definitions:\n{{\n", logLabel);
+		foreach (KeyValuePair<string, string> definition in definitions)
+		{
+			PublicDefinitions.Add(string.Format("{0}={1}", definition.Key, definition.Value));
+			msg += string.Format("\t{0} = {1}\n", definition.Key, definition.Value);
+		}
 
-		Console.WriteLine(string.Format("{0}: Registering runtime dependency: \"{1}\".", logLabel, targetDLLFullPath));
-		RuntimeDependencies.Add(targetDLLFullPath);
-
-		PublicDefinitions.Add("LENS_CALIBRATOR_OPENCV_DLL_PATH=" + "Binaries/ThirdParty/Win64/");
-		PublicDefinitions.Add("LENS_CALIBRATOR_OPENCV_DLL_NAME=" + dllFileName);
+		Console.WriteLine(string.Format("{0}\n}}", msg));
 	}
 }

@@ -19,7 +19,7 @@ private:
 	ULensSolver * lensSolver;
 	UDistortionProcessor * distortionProcessor;
 
-	void * openCVDLLHandle;
+	TMap<FString, void*> dllHandles;
 
 	FTickerDelegate TickDelegate;
 	FDelegateHandle TickDelegateHandle;
