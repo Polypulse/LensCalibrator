@@ -19,11 +19,14 @@ private:
 	ULensSolver * lensSolver;
 	UDistortionProcessor * distortionProcessor;
 
+	void * openCVDLLHandle;
+
 	FTickerDelegate TickDelegate;
 	FDelegateHandle TickDelegateHandle;
 
 	void Initialize();
 	bool Tick(float deltatime);
+
 public:
 	static FLensCalibratorModule& Get() { return FModuleManager::GetModuleChecked<FLensCalibratorModule>(FLensCalibratorModule::ModuleName); };
 	ULensSolver * GetLensSolver();

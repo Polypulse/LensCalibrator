@@ -291,8 +291,13 @@ void FLensSolverWorkerFindCorners::Tick()
 
 bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution)
 {
-	cv::String cvPath(TCHAR_TO_UTF8(*absoluteFilePath));
-	image = cv::imread(cvPath);
+	std::string str(TCHAR_TO_UTF8(*absoluteFilePath));
+	std::replace(str.begin(), str.end(), '\\', '/');
+
+	if (Debug())
+		QueueLog(FString::Printf(TEXT("Attempting to read image from path: \"%s\""), *absoluteFilePath));
+		
+	image = cv::imread(str);
 
 	if (image.data == NULL)
 	{

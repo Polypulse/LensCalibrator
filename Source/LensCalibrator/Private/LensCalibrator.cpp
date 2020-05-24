@@ -2,6 +2,7 @@
  * Written by Sean Connor <sean@polypulse.io>, April 2020 */
 
 #include "LensCalibrator.h"
+
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 #include "Engine.h"
@@ -9,6 +10,9 @@
 #include "LensSolver.h"
 
 #define LOCTEXT_NAMESPACE "FLensCalibratorModule"
+
+#define LC_STRINGIFY(x) #x
+#define LC_TO_STRING(x) LC_STRINGIFY(x)
 
 void FLensCalibratorModule::Initialize()
 {
@@ -59,8 +63,23 @@ UDistortionProcessor* FLensCalibratorModule::GetDistortionProcessor()
 
 void FLensCalibratorModule::StartupModule()
 {
+	const FString pluginName("LensCalibrator/");
+	const FString openCVDLLFolder = FPaths::Combine(FPaths::ProjectPluginsDir(), pluginName, TEXT(PREPROCESSOR_TO_STRING(LENS_CALIBRATOR_OPENCV_DLL_PATH)));
+	const FString openCVDLLFullPath = FPaths::Combine(openCVDLLFolder, TEXT(PREPROCESSOR_TO_STRING(LENS_CALIBRATOR_OPENCV_DLL_NAME)));
+
+	FPlatformProcess::PushDllDirectory(*openCVDLLFolder);
+	openCVDLLHandle = FPlatformProcess::GetDllHandle(*openCVDLLFullPath);
+	if (openCVDLLHandle == NULL)
+	{
+		UE_LOG(LogTemp, Fatal, TEXT("Missing OpenCV DLL at path: \"%s\"."), *openCVDLLFullPath);
+		return;
+	}
+
+	FPlatformProcess::PopDllDirectory(*openCVDLLFolder);
+
 	lensSolver = nullptr;
 	distortionProcessor = nullptr;
+
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
     AddShaderSourceDirectoryMapping("/LensCalibratorShaders", FPaths::Combine(FPaths::ProjectDir(), TEXT("Plugins/LensCalibrator/Shaders")));
 	IConsoleManager::Get().RegisterConsoleVariable(TEXT("LensCalibrator.Debug"), 0, TEXT("Output more log information for debugging."));
