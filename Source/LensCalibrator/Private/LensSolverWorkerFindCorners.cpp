@@ -212,7 +212,9 @@ void FLensSolverWorkerFindCorners::Tick()
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Beginning calibration pattern detection for image: \"%s\"."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
 
 	// patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
-	patternFound = OpenCVWrapper::Get().FindChessboardCorners(image, patternSize, imageCorners, findFlags);
+	// TArray<float> data;
+	// data.SetNum(checkerBoardCornerCount.X * checkerBoardCornerCount.Y * 2);
+	patternFound = GetOpenCVWrapper().FindChessboardCorners(image, patternSize, imageCorners, findFlags);
 	/*
 	try
 	{
@@ -246,7 +248,7 @@ void FLensSolverWorkerFindCorners::Tick()
 		0.0001
 	);
 
-	cv::cornerSubPix(image, imageCorners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
+	// cv::cornerSubPix(image, imageCorners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
 	/*
 	try
 	{
@@ -266,13 +268,14 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	if (textureSearchParameters.writeDebugTextureToFile)
 	{
-		cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
+		// cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
 		WriteMatToFile(image, textureSearchParameters.debugTextureOutputPath);
 	}
 
 	TArray<FVector2D> corners;
 	TArray<FVector> objectPoints;
 
+	// corners.SetNum(data.Num() / 2);
 	corners.SetNum(imageCorners.size());
 	objectPoints.SetNum(checkerBoardCornerCount.X * checkerBoardCornerCount.Y);
 
@@ -281,13 +284,22 @@ void FLensSolverWorkerFindCorners::Tick()
 		for (int x = 0; x < checkerBoardCornerCount.X; x++)
 			objectPoints[i++] = FVector(x * checkerBoardSquareSizeMM, y * checkerBoardSquareSizeMM, 0.0f);
 
+	/*
+	for (int ci = 0; ci < data.Num(); ci+=2)
+	{
+		corners[ci].X = data[ci] * inverseResizeRatio;
+		corners[ci].Y = data[ci + 1] * inverseResizeRatio;
+	}
+	*/
+
 	for (int ci = 0; ci < imageCorners.size(); ci++)
 	{
 		corners[ci].X = imageCorners[ci].x * inverseResizeRatio;
 		corners[ci].Y = imageCorners[ci].y * inverseResizeRatio;
 	}
 
-	bool emptied = imageCorners.empty();
+	// bool emptied = imageCorners.empty();
+	// data.Empty();
 
 	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;
 
