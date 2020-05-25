@@ -4,16 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
-
-#pragma push_macro("check")
-#undef check
-#include "opencv2/opencv.hpp"
-#include "opencv2/core.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/core/mat.hpp"
-#include "opencv2/imgproc/types_c.h"
-#pragma pop_macro("check")
-#include <vector>
+#include "Math/Vector2D.h"
 
 #include "LensSolverWorkerParameters.h"
 
@@ -86,8 +77,10 @@ struct FLensSolverTextureFileWorkUnit
 
 struct FCalibrationPointParameters
 {
-	std::vector<cv::Point2f> corners;
-	std::vector<cv::Point3f> objectPoints;
+	// std::vector<cv::Point2f> corners;
+	// std::vector<cv::Point3f> objectPoints;
+	TArray<FVector2D> corners;
+	TArray<FVector> objectPoints;
 
 	FCalibrationPointParameters()
 	{

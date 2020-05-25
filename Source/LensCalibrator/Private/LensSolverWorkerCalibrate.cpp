@@ -345,7 +345,7 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		queue->Dequeue(calibrateWorkUnit);
 		workUnitCount--;
 
-		if (calibrateWorkUnit.calibrationPointParameters.corners.size() == 0 || calibrateWorkUnit.calibrationPointParameters.objectPoints.size() == 0)
+		if (calibrateWorkUnit.calibrationPointParameters.corners.Num() == 0 || calibrateWorkUnit.calibrationPointParameters.objectPoints.Num() == 0)
 		{
 			if (Debug())
 				QueueLog(FString::Printf(TEXT("(WARNING): No detected calibration pattern corners in image: \"%s\" for calibration: \"%s\", skipping and continuing to next image."),
@@ -354,13 +354,26 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 			continue;
 		}
 
-		corners.push_back(calibrateWorkUnit.calibrationPointParameters.corners);
-		objectPoints.push_back(calibrateWorkUnit.calibrationPointParameters.objectPoints);
+		corners.push_back(std::vector<cv::Point2f>(calibrateWorkUnit.calibrationPointParameters.corners.Num()));
+		objectPoints.push_back(std::vector<cv::Point3f>(calibrateWorkUnit.calibrationPointParameters.objectPoints.Num()));
+
+		for (int i = 0; i < calibrateWorkUnit.calibrationPointParameters.corners.Num(); i++)
+			corners[corners.size() - 1].push_back(cv::Point2f(
+				calibrateWorkUnit.calibrationPointParameters.corners[i].X,
+				calibrateWorkUnit.calibrationPointParameters.corners[i].Y
+			));
+
+		for (int i = 0; i < calibrateWorkUnit.calibrationPointParameters.objectPoints.Num(); i++)
+			objectPoints[objectPoints.size() - 1].push_back(cv::Point3f(
+				calibrateWorkUnit.calibrationPointParameters.objectPoints[i].X,
+				calibrateWorkUnit.calibrationPointParameters.objectPoints[i].Y,
+				calibrateWorkUnit.calibrationPointParameters.objectPoints[i].Z
+			));
 
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Dequeued %d corner points and %d object points for image: \"%s\" for calibration: \"%s\"."),
-				calibrateWorkUnit.calibrationPointParameters.corners.size(),
-				calibrateWorkUnit.calibrationPointParameters.objectPoints.size(),
+				calibrateWorkUnit.calibrationPointParameters.corners.Num(),
+				calibrateWorkUnit.calibrationPointParameters.objectPoints.Num(),
 				*calibrateWorkUnit.baseParameters.friendlyName,
 				*calibrateWorkUnit.baseParameters.calibrationID));
 	}

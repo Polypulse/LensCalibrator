@@ -269,21 +269,28 @@ void FLensSolverWorkerFindCorners::Tick()
 		WriteMatToFile(image, textureSearchParameters.debugTextureOutputPath);
 	}
 
+	TArray<FVector2D> corners;
+	TArray<FVector> objectPoints;
+
+	corners.SetNum(imageCorners.size());
+	objectPoints.SetNum(checkerBoardCornerCount.X * checkerBoardCornerCount.Y);
+
+	int i = 0;
 	for (int y = 0; y < checkerBoardCornerCount.Y; y++)
 		for (int x = 0; x < checkerBoardCornerCount.X; x++)
-			imageObjectPoints.push_back(cv::Point3f(x * checkerBoardSquareSizeMM, y * checkerBoardSquareSizeMM, 0.0f));
+			objectPoints[i++] = FVector(x * checkerBoardSquareSizeMM, y * checkerBoardSquareSizeMM, 0.0f);
 
 	for (int ci = 0; ci < imageCorners.size(); ci++)
 	{
-		imageCorners[ci].x = imageCorners[ci].x * inverseResizeRatio;
-		imageCorners[ci].y = imageCorners[ci].y * inverseResizeRatio;
+		corners[ci].X = imageCorners[ci].x * inverseResizeRatio;
+		corners[ci].Y = imageCorners[ci].y * inverseResizeRatio;
 	}
 
 	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;
 
 	calibrationPointsWorkUnit.baseParameters								= baseParameters;
-	calibrationPointsWorkUnit.calibrationPointParameters.corners			= imageCorners;
-	calibrationPointsWorkUnit.calibrationPointParameters.objectPoints		= imageObjectPoints;
+	calibrationPointsWorkUnit.calibrationPointParameters.corners			= corners;
+	calibrationPointsWorkUnit.calibrationPointParameters.objectPoints		= objectPoints;
 	calibrationPointsWorkUnit.resizeParameters								= resizeParameters;
 
 	QueueCalibrationPointsWorkUnit(calibrationPointsWorkUnit);
