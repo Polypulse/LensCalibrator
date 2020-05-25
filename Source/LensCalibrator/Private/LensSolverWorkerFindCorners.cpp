@@ -4,6 +4,7 @@
 #include "LensSolverWorkerFindCorners.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 #include "MatQueueWriter.h"
+#include "OpenCVWrapper.h"
 
 FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	FLensSolverWorkerParameters & inputParameters,
@@ -210,7 +211,8 @@ void FLensSolverWorkerFindCorners::Tick()
 	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Beginning calibration pattern detection for image: \"%s\"."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
 
-	patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
+	// patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
+	patternFound = OpenCVWrapper::Get().FindChessboardCorners(image, patternSize, imageCorners, findFlags);
 	/*
 	try
 	{

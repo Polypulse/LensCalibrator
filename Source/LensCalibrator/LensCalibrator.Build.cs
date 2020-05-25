@@ -52,10 +52,37 @@ public class LensCalibrator : ModuleRules
 		PrivateIncludePaths.AddRange(
 			new string[]
 			{
-				Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Include")
+				Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Include"),
+				Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Include")
 			}
 		);
 
+		ConfigureOpenCV(isDebug);
+		ConfigureOpenCVWrapper(isDebug);
+	}
+
+	private void ConfigureOpenCVWrapper (bool isDebug)
+	{
+		string libFolderPath = isDebug ? 
+			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Binaries/Debug/Static/")) :
+			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Binaries/Release/Static/"));
+
+		string[] libFiles = Directory.GetFiles(libFolderPath).Where(f => Path.GetExtension(f) == ".lib").ToArray();
+		if (libFiles.Length == 0)
+			throw new Exception(string.Format("{0}: Missing libraries at path: \"{1}\".", libFolderPath));
+
+		for (int i = 0; i < libFiles.Length; i++)
+		{
+			string libFileName = libFiles[i];
+			string libFullPath = Path.Combine(libFolderPath, libFileName);
+
+			Console.WriteLine(string.Format("{0}: Registering library for linking: \"{1}\".", logLabel, libFullPath));
+			PublicAdditionalLibraries.Add(libFullPath);
+		}
+	}
+
+	private void ConfigureOpenCV (bool isDebug)
+	{
 		string libFolderPath = isDebug ? 
 			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Binaries/Debug/Static/")) :
 			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Binaries/Release/Static/"));
