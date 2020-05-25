@@ -196,7 +196,6 @@ void FLensSolverWorkerFindCorners::Tick()
 	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
 	std::vector<cv::Point2f> imageCorners;
-	std::vector<cv::Point3f> imageObjectPoints;
 
 	cv::Size patternSize(checkerBoardCornerCount.X, checkerBoardCornerCount.Y);
 
@@ -285,6 +284,8 @@ void FLensSolverWorkerFindCorners::Tick()
 		corners[ci].X = imageCorners[ci].x * inverseResizeRatio;
 		corners[ci].Y = imageCorners[ci].y * inverseResizeRatio;
 	}
+
+	bool emptied = imageCorners.empty();
 
 	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;
 
