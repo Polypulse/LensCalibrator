@@ -402,7 +402,7 @@ void FLensSolverWorkerFindCorners::QueueEmptyCalibrationPointsWorkUnit(const FBa
 	queueFindCornerResultOutputDel->Execute(calibrationPointsWorkUnit);
 }
 
-FResizeParameters CalculateResizeParameters(FChessboardSearchParameters textureSearchParameters)
+FResizeParameters FLensSolverWorkerFindCorners::CalculateResizeParameters(FChessboardSearchParameters textureSearchParameters)
 {
 	FResizeParameters resizeParameters;
 

@@ -214,13 +214,18 @@ void ULensSolver::StartMediaStreamCalibration(
 	workUnit.textureSearchParameters.checkerBoardCornerCountY = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.Y;
 	workUnit.textureSearchParameters.writeDebugTextureToFile = mediaStreamParameters.textureSearchParameters.writeDebugTextureToFile;
 
-	if (!LensSolverUtilities::ValidateFilePath(filePath, defaultMatFolder, defaultFileName, defaultExtension))
+	static FString defaultMatFolder = LensSolverUtilities::GenerateGenericOutputPath("DebugImages");
+	static FString defaultFileName = "DebugImage";
+	static FString defaultExtension = "jpg";
+
+	FString outputPath = mediaStreamParameters.textureSearchParameters.debugTextureOutputPath;
+	if (!LensSolverUtilities::ValidateFilePath(outputPath, defaultMatFolder, defaultFileName, defaultExtension))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Unable to write image to file: \"%s\", cannot validate path."), *filePath);
+		UE_LOG(LogTemp, Error, TEXT("Unable to use use path: \"%s\" to write an image to file."), *outputPath);
 		return;
 	}
 
-	workUnit.textureSearchParameters.debugTextureOutputPath = TCHAR_TO_UTF8(*mediaStreamParameters.textureSearchParameters.debugTextureOutputPath);
+	workUnit.textureSearchParameters.debugTextureOutputPath = TCHAR_TO_UTF8(*outputPath);
 
 	workUnit.mediaStreamParameters								= mediaStreamParameters.mediaStreamParameters;
 	workUnit.mediaStreamParameters.currentStreamSnapshotCount	= 0;
@@ -323,7 +328,7 @@ void ULensSolver::Poll()
 	PollFinishedJobs();
 
 	LensSolverWorkDistributor::GetInstance().PollMediaTextureStreams();
-	MatQueueWriter::Get().Poll();
+	GetMatQueueWriter().Poll();
 
 	PollLogs();
 }
