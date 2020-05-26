@@ -118,7 +118,8 @@ void FLensSolverWorkerFindCorners::Tick()
 		DequeueTextureFileWorkUnit(textureFileWorkUnit);
 		baseParameters = textureFileWorkUnit.baseParameters;
 		textureSearchParameters = textureFileWorkUnit.textureSearchParameters;
-		resizeParameters = CalculateResizeParameters(textureFileWorkUnit.textureSearchParameters);
+		resizeParameters.nativeX = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionX;
+		resizeParameters.nativeY = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionY;
 
 		if (!GetOpenCVWrapper().ProcessImageFromFile(
 			resizeParameters,
@@ -137,15 +138,17 @@ void FLensSolverWorkerFindCorners::Tick()
 		DequeuePixelArrayWorkUnit(texturePixelArrayUnit);
 		baseParameters = texturePixelArrayUnit.baseParameters;
 		textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
-		resizeParameters = CalculateResizeParameters(texturePixelArrayUnit.textureSearchParameters);
+		resizeParameters = CalculateResizeParameters(textureSearchParameters);
+		resizeParameters.resizeX = texturePixelArrayUnit.resizeParameters.resizeX;
+		resizeParameters.resizeY = texturePixelArrayUnit.resizeParameters.resizeY;
 
 		if (!GetOpenCVWrapper().ProcessImageFromPixels(
 			resizeParameters,
 			texturePixelArrayUnit.textureSearchParameters,
 			reinterpret_cast<uint8_t*>(texturePixelArrayUnit.pixelArrayParameters.pixels.GetData()),
 			4,
-			texturePixelArrayUnit.resizeParameters.resizeX,
-			texturePixelArrayUnit.resizeParameters.resizeY,
+			resizeParameters.resizeX,
+			resizeParameters.resizeY,
 			data))
 		{
 			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
@@ -402,7 +405,7 @@ void FLensSolverWorkerFindCorners::QueueEmptyCalibrationPointsWorkUnit(const FBa
 	queueFindCornerResultOutputDel->Execute(calibrationPointsWorkUnit);
 }
 
-FResizeParameters FLensSolverWorkerFindCorners::CalculateResizeParameters(FChessboardSearchParameters textureSearchParameters)
+FResizeParameters FLensSolverWorkerFindCorners::CalculateResizeParameters(const FChessboardSearchParameters & textureSearchParameters)
 {
 	FResizeParameters resizeParameters;
 

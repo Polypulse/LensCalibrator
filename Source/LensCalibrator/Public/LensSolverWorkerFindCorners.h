@@ -53,7 +53,7 @@ private:
 	const QueuePixelArrayWorkUnitInputDel* queuePixelArrayWorkUnitInputDel;
 	*/
 
-	FResizeParameters CalculateResizeParameters (FChessboardSearchParameters textureSearchParameters);
+	FResizeParameters CalculateResizeParameters (const FChessboardSearchParameters & textureSearchParameters);
 
 	QueueTextureFileWorkUnitInputDel* queueTextureFileWorkUnitInputDel;
 	QueuePixelArrayWorkUnitInputDel* queuePixelArrayWorkUnitInputDel;
