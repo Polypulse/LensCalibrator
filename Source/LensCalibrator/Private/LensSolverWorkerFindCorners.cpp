@@ -93,20 +93,39 @@ void FLensSolverWorkerFindCorners::DequeuePixelArrayWorkUnit(FLensSolverPixelArr
 void FLensSolverWorkerFindCorners::Tick()
 {
 	FBaseParameters baseParameters;
-	FTextureSearchParameters textureSearchParameters;
 	FResizeParameters resizeParameters;
 
 	cv::Mat image;
 
+	float * data = nullptr;
 	if (!textureFileWorkQueue.IsEmpty())
 	{
 		FLensSolverTextureFileWorkUnit textureFileWorkUnit;
+
 		DequeueTextureFileWorkUnit(textureFileWorkUnit);
 		baseParameters = textureFileWorkUnit.baseParameters;
-		textureSearchParameters = textureFileWorkUnit.textureSearchParameters;
-		resizeParameters.nativeResolution = textureSearchParameters.nativeFullResolution;
 
-		if (!GetImageFromFile(textureFileWorkUnit.textureFileParameters.absoluteFilePath, image, resizeParameters.sourceResolution))
+		resizeParameters.nativeX = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionX;
+		resizeParameters.nativeY = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionY;
+
+		if (textureFileWorkUnit.textureSearchParameters.resize)
+		{
+			resizeParameters.resizeX = FMath::FloorToInt(resizeParameters.sourceX * textureFileWorkUnit.textureSearchParameters.resizePercentage);
+			resizeParameters.resizeY = FMath::FloorToInt(resizeParameters.sourceY * textureFileWorkUnit.textureSearchParameters.resizePercentage);
+		}
+
+		else
+		{
+			resizeParameters.resizeX = resizeParameters.sourceX;
+			resizeParameters.resizeY = resizeParameters.sourceY;
+		}
+
+
+		if (!GetOpenCVWrapper().ProcessImageFromFile(
+			resizeParameters,
+			textureFileWorkUnit.textureSearchParameters,
+			std::string(TCHAR_TO_UTF8(*textureFileWorkUnit.textureFileParameters.absoluteFilePath)),
+			data))
 		{
 			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 			return;
@@ -118,25 +137,30 @@ void FLensSolverWorkerFindCorners::Tick()
 		FLensSolverPixelArrayWorkUnit texturePixelArrayUnit;
 		DequeuePixelArrayWorkUnit(texturePixelArrayUnit);
 		baseParameters = texturePixelArrayUnit.baseParameters;
-		textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
-		resizeParameters = texturePixelArrayUnit.resizeParameters;
-		resizeParameters.nativeResolution = textureSearchParameters.nativeFullResolution;
+		// textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
+		// resizeParameters = texturePixelArrayUnit.resizeParameters;
+		// resizeParameters.nativeResolution = textureSearchParameters.nativeFullResolution;
 
+		/*
 		if (!GetImageFromArray(texturePixelArrayUnit.pixelArrayParameters.pixels, resizeParameters.resizeResolution, image))
 		{
 			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 			return;
 		}
+		*/
 	}
 
 	else return;
 
+	/*
 	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Preparing search for calibration pattern using source image of size: (%d, %d)."), 
 			*JobDataToString(baseParameters), 
 			resizeParameters.sourceResolution.X,
 			resizeParameters.sourceResolution.Y));
+	*/
 
+	/*
 	float resizePercentage = textureSearchParameters.resizePercentage;
 	bool resize = textureSearchParameters.resize;
 
@@ -145,18 +169,6 @@ void FLensSolverWorkerFindCorners::Tick()
 	// resizeParameters.resizeResolution = resizeParameters.sourceResolution * resizePercentage;
 
 	// QueueLog(FString::Printf(TEXT("%sPrepared image of size: (%d, %d!"), *workerMessage, image.cols, image.rows));
-
-	if (resize)
-	{
-		resizeParameters.resizeResolution.X = FMath::FloorToInt(resizeParameters.sourceResolution.X * resizePercentage);
-		resizeParameters.resizeResolution.Y = FMath::FloorToInt(resizeParameters.sourceResolution.Y * resizePercentage);
-	}
-
-	else
-	{
-		resizeParameters.resizeResolution.X = resizeParameters.sourceResolution.X;
-		resizeParameters.resizeResolution.Y = resizeParameters.sourceResolution.Y;
-	}
 
 	cv::Size sourceImageSize(resizeParameters.sourceResolution.X, resizeParameters.sourceResolution.Y);
 	cv::Size resizedImageSize(resizeParameters.resizeResolution.X, resizeParameters.resizeResolution.Y);
@@ -176,7 +188,7 @@ void FLensSolverWorkerFindCorners::Tick()
 		cv::resize(image, image, resizedImageSize, 0.0f, 0.0f, cv::INTER_LINEAR);
 	}
 
-	/*/
+	/*
 	if (image.rows != resizedPixelWidth || image.cols != resizedPixelHeight)
 	{
 		UE_LOG(LogTemp, Log, TEXT("%sAllocating image from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, resizedPixelWidth, resizedPixelHeight);
@@ -194,6 +206,7 @@ void FLensSolverWorkerFindCorners::Tick()
 		1.0f / inverseResizeRatio);
 	*/
 
+	/*
 	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
 	std::vector<cv::Point2f> imageCorners;
@@ -230,7 +243,6 @@ void FLensSolverWorkerFindCorners::Tick()
 		QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 		return;
 	}
-	*/
 
 	if (!patternFound)
 	{
@@ -264,38 +276,33 @@ void FLensSolverWorkerFindCorners::Tick()
 		QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 		return;
 	}
-	*/
 
 	if (textureSearchParameters.writeDebugTextureToFile)
 	{
 		// cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
 		WriteMatToFile(image, textureSearchParameters.debugTextureOutputPath);
 	}
+	*/
 
 	TArray<FVector2D> corners;
 	TArray<FVector> objectPoints;
 
 	// corners.SetNum(data.Num() / 2);
-	corners.SetNum(imageCorners.size());
-	objectPoints.SetNum(checkerBoardCornerCount.X * checkerBoardCornerCount.Y);
+	corners.SetNum(textureSearchParameters.checkerBoardCornerCount.X * textureSearchParameters.checkerBoardCornerCount.Y);
+	objectPoints.SetNum(textureSearchParameters.checkerBoardCornerCount.X * textureSearchParameters.checkerBoardCornerCount.Y);
 
 	int i = 0;
-	for (int y = 0; y < checkerBoardCornerCount.Y; y++)
-		for (int x = 0; x < checkerBoardCornerCount.X; x++)
-			objectPoints[i++] = FVector(x * checkerBoardSquareSizeMM, y * checkerBoardSquareSizeMM, 0.0f);
+	for (int y = 0; y < textureSearchParameters.checkerBoardCornerCount.Y; y++)
+		for (int x = 0; x < textureSearchParameters.checkerBoardCornerCount.X; x++)
+			objectPoints[i++] = FVector(
+				x * textureSearchParameters.checkerBoardSquareSizeMM,
+				y * textureSearchParameters.checkerBoardSquareSizeMM,
+				0.0f);
 
-	/*
-	for (int ci = 0; ci < data.Num(); ci+=2)
+	for (int ci = 0; ci < textureSearchParameters.checkerBoardCornerCount.X * textureSearchParameters.checkerBoardCornerCount.Y; ci += 2)
 	{
-		corners[ci].X = data[ci] * inverseResizeRatio;
-		corners[ci].Y = data[ci + 1] * inverseResizeRatio;
-	}
-	*/
-
-	for (int ci = 0; ci < imageCorners.size(); ci++)
-	{
-		corners[ci].X = imageCorners[ci].x * inverseResizeRatio;
-		corners[ci].Y = imageCorners[ci].y * inverseResizeRatio;
+		corners[ci].X = *(data + ci).x * inverseResizeRatio;
+		corners[ci].Y = *(data + ci + 1).y * inverseResizeRatio;
 	}
 
 	// bool emptied = imageCorners.empty();
@@ -311,6 +318,7 @@ void FLensSolverWorkerFindCorners::Tick()
 	QueueCalibrationPointsWorkUnit(calibrationPointsWorkUnit);
 }
 
+/*
 bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution)
 {
 	std::string str(TCHAR_TO_UTF8(*absoluteFilePath));
@@ -352,13 +360,16 @@ bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixe
 
 	return true;
 }
+*/
 
+/*
 void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString outputPath)
 {
 	MatQueueWriter::Get().QueueMat(outputPath, image);
 	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): Queued texture: \'%s\" to be written to file."), *outputPath));
 }
+*/
 
 void FLensSolverWorkerFindCorners::QueueCalibrationPointsWorkUnit(const FLensSolverCalibrationPointsWorkUnit & calibrationPointsWorkUnit)
 {
@@ -381,4 +392,9 @@ void FLensSolverWorkerFindCorners::QueueEmptyCalibrationPointsWorkUnit(const FBa
 	calibrationPointsWorkUnit.baseParameters = baseParameters;
 	calibrationPointsWorkUnit.resizeParameters = resizeParameters;
 	queueFindCornerResultOutputDel->Execute(calibrationPointsWorkUnit);
+}
+
+OpenCVResizeParameters UE4ToWrapperResizeParameters(const FResizeParameters& resizeParameters)
+{
+	return OpenCVResizeParameters();
 }

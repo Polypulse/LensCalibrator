@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 #include "Math/Vector2D.h"
+#include "OpenCVWrapper.h"
 
 #include "LensSolverWorkerParameters.h"
 
@@ -37,25 +38,10 @@ struct FPixelArrayParameters
 	}
 };
 
-struct FResizeParameters
-{
-	FIntPoint sourceResolution;
-	FIntPoint resizeResolution;
-	FIntPoint nativeResolution;
-
-	FResizeParameters()
-	{
-		sourceResolution = FIntPoint(0, 0);
-		resizeResolution = FIntPoint(0, 0);
-		nativeResolution = FIntPoint(0, 0);
-	}
-};
-
-
 struct FLensSolverPixelArrayWorkUnit
 {
 	FBaseParameters baseParameters;
-	FTextureSearchParameters textureSearchParameters;
+	FChessboardSearchParameters textureSearchParameters;
 	FResizeParameters resizeParameters;
 	FPixelArrayParameters pixelArrayParameters;
 
@@ -67,7 +53,7 @@ struct FLensSolverPixelArrayWorkUnit
 struct FLensSolverTextureFileWorkUnit
 {
 	FBaseParameters baseParameters;
-	FTextureSearchParameters textureSearchParameters;
+	FChessboardSearchParameters textureSearchParameters;
 	FTextureFileParameters textureFileParameters;
 
 	FLensSolverTextureFileWorkUnit() 

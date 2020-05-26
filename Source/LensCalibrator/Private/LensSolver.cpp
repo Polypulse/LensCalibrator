@@ -136,7 +136,23 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.baseParameters.calibrationID				= ouptutJobInfo.calibrationIDs[ci];
 			workUnit.baseParameters.zoomLevel					= zoomLevels[ci];
 			workUnit.baseParameters.friendlyName				= FPaths::GetBaseFilename(imageFiles[ci][ii]);
-			workUnit.textureSearchParameters					= oneTimeProcessParameters.textureSearchParameters;
+
+			// workUnit.textureSearchParameters					= oneTimeProcessParameters.textureSearchParameters;
+
+			// Ugly, but this is temporary. Currently trying to refactor a larger part of the program.
+			workUnit.textureSearchParameters.nativeFullResolutionX = oneTimeProcessParameters.textureSearchParameters.nativeFullResolution.X;
+			workUnit.textureSearchParameters.nativeFullResolutionY = oneTimeProcessParameters.textureSearchParameters.nativeFullResolution.Y;
+			workUnit.textureSearchParameters.resizePercentage = oneTimeProcessParameters.textureSearchParameters.resizePercentage;
+			workUnit.textureSearchParameters.resize = oneTimeProcessParameters.textureSearchParameters.resize;
+			workUnit.textureSearchParameters.flipX = oneTimeProcessParameters.textureSearchParameters.flipX,
+			workUnit.textureSearchParameters.flipY = oneTimeProcessParameters.textureSearchParameters.flipY;
+			workUnit.textureSearchParameters.exhaustiveSearch = oneTimeProcessParameters.textureSearchParameters.exhaustiveSearch;
+			workUnit.textureSearchParameters.checkerBoardSquareSizeMM = oneTimeProcessParameters.textureSearchParameters.checkerBoardSquareSizeMM;
+			workUnit.textureSearchParameters.checkerBoardCornerCountX = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.X,
+			workUnit.textureSearchParameters.checkerBoardCornerCountY = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.Y;
+			workUnit.textureSearchParameters.writeDebugTextureToFile = oneTimeProcessParameters.textureSearchParameters.writeDebugTextureToFile;
+			workUnit.textureSearchParameters.debugTextureOutputPath = TCHAR_TO_UTF8(*oneTimeProcessParameters.textureSearchParameters.debugTextureOutputPath);
+
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
 			LensSolverWorkDistributor::GetInstance().QueueTextureFileWorkUnit(ouptutJobInfo.jobID, workUnit);
