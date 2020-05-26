@@ -96,6 +96,7 @@ struct FCalibrateLatch
 struct FMediaStreamWorkUnit
 {
 	FBaseParameters baseParameters;
-	FTextureSearchParameters textureSearchParameters;
+	// FTextureSearchParameters textureSearchParameters;
+	FChessboardSearchParameters textureSearchParameters;
 	FMediaStreamParameters mediaStreamParameters;
 };

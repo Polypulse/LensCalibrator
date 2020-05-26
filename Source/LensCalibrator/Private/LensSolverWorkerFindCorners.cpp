@@ -54,7 +54,10 @@ void FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit(FLensSolverTextureFi
 	Unlock();
 
 	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued TextureFileWorkUnit with path: \"%s\", total currently queued: %d."), *JobDataToString(workUnit.baseParameters), *workUnit.textureFileParameters.absoluteFilePath, workUnitCount));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued TextureFileWorkUnit with path: \"%s\", total currently queued: %d."),
+		*JobDataToString(workUnit.baseParameters),
+		*workUnit.textureFileParameters.absoluteFilePath,
+		workUnitCount));
 }
 
 void FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit(FLensSolverPixelArrayWorkUnit workUnit)
@@ -65,7 +68,11 @@ void FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit(FLensSolverPixelArray
 	Unlock();
 
 	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued PixelArrayWorkUnit of resolution: (%d, %d), total currently queued: %d."), *JobDataToString(workUnit.baseParameters), workUnit.resizeParameters.sourceResolution.X, workUnit.resizeParameters.sourceResolution.Y, workUnitCount));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Queued PixelArrayWorkUnit of resolution: (%d, %d), total currently queued: %d."),
+		*JobDataToString(workUnit.baseParameters),
+		workUnit.resizeParameters.sourceX,
+		workUnit.resizeParameters.sourceY,
+		workUnitCount));
 }
 
 void FLensSolverWorkerFindCorners::DequeueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit& workUnit)
@@ -76,7 +83,9 @@ void FLensSolverWorkerFindCorners::DequeueTextureFileWorkUnit(FLensSolverTexture
 	Unlock();
 
 	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Dequeued TextureFileWorkUnit with path: \"%s\"."), *JobDataToString(workUnit.baseParameters), *workUnit.textureFileParameters.absoluteFilePath));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Dequeued TextureFileWorkUnit with path: \"%s\"."),
+		*JobDataToString(workUnit.baseParameters),
+		*workUnit.textureFileParameters.absoluteFilePath));
 }
 
 void FLensSolverWorkerFindCorners::DequeuePixelArrayWorkUnit(FLensSolverPixelArrayWorkUnit & workUnit)
@@ -87,13 +96,17 @@ void FLensSolverWorkerFindCorners::DequeuePixelArrayWorkUnit(FLensSolverPixelArr
 	Unlock();
 
 	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Dequeued PixelArrayWorkUnit of resolution: (%d, %d)."), *JobDataToString(workUnit.baseParameters), workUnit.resizeParameters.sourceResolution.X, workUnit.resizeParameters.sourceResolution.Y));
+		QueueLog(FString::Printf(TEXT("(INFO): %s: Dequeued PixelArrayWorkUnit of resolution: (%d, %d)."),
+		*JobDataToString(workUnit.baseParameters),
+		workUnit.resizeParameters.sourceX,
+		workUnit.resizeParameters.sourceY));
 }
 
 void FLensSolverWorkerFindCorners::Tick()
 {
 	FBaseParameters baseParameters;
 	FResizeParameters resizeParameters;
+	FChessboardSearchParameters textureSearchParameters;
 
 	cv::Mat image;
 
@@ -104,22 +117,8 @@ void FLensSolverWorkerFindCorners::Tick()
 
 		DequeueTextureFileWorkUnit(textureFileWorkUnit);
 		baseParameters = textureFileWorkUnit.baseParameters;
-
-		resizeParameters.nativeX = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionX;
-		resizeParameters.nativeY = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionY;
-
-		if (textureFileWorkUnit.textureSearchParameters.resize)
-		{
-			resizeParameters.resizeX = FMath::FloorToInt(resizeParameters.sourceX * textureFileWorkUnit.textureSearchParameters.resizePercentage);
-			resizeParameters.resizeY = FMath::FloorToInt(resizeParameters.sourceY * textureFileWorkUnit.textureSearchParameters.resizePercentage);
-		}
-
-		else
-		{
-			resizeParameters.resizeX = resizeParameters.sourceX;
-			resizeParameters.resizeY = resizeParameters.sourceY;
-		}
-
+		textureSearchParameters = textureFileWorkUnit.textureSearchParameters;
+		resizeParameters = CalculateResizeParameters(textureFileWorkUnit.textureSearchParameters);
 
 		if (!GetOpenCVWrapper().ProcessImageFromFile(
 			resizeParameters,
@@ -137,9 +136,21 @@ void FLensSolverWorkerFindCorners::Tick()
 		FLensSolverPixelArrayWorkUnit texturePixelArrayUnit;
 		DequeuePixelArrayWorkUnit(texturePixelArrayUnit);
 		baseParameters = texturePixelArrayUnit.baseParameters;
-		// textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
-		// resizeParameters = texturePixelArrayUnit.resizeParameters;
-		// resizeParameters.nativeResolution = textureSearchParameters.nativeFullResolution;
+		textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
+		resizeParameters = CalculateResizeParameters(texturePixelArrayUnit.textureSearchParameters);
+
+		if (!GetOpenCVWrapper().ProcessImageFromPixels(
+			resizeParameters,
+			texturePixelArrayUnit.textureSearchParameters,
+			reinterpret_cast<uint8_t*>(texturePixelArrayUnit.pixelArrayParameters.pixels.GetData()),
+			4,
+			texturePixelArrayUnit.resizeParameters.resizeX,
+			texturePixelArrayUnit.resizeParameters.resizeY,
+			data))
+		{
+			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
+			return;
+		}
 
 		/*
 		if (!GetImageFromArray(texturePixelArrayUnit.pixelArrayParameters.pixels, resizeParameters.resizeResolution, image))
@@ -173,7 +184,6 @@ void FLensSolverWorkerFindCorners::Tick()
 	cv::Size sourceImageSize(resizeParameters.sourceResolution.X, resizeParameters.sourceResolution.Y);
 	cv::Size resizedImageSize(resizeParameters.resizeResolution.X, resizeParameters.resizeResolution.Y);
 
-	float inverseResizeRatio = resizeParameters.nativeResolution.X / (float)resizeParameters.resizeResolution.X;
 
 	if (resize && resizePercentage != 1.0f)
 	{
@@ -287,26 +297,24 @@ void FLensSolverWorkerFindCorners::Tick()
 	TArray<FVector2D> corners;
 	TArray<FVector> objectPoints;
 
-	// corners.SetNum(data.Num() / 2);
-	corners.SetNum(textureSearchParameters.checkerBoardCornerCount.X * textureSearchParameters.checkerBoardCornerCount.Y);
-	objectPoints.SetNum(textureSearchParameters.checkerBoardCornerCount.X * textureSearchParameters.checkerBoardCornerCount.Y);
+	float inverseResizeRatio = resizeParameters.nativeX / (float)resizeParameters.resizeX;
+
+	corners.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY);
+	objectPoints.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY);
 
 	int i = 0;
-	for (int y = 0; y < textureSearchParameters.checkerBoardCornerCount.Y; y++)
-		for (int x = 0; x < textureSearchParameters.checkerBoardCornerCount.X; x++)
+	for (int y = 0; y < textureSearchParameters.checkerBoardCornerCountY; y++)
+		for (int x = 0; x < textureSearchParameters.checkerBoardCornerCountX; x++)
 			objectPoints[i++] = FVector(
 				x * textureSearchParameters.checkerBoardSquareSizeMM,
 				y * textureSearchParameters.checkerBoardSquareSizeMM,
 				0.0f);
 
-	for (int ci = 0; ci < textureSearchParameters.checkerBoardCornerCount.X * textureSearchParameters.checkerBoardCornerCount.Y; ci += 2)
+	for (int ci = 0; ci < textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY; ci += 2)
 	{
-		corners[ci].X = *(data + ci).x * inverseResizeRatio;
-		corners[ci].Y = *(data + ci + 1).y * inverseResizeRatio;
+		corners[ci].X = *(data + ci) * inverseResizeRatio;
+		corners[ci].Y = *(data + ci + 1) * inverseResizeRatio;
 	}
-
-	// bool emptied = imageCorners.empty();
-	// data.Empty();
 
 	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;
 
@@ -394,7 +402,24 @@ void FLensSolverWorkerFindCorners::QueueEmptyCalibrationPointsWorkUnit(const FBa
 	queueFindCornerResultOutputDel->Execute(calibrationPointsWorkUnit);
 }
 
-OpenCVResizeParameters UE4ToWrapperResizeParameters(const FResizeParameters& resizeParameters)
+FResizeParameters CalculateResizeParameters(FChessboardSearchParameters textureSearchParameters)
 {
-	return OpenCVResizeParameters();
+	FResizeParameters resizeParameters;
+
+	resizeParameters.nativeX = textureSearchParameters.nativeFullResolutionX;
+	resizeParameters.nativeY = textureSearchParameters.nativeFullResolutionY;
+
+	if (textureSearchParameters.resize)
+	{
+		resizeParameters.resizeX = FMath::FloorToInt(resizeParameters.sourceX * textureSearchParameters.resizePercentage);
+		resizeParameters.resizeY = FMath::FloorToInt(resizeParameters.sourceY * textureSearchParameters.resizePercentage);
+	}
+
+	else
+	{
+		resizeParameters.resizeX = resizeParameters.sourceX;
+		resizeParameters.resizeY = resizeParameters.sourceY;
+	}
+
+	return resizeParameters;
 }

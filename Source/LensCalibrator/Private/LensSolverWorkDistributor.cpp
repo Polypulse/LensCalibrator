@@ -883,8 +883,10 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	pixelArrayWorkUnit.textureSearchParameters.resize = false;
 	pixelArrayWorkUnit.pixelArrayParameters.pixels = surfaceData;
 
-	pixelArrayWorkUnit.resizeParameters.sourceResolution = FIntPoint(mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth(), mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight());
-	pixelArrayWorkUnit.resizeParameters.resizeResolution = FIntPoint(width, height);
+	pixelArrayWorkUnit.resizeParameters.sourceX = mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth();
+	pixelArrayWorkUnit.resizeParameters.sourceX = mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight();
+	pixelArrayWorkUnit.resizeParameters.resizeX = width;
+	pixelArrayWorkUnit.resizeParameters.resizeY = height;
 
 	QueueTextureArrayWorkUnit(pixelArrayWorkUnit.baseParameters.jobID, pixelArrayWorkUnit);
 

@@ -200,7 +200,28 @@ void ULensSolver::StartMediaStreamCalibration(
 	workUnit.baseParameters.calibrationID						= ouptutJobInfo.calibrationIDs[0];
 	workUnit.baseParameters.friendlyName						= "stream";
 	workUnit.baseParameters.zoomLevel							= mediaStreamParameters.mediaStreamParameters.zoomLevel;
-	workUnit.textureSearchParameters							= mediaStreamParameters.textureSearchParameters;
+	// workUnit.textureSearchParameters							= mediaStreamParameters.textureSearchParameters;
+
+	workUnit.textureSearchParameters.nativeFullResolutionX = mediaStreamParameters.textureSearchParameters.nativeFullResolution.X;
+	workUnit.textureSearchParameters.nativeFullResolutionY = mediaStreamParameters.textureSearchParameters.nativeFullResolution.Y;
+	workUnit.textureSearchParameters.resizePercentage = mediaStreamParameters.textureSearchParameters.resizePercentage;
+	workUnit.textureSearchParameters.resize = mediaStreamParameters.textureSearchParameters.resize;
+	workUnit.textureSearchParameters.flipX = mediaStreamParameters.textureSearchParameters.flipX,
+	workUnit.textureSearchParameters.flipY = mediaStreamParameters.textureSearchParameters.flipY;
+	workUnit.textureSearchParameters.exhaustiveSearch = mediaStreamParameters.textureSearchParameters.exhaustiveSearch;
+	workUnit.textureSearchParameters.checkerBoardSquareSizeMM = mediaStreamParameters.textureSearchParameters.checkerBoardSquareSizeMM;
+	workUnit.textureSearchParameters.checkerBoardCornerCountX = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.X,
+	workUnit.textureSearchParameters.checkerBoardCornerCountY = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.Y;
+	workUnit.textureSearchParameters.writeDebugTextureToFile = mediaStreamParameters.textureSearchParameters.writeDebugTextureToFile;
+
+	if (!LensSolverUtilities::ValidateFilePath(filePath, defaultMatFolder, defaultFileName, defaultExtension))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Unable to write image to file: \"%s\", cannot validate path."), *filePath);
+		return;
+	}
+
+	workUnit.textureSearchParameters.debugTextureOutputPath = TCHAR_TO_UTF8(*mediaStreamParameters.textureSearchParameters.debugTextureOutputPath);
+
 	workUnit.mediaStreamParameters								= mediaStreamParameters.mediaStreamParameters;
 	workUnit.mediaStreamParameters.currentStreamSnapshotCount	= 0;
 

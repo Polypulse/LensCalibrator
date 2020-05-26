@@ -138,12 +138,12 @@ void FLensSolverWorkerCalibrate::Tick()
 	std::vector<cv::Mat> rvecs, tvecs;
 	cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<double>::type);
 	cv::Mat distortionCoefficients = cv::Mat::zeros(5, 1, cv::DataType<double>::type);
-	cv::Size sourceImageSize(latchData.resizeParameters.nativeResolution.X, latchData.resizeParameters.nativeResolution.Y);
+	cv::Size sourceImageSize(latchData.resizeParameters.nativeX, latchData.resizeParameters.nativeY);
 	cv::Point2d principalPoint = cv::Point2d(0.0, 0.0);
 	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
 
-	int sourcePixelWidth = latchData.resizeParameters.nativeResolution.X;
-	int sourcePixelHeight = latchData.resizeParameters.nativeResolution.Y;
+	int sourcePixelWidth = latchData.resizeParameters.nativeX;
+	int sourcePixelHeight = latchData.resizeParameters.nativeY;
 	
 	float sensorHeight = latchData.calibrationParameters.sensorDiagonalSizeMM / FMath::Sqrt(FMath::Square(sourcePixelWidth / (float)sourcePixelHeight) + 1.0f);
 	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
@@ -182,11 +182,11 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
 	{
-		cameraMatrix.at<double>(0, 0) = 1.0 / (latchData.resizeParameters.nativeResolution.X * 0.5);
-		cameraMatrix.at<double>(1, 1) = 1.0 / (latchData.resizeParameters.nativeResolution.Y * 0.5);
+		cameraMatrix.at<double>(0, 0) = 1.0 / (latchData.resizeParameters.nativeX * 0.5);
+		cameraMatrix.at<double>(1, 1) = 1.0 / (latchData.resizeParameters.nativeY * 0.5);
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Keeping aspect ratio at: %f"), 
-				(latchData.resizeParameters.nativeResolution.X / (double)latchData.resizeParameters.nativeResolution.Y)));
+				(latchData.resizeParameters.nativeX / (double)latchData.resizeParameters.nativeY)));
 	}
 
 	QueueLog("(INFO): Calibrating...");
@@ -280,7 +280,8 @@ void FLensSolverWorkerCalibrate::Tick()
 	solvedPoints.aspectRatio = aspectRatio;
 	solvedPoints.sensorSizeMM = FVector2D(sensorWidth, sensorHeight);
 	solvedPoints.principalPixelPoint = FVector2D(principalPoint.x, principalPoint.y);
-	solvedPoints.resolution = latchData.resizeParameters.nativeResolution;
+	solvedPoints.resolution.X = latchData.resizeParameters.nativeX;
+	solvedPoints.resolution.Y = latchData.resizeParameters.nativeY;
 	solvedPoints.perspectiveMatrix = perspectiveMatrix;
 	solvedPoints.distortionCoefficients = outputDistortionCoefficients;
 

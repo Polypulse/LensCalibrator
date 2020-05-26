@@ -8,6 +8,7 @@
 #include "Engine.h"
 
 #include "LensSolver.h"
+#include "MatQueueWriter.h"
 
 #define LOCTEXT_NAMESPACE "FLensCalibratorModule"
 
