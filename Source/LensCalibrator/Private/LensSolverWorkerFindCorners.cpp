@@ -146,10 +146,10 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	corners.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY);
 
-	for (int ci = 0; ci < textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY; ci += 2)
+	for (int ci = 0; ci < textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY; ci++)
 	{
-		corners[ci].X = *(data + ci) * inverseResizeRatio;
-		corners[ci].Y = *(data + ci + 1) * inverseResizeRatio;
+		corners[ci].X = *(data + ci * 2) * inverseResizeRatio;
+		corners[ci].Y = *(data + ci * 2 + 1) * inverseResizeRatio;
 	}
 
 	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;

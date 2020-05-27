@@ -65,12 +65,9 @@ private:
 
 	bool DequeueAllWorkUnits(
 		const FString calibrationID, 
-		TArray<TArray<FVector2D>> & corners,
+		TArray<float> & corners,
 		int & cornerCountX, int & cornerCountY,
 		float & chessboardSquareSizeMM);
-		// TArray<TArray<FVector>> & objectPoints,
-		// std::vector<std::vector<cv::Point2f>> & corners,
-		// std::vector<std::vector<cv::Point3f>> & objectPoints);
 
 	bool LatchInQueue();
 

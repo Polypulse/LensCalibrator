@@ -58,7 +58,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	FCalibrateLatch latchData;
 	DequeueLatch(latchData);
 
-	TArray<TArray<FVector2D>> corners;
+	TArray<float> corners;
 	int cornerCountX, cornerCountY;
 	float chessboardSquareSizeMM;
 
@@ -190,7 +190,7 @@ void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrationPoint
 
 bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		const FString calibrationID, 
-		TArray<TArray<FVector2D>> & corners,
+		TArray<float> & corners,
 		int & cornerCountX, int & cornerCountY,
 		float & chessboardSquareSizeMM) 
 {
@@ -256,7 +256,14 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 			return false;
 		}
 
-		corners.Add(calibrateWorkUnit.calibrationPointParameters.corners);
+		int count = corners.Num();
+		int halfCount = count / 2;
+		corners.SetNum(count + calibrateWorkUnit.calibrationPointParameters.corners.Num() * 2);
+		for (int i = 0; i < calibrateWorkUnit.calibrationPointParameters.corners.Num() * 2; i += 2)
+		{
+			corners[count + i] = calibrateWorkUnit.calibrationPointParameters.corners[i / 2].X;
+			corners[count + i + 1] = calibrateWorkUnit.calibrationPointParameters.corners[i / 2].Y;
+		}
 
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Dequeued %d corner points image: \"%s\" for calibration: \"%s\"."),
