@@ -24,7 +24,7 @@ FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	workUnitCount = 0;
 }
 
-FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(FIntPoint& imageSize, FVector2D principlePoint, float focalLength)
+FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(const FIntPoint& imageSize, const FVector2D& principlePoint, const float focalLength)
 {
 	FMatrix perspectiveMatrix;
 
@@ -68,13 +68,14 @@ void FLensSolverWorkerCalibrate::Tick()
 	std::vector<std::vector<cv::Point2f>> corners;
 	*/
 	TArray<TArray<FVector2D>> corners;
-	TArray<TArray<FVector>> objectPoints;
+	// TArray<TArray<FVector>> objectPoints;
 	int cornerCountX, cornerCountY;
+	float chessboardSquareSizeMM;
 
-	if (!DequeueAllWorkUnits(latchData.baseParameters.calibrationID, corners, objectPoints, cornerCountX, cornerCountY))
+	if (!DequeueAllWorkUnits(latchData.baseParameters.calibrationID, corners, cornerCountX, cornerCountY, chessboardSquareSizeMM))
 		return;
 
-	if (corners.Num() == 0 || objectPoints.Num() == 0)
+	if (corners.Num() == 0)
 	{
 		QueueLog("No calibration corners or object points to use in calibration process.");
 		QueueCalibrationResultError(latchData.baseParameters);
@@ -202,7 +203,7 @@ void FLensSolverWorkerCalibrate::Tick()
 		latchData.resizeParameters,
 		parameters,
 		reinterpret_cast<float*>(corners.GetData()),
-		reinterpret_cast<float*>(objectPoints.GetData()),
+		chessboardSquareSizeMM,
 		cornerCountX,
 		cornerCountY,
 		corners.Num(),
@@ -294,8 +295,8 @@ void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrationPoint
 bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		const FString calibrationID, 
 		TArray<TArray<FVector2D>> & corners,
-		TArray<TArray<FVector>> & objectPoints,
-		int & cornerCountX, int & cornerCountY) 
+		int & cornerCountX, int & cornerCountY,
+		float & chessboardSquareSizeMM) 
 	// std::vector<std::vector<cv::Point2f>> & corners,
 	// std::vector<std::vector<cv::Point3f>> & objectPoints)
 {
@@ -313,6 +314,7 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 
 	bool isQueued = queue->IsEmpty() == false;
 	cornerCountX = -1, cornerCountY = -1;
+	chessboardSquareSizeMM = -1;
 
 	while (isQueued)
 	{
@@ -321,7 +323,7 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		isQueued = queue->IsEmpty() == false;
 		workUnitCount--;
 
-		if (calibrateWorkUnit.calibrationPointParameters.corners.Num() == 0 || calibrateWorkUnit.calibrationPointParameters.objectPoints.Num() == 0)
+		if (calibrateWorkUnit.calibrationPointParameters.corners.Num() == 0)
 		{
 			if (Debug())
 				QueueLog(FString::Printf(TEXT("(WARNING): No detected calibration pattern corners in image: \"%s\" for calibration: \"%s\", skipping and continuing to next image."),
@@ -348,8 +350,20 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 			return false;
 		}
 
+		if (chessboardSquareSizeMM == -1)
+			chessboardSquareSizeMM = calibrateWorkUnit.calibrationPointParameters.chessboardSquareSizeMM;
+		else if (chessboardSquareSizeMM != calibrateWorkUnit.calibrationPointParameters.chessboardSquareSizeMM)
+		{
+			if (Debug())
+				QueueLog(FString::Printf(TEXT("(ERROR): Detected different chessboard square size of: %d instead of %d in calibration queue: \"%s\". Something is broken."),
+					calibrateWorkUnit.calibrationPointParameters.chessboardSquareSizeMM,
+					chessboardSquareSizeMM,
+					*calibrateWorkUnit.baseParameters.calibrationID));
+			return false;
+		}
+
 		corners.Add(calibrateWorkUnit.calibrationPointParameters.corners);
-		objectPoints.Add(calibrateWorkUnit.calibrationPointParameters.objectPoints);
+		// objectPoints.Add(calibrateWorkUnit.calibrationPointParameters.objectPoints);
 
 		/*
 		corners.push_back(std::vector<cv::Point2f>(calibrateWorkUnit.calibrationPointParameters.corners.Num()));
@@ -370,9 +384,8 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		*/
 
 		if (Debug())
-			QueueLog(FString::Printf(TEXT("(INFO): Dequeued %d corner points and %d object points for image: \"%s\" for calibration: \"%s\"."),
+			QueueLog(FString::Printf(TEXT("(INFO): Dequeued %d corner points image: \"%s\" for calibration: \"%s\"."),
 				calibrateWorkUnit.calibrationPointParameters.corners.Num(),
-				calibrateWorkUnit.calibrationPointParameters.objectPoints.Num(),
 				*calibrateWorkUnit.baseParameters.friendlyName,
 				*calibrateWorkUnit.baseParameters.calibrationID));
 	}

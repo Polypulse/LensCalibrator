@@ -54,7 +54,7 @@ private:
 	TMap<FString, TQueue<FLensSolverCalibrationPointsWorkUnit>*> workQueue;
 	TQueue<FCalibrateLatch, EQueueMode::Mpsc> latchQueue;
 
-	FMatrix GeneratePerspectiveMatrixFromFocalLength(FIntPoint& imageSize, FVector2D principlePoint, float focalLength);
+	FMatrix GeneratePerspectiveMatrixFromFocalLength(const FIntPoint& imageSize, const FVector2D& principlePoint, const float focalLength);
 	void WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString outputPath);
 
 	void QueueCalibrationResultError(const FBaseParameters & baseParameters);
@@ -66,8 +66,9 @@ private:
 	bool DequeueAllWorkUnits(
 		const FString calibrationID, 
 		TArray<TArray<FVector2D>> & corners,
-		TArray<TArray<FVector>> & objectPoints,
-		int & cornerCountX, int & cornerCountY);
+		int & cornerCountX, int & cornerCountY,
+		float & chessboardSquareSizeMM);
+		// TArray<TArray<FVector>> & objectPoints,
 		// std::vector<std::vector<cv::Point2f>> & corners,
 		// std::vector<std::vector<cv::Point3f>> & objectPoints);
 

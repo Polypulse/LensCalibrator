@@ -298,13 +298,14 @@ void FLensSolverWorkerFindCorners::Tick()
 	*/
 
 	TArray<FVector2D> corners;
-	TArray<FVector> objectPoints;
+	// TArray<FVector> objectPoints;
 
 	float inverseResizeRatio = resizeParameters.nativeX / (float)resizeParameters.resizeX;
 
 	corners.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY);
-	objectPoints.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY);
+	// objectPoints.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY);
 
+	/*
 	int i = 0;
 	for (int y = 0; y < textureSearchParameters.checkerBoardCornerCountY; y++)
 		for (int x = 0; x < textureSearchParameters.checkerBoardCornerCountX; x++)
@@ -312,6 +313,7 @@ void FLensSolverWorkerFindCorners::Tick()
 				x * textureSearchParameters.checkerBoardSquareSizeMM,
 				y * textureSearchParameters.checkerBoardSquareSizeMM,
 				0.0f);
+	*/
 
 	for (int ci = 0; ci < textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY; ci += 2)
 	{
@@ -323,9 +325,12 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	calibrationPointsWorkUnit.baseParameters								= baseParameters;
 	calibrationPointsWorkUnit.calibrationPointParameters.corners			= corners;
-	calibrationPointsWorkUnit.calibrationPointParameters.objectPoints		= objectPoints;
-	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountX		= textureSearchParameters.checkerBoardCornerCountX;
-	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountY		= textureSearchParameters.checkerBoardCornerCountY;
+	// calibrationPointsWorkUnit.calibrationPointParameters.objectPoints	= objectPoints;
+
+	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountX				= textureSearchParameters.checkerBoardCornerCountX;
+	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountY				= textureSearchParameters.checkerBoardCornerCountY;
+	calibrationPointsWorkUnit.calibrationPointParameters.chessboardSquareSizeMM		= textureSearchParameters.checkerBoardSquareSizeMM;
+
 	calibrationPointsWorkUnit.resizeParameters								= resizeParameters;
 
 	QueueCalibrationPointsWorkUnit(calibrationPointsWorkUnit);
