@@ -8,6 +8,7 @@
 #include "Async/AsyncWork.h"
 #include "SolvedPoints.h"
 
+/*
 #pragma push_macro("check")
 #undef check
 #include "opencv2/opencv.hpp"
@@ -17,6 +18,7 @@
 #include "opencv2/imgproc/types_c.h"
 #pragma pop_macro("check")
 #include <vector>
+*/
 
 #include "JobInfo.h"
 #include "LensSolverUtilities.h"

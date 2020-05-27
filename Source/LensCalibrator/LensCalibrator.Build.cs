@@ -56,10 +56,10 @@ public class LensCalibrator : ModuleRules
 			}
 		);
 
-		ConfigureOpenCV(isDebug, new string[2]
+		ConfigureOpenCV(isDebug, new string[1]
 			{
-				"OpenCV",
-				"OpenCVWrapper",
+				// "OpenCV",
+				"OpenCVWrapper"
 			});
 		// ConfigureOpenCVWrapper(isDebug);
 		// ConfigureDynamicOpenCVWrapper(isDebug);

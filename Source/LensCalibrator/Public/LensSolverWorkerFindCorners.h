@@ -19,28 +19,7 @@ public:
 		QueuePixelArrayWorkUnitInputDel* inputQueuePixelArrayWorkUnitInputDel,
 		QueueFindCornerResultOutputDel* inputQueueFindCornerResultOutputDel);
 
-	~FLensSolverWorkerFindCorners()
-	{
-		/*
-		queueTextureFileWorkUnitInputDel->Unbind();
-		queuePixelArrayWorkUnitInputDel->Unbind();
-
-		queueTextureFileWorkUnitInputDel = nullptr;
-		queuePixelArrayWorkUnitInputDel = nullptr;
-		/*
-		if (queueTextureFileWorkUnitInputDel != nullptr && queueTextureFileWorkUnitInputDel->IsBound())
-		{
-			queueTextureFileWorkUnitInputDel->Unbind();
-			queueTextureFileWorkUnitInputDel = nullptr;
-		}
-
-		if (queuePixelArrayWorkUnitInputDel != nullptr && queuePixelArrayWorkUnitInputDel->IsBound())
-		{
-			queuePixelArrayWorkUnitInputDel->Unbind();
-			queuePixelArrayWorkUnitInputDel = nullptr;
-		}
-		*/
-	};
+	~FLensSolverWorkerFindCorners() {};
 
 private:
 	mutable int workUnitCount;
@@ -48,18 +27,12 @@ private:
 	TQueue<FLensSolverPixelArrayWorkUnit, EQueueMode::Mpsc> pixelArrayWorkQueue;
 	TQueue<FLensSolverTextureFileWorkUnit, EQueueMode::Mpsc> textureFileWorkQueue;
 
-	/*
-	const QueueTextureFileWorkUnitInputDel* queueTextureFileWorkUnitInputDel;
-	const QueuePixelArrayWorkUnitInputDel* queuePixelArrayWorkUnitInputDel;
-	*/
-
 	FResizeParameters CalculateResizeParameters (const FChessboardSearchParameters & textureSearchParameters);
 
 	QueueTextureFileWorkUnitInputDel* queueTextureFileWorkUnitInputDel;
 	QueuePixelArrayWorkUnitInputDel* queuePixelArrayWorkUnitInputDel;
 	const QueueFindCornerResultOutputDel* queueFindCornerResultOutputDel;
 
-	// void WriteMatToFile(cv::Mat image, FString outputPath);
 	void DequeueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit& workUnit);
 	void DequeuePixelArrayWorkUnit(FLensSolverPixelArrayWorkUnit & workUnit);
 	void QueueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit workUnit);
@@ -69,8 +42,6 @@ private:
 	void QueueEmptyCalibrationPointsWorkUnit(const FBaseParameters & baseParameters, const FResizeParameters & resizeParameters);
 
 protected:
-	// bool GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution);
-	// bool GetImageFromArray(const TArray<FColor> & pixels, const FIntPoint resolution, cv::Mat& image);
 
 	virtual void Tick() override;
 	virtual int GetWorkLoad() override;

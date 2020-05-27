@@ -17,11 +17,6 @@ FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	inputQueueTextureFileWorkUnitInputDel->BindRaw(this, &FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit);
 	inputQueuePixelArrayWorkUnitInputDel->BindRaw(this, &FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit);
 
-	/*
-	queueTextureFileWorkUnitInputDel = inputQueueTextureFileWorkUnitInputDel;
-	queuePixelArrayWorkUnitInputDel = inputQueuePixelArrayWorkUnitInputDel;
-	*/
-
 	workUnitCount = 0;
 }
 
@@ -32,22 +27,11 @@ int FLensSolverWorkerFindCorners::GetWorkLoad()
 	count = workUnitCount;
 	Unlock();
 
-	/*
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): Retrieving FindCorners worker work load: %d"), count));
-	*/
-
 	return count;
 }
 
 void FLensSolverWorkerFindCorners::QueueTextureFileWorkUnit(FLensSolverTextureFileWorkUnit workUnit)
 {
-	/*
-	static int count = 0;
-	count++;
-	QueueLog(FString::Printf(TEXT("Worker received TextureFileWorkUnit of index: %d"), count));
-	*/
-
 	textureFileWorkQueue.Enqueue(workUnit);
 	Lock();
 	workUnitCount++;
@@ -108,8 +92,6 @@ void FLensSolverWorkerFindCorners::Tick()
 	FResizeParameters resizeParameters;
 	FChessboardSearchParameters textureSearchParameters;
 
-	cv::Mat image;
-
 	float * data = nullptr;
 	if (!textureFileWorkQueue.IsEmpty())
 	{
@@ -154,166 +136,15 @@ void FLensSolverWorkerFindCorners::Tick()
 			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 			return;
 		}
-
-		/*
-		if (!GetImageFromArray(texturePixelArrayUnit.pixelArrayParameters.pixels, resizeParameters.resizeResolution, image))
-		{
-			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
-			return;
-		}
-		*/
 	}
 
 	else return;
 
-	/*
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Preparing search for calibration pattern using source image of size: (%d, %d)."), 
-			*JobDataToString(baseParameters), 
-			resizeParameters.sourceResolution.X,
-			resizeParameters.sourceResolution.Y));
-	*/
-
-	/*
-	float resizePercentage = textureSearchParameters.resizePercentage;
-	bool resize = textureSearchParameters.resize;
-
-	float checkerBoardSquareSizeMM = textureSearchParameters.checkerBoardSquareSizeMM;
-	FIntPoint checkerBoardCornerCount = textureSearchParameters.checkerBoardCornerCount;
-	// resizeParameters.resizeResolution = resizeParameters.sourceResolution * resizePercentage;
-
-	// QueueLog(FString::Printf(TEXT("%sPrepared image of size: (%d, %d!"), *workerMessage, image.cols, image.rows));
-
-	cv::Size sourceImageSize(resizeParameters.sourceResolution.X, resizeParameters.sourceResolution.Y);
-	cv::Size resizedImageSize(resizeParameters.resizeResolution.X, resizeParameters.resizeResolution.Y);
-
-
-	if (resize && resizePercentage != 1.0f)
-	{
-		if (Debug())
-			QueueLog(FString::Printf(TEXT("(INFO): %s: Resizing image from: (%d, %d) to: (%d, %d)."),
-				*JobDataToString(baseParameters),
-				resizeParameters.sourceResolution.X,
-				resizeParameters.sourceResolution.Y,
-				resizeParameters.resizeResolution.X,
-				resizeParameters.resizeResolution.Y));
-
-		cv::resize(image, image, resizedImageSize, 0.0f, 0.0f, cv::INTER_LINEAR);
-	}
-
-	/*
-	if (image.rows != resizedPixelWidth || image.cols != resizedPixelHeight)
-	{
-		UE_LOG(LogTemp, Log, TEXT("%sAllocating image from size: (%d, %d) to: (%d, %d)."), *workerMessage, image.cols, image.rows, resizedPixelWidth, resizedPixelHeight);
-		image = cv::Mat(resizedPixelHeight, resizedPixelWidth, cv::DataType<uint8>::type);
-	}
-	*/
-
-	/*
-	UE_LOG(LogTemp, Log, TEXT("%sResized pixel size: (%d, %d), source size: (%d, %d), resize ratio: %f."),
-		*workerMessage,
-		resizedPixelWidth,
-		resizedPixelHeight,
-		resizeParameters.sourceResolution.X,
-		resizeParameters.sourceResolution.Y,
-		1.0f / inverseResizeRatio);
-	*/
-
-	/*
-	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
-
-	std::vector<cv::Point2f> imageCorners;
-
-	cv::Size patternSize(checkerBoardCornerCount.X, checkerBoardCornerCount.Y);
-
-	bool patternFound = false;
-
-	int findFlags = cv::CALIB_CB_NORMALIZE_IMAGE;
-	findFlags |= cv::CALIB_CB_ADAPTIVE_THRESH;
-
-	if (textureSearchParameters.exhaustiveSearch)
-		findFlags |= cv::CALIB_CB_EXHAUSTIVE;
-
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Beginning calibration pattern detection for image: \"%s\"."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
-
-	// patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
-	// TArray<float> data;
-	// data.SetNum(checkerBoardCornerCount.X * checkerBoardCornerCount.Y * 2);
-	patternFound = GetOpenCVWrapper().FindChessboardCorners(image, patternSize, imageCorners, findFlags);
-	/*
-	try
-	{
-		patternFound = cv::findChessboardCorners(image, patternSize, imageCorners, findFlags);
-	}
-
-	// catch (const cv::Exception& exception)
-	catch (...)
-	{
-		// FString exceptionMsg = UTF8_TO_TCHAR(exception.msg.c_str());
-		// QueueLog(FString::Printf(TEXT("(ERROR): OpenCV exception: \"%s\"."), *exceptionMsg));
-		QueueLog("(ERROR): OpenCV exception occurred.");
-		QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
-		return;
-	}
-
-	if (!patternFound)
-	{
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Found no pattern in image: \"%s\", queuing empty work unit."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
-		QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
-		return;
-	}
-
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): %s: Found calibration pattern in image: \"%s\"."), *JobDataToString(baseParameters), *baseParameters.friendlyName));
-
-	cv::TermCriteria cornerSubPixCriteria(
-		cv::TermCriteria::MAX_ITER + cv::TermCriteria::EPS,
-		50,
-		0.0001
-	);
-
-	// cv::cornerSubPix(image, imageCorners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
-	/*
-	try
-	{
-		cv::cornerSubPix(image, imageCorners, cv::Size(5, 5), cv::Size(-1, -1), cornerSubPixCriteria);
-	}
-
-	// catch (const cv::Exception& exception)
-	catch (...)
-	{
-		// FString exceptionMsg = UTF8_TO_TCHAR(exception.msg.c_str());
-		// QueueLog(FString::Printf(TEXT("(ERROR): OpenCV exception: \"%s\"."), *exceptionMsg));
-		QueueLog("(ERROR): OpenCV exception occurred.");
-		QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
-		return;
-	}
-
-	if (textureSearchParameters.writeDebugTextureToFile)
-	{
-		// cv::drawChessboardCorners(image, patternSize, imageCorners, patternFound);
-		WriteMatToFile(image, textureSearchParameters.debugTextureOutputPath);
-	}
-	*/
-
 	TArray<FVector2D> corners;
-	// TArray<FVector> objectPoints;
 
 	float inverseResizeRatio = resizeParameters.nativeX / (float)resizeParameters.resizeX;
 
 	corners.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY);
-	// objectPoints.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY);
-
-	/*
-	int i = 0;
-	for (int y = 0; y < textureSearchParameters.checkerBoardCornerCountY; y++)
-		for (int x = 0; x < textureSearchParameters.checkerBoardCornerCountX; x++)
-			objectPoints[i++] = FVector(
-				x * textureSearchParameters.checkerBoardSquareSizeMM,
-				y * textureSearchParameters.checkerBoardSquareSizeMM,
-				0.0f);
-	*/
 
 	for (int ci = 0; ci < textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY; ci += 2)
 	{
@@ -325,7 +156,6 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	calibrationPointsWorkUnit.baseParameters								= baseParameters;
 	calibrationPointsWorkUnit.calibrationPointParameters.corners			= corners;
-	// calibrationPointsWorkUnit.calibrationPointParameters.objectPoints	= objectPoints;
 
 	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountX				= textureSearchParameters.checkerBoardCornerCountX;
 	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountY				= textureSearchParameters.checkerBoardCornerCountY;
@@ -335,59 +165,6 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	QueueCalibrationPointsWorkUnit(calibrationPointsWorkUnit);
 }
-
-/*
-bool FLensSolverWorkerFindCorners::GetImageFromFile(const FString & absoluteFilePath, cv::Mat& image, FIntPoint & sourceResolution)
-{
-	std::string str(TCHAR_TO_UTF8(*absoluteFilePath));
-	std::replace(str.begin(), str.end(), '\\', '/');
-
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("Attempting to read image from path: \"%s\""), *absoluteFilePath));
-		
-	image = cv::imread(str);
-
-	if (image.data == NULL)
-	{
-		if (Debug())
-			QueueLog(FString::Printf(TEXT("(ERROR) Unable texture from path: \"%s\""), *absoluteFilePath));
-		return false;
-	}
-
-	cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
-	sourceResolution = FIntPoint(image.cols, image.rows);
-
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): Loaded texture from path: \"%s\" at resolution: (%d, %d)."), *absoluteFilePath, sourceResolution.X, sourceResolution.Y));
-	return true;
-}
-
-bool FLensSolverWorkerFindCorners::GetImageFromArray(const TArray<FColor> & pixels, const FIntPoint resolution, cv::Mat& image)
-{
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): Copying pixel data of pixel count: %d to image of size: (%d, %d)."), pixels.Num(), resolution.X, resolution.Y));
-
-	image = cv::Mat(resolution.Y, resolution.X, cv::DataType<uint8>::type);
-
-	int pixelCount = resolution.X * resolution.Y;
-	for (int pi = 0; pi < pixelCount; pi++)
-		image.at<uint8>(pi / resolution.X, pi % resolution.X) = pixels[pi].R;
-
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): Done copying pixel data."), pixels.Num(), resolution.X, resolution.Y));
-
-	return true;
-}
-*/
-
-/*
-void FLensSolverWorkerFindCorners::WriteMatToFile(cv::Mat image, FString outputPath)
-{
-	MatQueueWriter::Get().QueueMat(outputPath, image);
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): Queued texture: \'%s\" to be written to file."), *outputPath));
-}
-*/
 
 void FLensSolverWorkerFindCorners::QueueCalibrationPointsWorkUnit(const FLensSolverCalibrationPointsWorkUnit & calibrationPointsWorkUnit)
 {

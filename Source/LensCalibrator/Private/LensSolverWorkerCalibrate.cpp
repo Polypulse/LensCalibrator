@@ -16,11 +16,6 @@ FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	inputQueueCalibrateWorkUnitDel->BindRaw(this, &FLensSolverWorkerCalibrate::QueueWorkUnit);
 	inputSignalLatch->BindRaw(this, &FLensSolverWorkerCalibrate::QueueLatch);
 
-	/*
-	queueCalibrateWorkUnitDel = inputQueueCalibrateWorkUnitDel;
-	signalLatch = inputSignalLatch;
-	*/
-
 	workUnitCount = 0;
 }
 
@@ -63,12 +58,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	FCalibrateLatch latchData;
 	DequeueLatch(latchData);
 
-	/*
-	std::vector<std::vector<cv::Point3f>> objectPoints;
-	std::vector<std::vector<cv::Point2f>> corners;
-	*/
 	TArray<TArray<FVector2D>> corners;
-	// TArray<TArray<FVector>> objectPoints;
 	int cornerCountX, cornerCountY;
 	float chessboardSquareSizeMM;
 
@@ -87,100 +77,6 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): Done dequeing work units, preparing calibration using %d sets of points."), corners.Num()));
-
-	/*
-	std::random_shuffle(std::begin(corners), std::end(corners));
-
-	std::vector<cv::Mat> rvecs, tvecs;
-	cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<double>::type);
-	cv::Mat distortionCoefficients = cv::Mat::zeros(5, 1, cv::DataType<double>::type);
-	cv::Size sourceImageSize(latchData.resizeParameters.nativeX, latchData.resizeParameters.nativeY);
-	cv::Point2d principalPoint = cv::Point2d(0.0, 0.0);
-	cv::TermCriteria termCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001f);
-
-	int sourcePixelWidth = latchData.resizeParameters.nativeX;
-	int sourcePixelHeight = latchData.resizeParameters.nativeY;
-	
-	float sensorHeight = latchData.calibrationParameters.sensorDiagonalSizeMM / FMath::Sqrt(FMath::Square(sourcePixelWidth / (float)sourcePixelHeight) + 1.0f);
-	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
-	// float sensorHeight = (latchData.calibrationParameters.sensorDiagonalSizeMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
-	// float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
-
-	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): Sensor size: (%f, %f) mm, diagonal: (%f) mm."), sensorWidth, sensorHeight, latchData.calibrationParameters.sensorDiagonalSizeMM));
-
-	double fovX = 0.0f, fovY = 0.0f, focalLength = 0.0f;
-	double aspectRatio = 0.0f;
-
-	int flags = 0;
-	flags |= latchData.calibrationParameters.useInitialIntrinsicValues				?	cv::CALIB_USE_INTRINSIC_GUESS : 0;
-	flags |= latchData.calibrationParameters.keepPrincipalPixelPositionFixed		?	cv::CALIB_FIX_PRINCIPAL_POINT : 0;
-	flags |= latchData.calibrationParameters.keepAspectRatioFixed					?	cv::CALIB_FIX_ASPECT_RATIO : 0;
-	flags |= latchData.calibrationParameters.lensHasTangentalDistortion				?	cv::CALIB_ZERO_TANGENT_DIST : 0;
-	flags |= latchData.calibrationParameters.fixRadialDistortionCoefficientK1		?	cv::CALIB_FIX_K1 : 0;
-	flags |= latchData.calibrationParameters.fixRadialDistortionCoefficientK2		?	cv::CALIB_FIX_K2 : 0;
-	flags |= latchData.calibrationParameters.fixRadialDistortionCoefficientK3		?	cv::CALIB_FIX_K3 : 0;
-	flags |= latchData.calibrationParameters.fixRadialDistortionCoefficientK4		?	cv::CALIB_FIX_K4 : 0;
-	flags |= latchData.calibrationParameters.fixRadialDistortionCoefficientK5		?	cv::CALIB_FIX_K5 : 0;
-	flags |= latchData.calibrationParameters.fixRadialDistortionCoefficientK6		?	cv::CALIB_FIX_K6 : 0;
-
-	if (flags & cv::CALIB_USE_INTRINSIC_GUESS)
-	{
-		cameraMatrix.at<double>(0, 2) = static_cast<double>(latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.X);
-		cameraMatrix.at<double>(1, 2) = static_cast<double>(latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.Y);
-		if (Debug())
-			QueueLog(FString::Printf(TEXT("(INFO): Setting initial principal point to: (%f, %f)"), 
-				latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.X,
-				latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.Y));
-	}
-
-	else if (flags & cv::CALIB_FIX_ASPECT_RATIO)
-	{
-		cameraMatrix.at<double>(0, 0) = 1.0 / (latchData.resizeParameters.nativeX * 0.5);
-		cameraMatrix.at<double>(1, 1) = 1.0 / (latchData.resizeParameters.nativeY * 0.5);
-		if (Debug())
-			QueueLog(FString::Printf(TEXT("(INFO): Keeping aspect ratio at: %f"), 
-				(latchData.resizeParameters.nativeX / (double)latchData.resizeParameters.nativeY)));
-	}
-
-	QueueLog("(INFO): Calibrating...");
-
-	double error = 0.0;
-	error = cv::calibrateCamera(
-		objectPoints,
-		corners,
-		sourceImageSize,
-		cameraMatrix,
-		distortionCoefficients,
-		rvecs,
-		tvecs,
-		flags,
-		termCriteria);
-	*/
-	/*
-	try
-	{
-		error = cv::calibrateCamera(
-			objectPoints,
-			corners,
-			sourceImageSize,
-			cameraMatrix,
-			distortionCoefficients,
-			rvecs,
-			tvecs,
-			flags,
-			termCriteria);
-	}
-
-	cv::calibrationMatrixValues(cameraMatrix, sourceImageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
-
-	fovX *= 2.0f;
-	fovY *= 2.0f;
-	focalLength *= 2.0f;
-
-	principalPoint.x = sourcePixelWidth * (principalPoint.x / sensorWidth);
-	principalPoint.y = sourcePixelHeight * (principalPoint.y / sensorHeight);
-	*/
 
 	FCalibrateLensParameters parameters; 
 	parameters.sensorDiagonalSizeMM = latchData.calibrationParameters.sensorDiagonalSizeMM;
@@ -297,8 +193,6 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		TArray<TArray<FVector2D>> & corners,
 		int & cornerCountX, int & cornerCountY,
 		float & chessboardSquareSizeMM) 
-	// std::vector<std::vector<cv::Point2f>> & corners,
-	// std::vector<std::vector<cv::Point3f>> & objectPoints)
 {
 	Lock();
 	TQueue<FLensSolverCalibrationPointsWorkUnit> ** queuePtr = workQueue.Find(calibrationID);
@@ -363,25 +257,6 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		}
 
 		corners.Add(calibrateWorkUnit.calibrationPointParameters.corners);
-		// objectPoints.Add(calibrateWorkUnit.calibrationPointParameters.objectPoints);
-
-		/*
-		corners.push_back(std::vector<cv::Point2f>(calibrateWorkUnit.calibrationPointParameters.corners.Num()));
-		objectPoints.push_back(std::vector<cv::Point3f>(calibrateWorkUnit.calibrationPointParameters.objectPoints.Num()));
-
-		for (int i = 0; i < calibrateWorkUnit.calibrationPointParameters.corners.Num(); i++)
-			corners[corners.size() - 1].push_back(cv::Point2f(
-				calibrateWorkUnit.calibrationPointParameters.corners[i].X,
-				calibrateWorkUnit.calibrationPointParameters.corners[i].Y
-			));
-
-		for (int i = 0; i < calibrateWorkUnit.calibrationPointParameters.objectPoints.Num(); i++)
-			objectPoints[objectPoints.size() - 1].push_back(cv::Point3f(
-				calibrateWorkUnit.calibrationPointParameters.objectPoints[i].X,
-				calibrateWorkUnit.calibrationPointParameters.objectPoints[i].Y,
-				calibrateWorkUnit.calibrationPointParameters.objectPoints[i].Z
-			));
-		*/
 
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Dequeued %d corner points image: \"%s\" for calibration: \"%s\"."),
