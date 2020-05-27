@@ -24,17 +24,17 @@ FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	workUnitCount = 0;
 }
 
-FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength)
+FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(FIntPoint& imageSize, FVector2D principlePoint, float focalLength)
 {
 	FMatrix perspectiveMatrix;
 
 	float min = 0.1f;
 	float max = 10000.0f;
 
-	float left = min * (-principlePoint.x) / focalLength;
-	float right = min * (imageSize.width - principlePoint.x) / focalLength;
-	float bottom = min * (principlePoint.y - imageSize.height) / focalLength;
-	float top = min * (principlePoint.y) / focalLength;
+	float left = min * (-principlePoint.X) / focalLength;
+	float right = min * (imageSize.X - principlePoint.X) / focalLength;
+	float bottom = min * (principlePoint.Y - imageSize.Y) / focalLength;
+	float top = min * (principlePoint.Y) / focalLength;
 
 	float a = -(right + left) / (right - left);
 	float b = -(top + bottom) / (top - bottom);
@@ -53,57 +53,6 @@ FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(cv:
 	);
 
 	return perspectiveMatrix;
-}
-
-void FLensSolverWorkerCalibrate::TransformVectorFromCVToUE4(FVector& v)
-{
-	float x, y, z;
-
-	x = v.X;
-	y = v.Y;
-	z = v.Z;
-
-	v.X = z;
-	v.Y = x;
-	v.Z = -y;
-}
-
-FTransform FLensSolverWorkerCalibrate::GenerateTransformFromRAndTVecs(std::vector<cv::Mat>& rvecs, std::vector<cv::Mat>& tvecs)
-{
-	FTransform outputTransform;
-	FMatrix transformMatrix;
-
-	cv::Mat rot;
-	FVector forward, right, up, origin;
-	FVector zero(0, 0, 0);
-
-	cv::Rodrigues(rvecs[0], rot);
-
-	forward		= FVector(rot.at<double>(0, 2), rot.at<double>(1, 2), rot.at<double>(2, 2));
-	right		= FVector(rot.at<double>(0, 0), rot.at<double>(1, 0), rot.at<double>(2, 0));
-	up			= FVector(rot.at<double>(0, 1), rot.at<double>(1, 1), rot.at<double>(2, 1));
-	origin		= FVector(tvecs[0].at<double>(0, 0), tvecs[0].at<double>(1, 0), tvecs[0].at<double>(2, 0));
-
-	TransformVectorFromCVToUE4(forward);
-	TransformVectorFromCVToUE4(right);
-	TransformVectorFromCVToUE4(up);
-	TransformVectorFromCVToUE4(origin);
-
-	up = -up;
-
-	transformMatrix.SetAxes(
-		&forward,
-		&right,
-		&up,
-		&zero
-	);
-
-	transformMatrix = transformMatrix.GetTransposed();
-	origin = transformMatrix.TransformPosition(origin);
-	outputTransform.SetFromMatrix(transformMatrix);
-	outputTransform.SetLocation(-origin);
-
-	return outputTransform;
 }
 
 void FLensSolverWorkerCalibrate::Tick()
@@ -232,10 +181,26 @@ void FLensSolverWorkerCalibrate::Tick()
 	principalPoint.y = sourcePixelHeight * (principalPoint.y / sensorHeight);
 	*/
 
+	FCalibrateLensParameters parameters; 
+	parameters.sensorDiagonalSizeMM = latchData.calibrationParameters.sensorDiagonalSizeMM;
+	parameters.initialPrincipalPointNativePixelPositionX = latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.X;
+	parameters.initialPrincipalPointNativePixelPositionY = latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.Y;
+	parameters.useInitialIntrinsicValues = latchData.calibrationParameters.useInitialIntrinsicValues;
+	parameters.keepPrincipalPixelPositionFixed = latchData.calibrationParameters.keepPrincipalPixelPositionFixed;
+	parameters.keepAspectRatioFixed = latchData.calibrationParameters.keepAspectRatioFixed;
+	parameters.lensHasTangentalDistortion = latchData.calibrationParameters.lensHasTangentalDistortion;
+	parameters.fixRadialDistortionCoefficientK1 = latchData.calibrationParameters.fixRadialDistortionCoefficientK1;
+	parameters.fixRadialDistortionCoefficientK2 = latchData.calibrationParameters.fixRadialDistortionCoefficientK2;
+	parameters.fixRadialDistortionCoefficientK3 = latchData.calibrationParameters.fixRadialDistortionCoefficientK3;
+	parameters.fixRadialDistortionCoefficientK4 = latchData.calibrationParameters.fixRadialDistortionCoefficientK4;
+	parameters.fixRadialDistortionCoefficientK5 = latchData.calibrationParameters.fixRadialDistortionCoefficientK5;
+	parameters.fixRadialDistortionCoefficientK6 = latchData.calibrationParameters.fixRadialDistortionCoefficientK6;
+
+
 	FCalibrateLensOutput output;
 	if (GetOpenCVWrapper().CalibrateLens(
 		latchData.resizeParameters,
-		latchData.calibrationParameters,
+		parameters,
 		reinterpret_cast<float*>(corners.GetData()),
 		reinterpret_cast<float*>(objectPoints.GetData()),
 		cornerCountX,
@@ -245,12 +210,14 @@ void FLensSolverWorkerCalibrate::Tick()
 	))
 		return;
 
+
 	if (ShouldExit())
 		return;
 
-	FMatrix perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(sourceImageSize, principalPoint, focalLength);
-
-	QueueLog("(INFO): Done.");
+	FMatrix perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(
+		FIntPoint(latchData.resizeParameters.nativeX, latchData.resizeParameters.nativeY), 
+		FVector2D(output.principalPixelPointX, output.principalPixelPointY), 
+		output.focalLengthMM);
 
 	QueueLog(FString::Printf(TEXT("(INFO): Completed camera calibration at zoom level: %f "
 		"with solve error: %f "
@@ -262,28 +229,25 @@ void FLensSolverWorkerCalibrate::Tick()
 		"\n\tPrincipal Point Pixel: (%f, %f),"
 		"\n\tAspect Ratio: %f\n)"),
 		latchData.baseParameters.zoomLevel,
-		error,
-		fovX,
-		fovY,
-		sensorWidth,
-		sensorHeight,
-		focalLength,
-		principalPoint.x, principalPoint.y,
-		aspectRatio));
-
-	if (ShouldExit())
-		return;
+		output.error,
+		output.fovX,
+		output.fovY,
+		output.sensorSizeMMX,
+		output.sensorSizeMMY,
+		output.focalLengthMM,
+		output.principalPixelPointX, output.principalPixelPointY,
+		output.aspectRatio));
 
 	FCalibrationResult solvedPoints;
 
 	solvedPoints.baseParameters = latchData.baseParameters;
 	solvedPoints.success = true;
-	solvedPoints.fovX = fovX;
-	solvedPoints.fovY = fovY;
-	solvedPoints.focalLengthMM = focalLength;
-	solvedPoints.aspectRatio = aspectRatio;
-	solvedPoints.sensorSizeMM = FVector2D(sensorWidth, sensorHeight);
-	solvedPoints.principalPixelPoint = FVector2D(principalPoint.x, principalPoint.y);
+	solvedPoints.fovX = output.fovX;
+	solvedPoints.fovY = output.fovY;
+	solvedPoints.focalLengthMM = output.focalLengthMM;
+	solvedPoints.aspectRatio = output.aspectRatio;
+	solvedPoints.sensorSizeMM = FVector2D(output.sensorSizeMMX, output.sensorSizeMMY);
+	solvedPoints.principalPixelPoint = FVector2D(output.principalPixelPointX, output.principalPixelPointY);
 	solvedPoints.resolution.X = latchData.resizeParameters.nativeX;
 	solvedPoints.resolution.Y = latchData.resizeParameters.nativeY;
 	solvedPoints.perspectiveMatrix = perspectiveMatrix;

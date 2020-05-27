@@ -54,10 +54,8 @@ private:
 	TMap<FString, TQueue<FLensSolverCalibrationPointsWorkUnit>*> workQueue;
 	TQueue<FCalibrateLatch, EQueueMode::Mpsc> latchQueue;
 
-	FMatrix GeneratePerspectiveMatrixFromFocalLength(cv::Size& imageSize, cv::Point2d principlePoint, float focalLength);
-	FTransform GenerateTransformFromRAndTVecs(std::vector<cv::Mat>& rvecs, std::vector<cv::Mat>& tvecs);
+	FMatrix GeneratePerspectiveMatrixFromFocalLength(FIntPoint& imageSize, FVector2D principlePoint, float focalLength);
 	void WriteSolvedPointsToJSONFile(const FCalibrationResult& solvePoints, FString outputPath);
-	void TransformVectorFromCVToUE4(FVector& v);
 
 	void QueueCalibrationResultError(const FBaseParameters & baseParameters);
 	void QueueCalibrationResult(FCalibrationResult solvedPoints);
