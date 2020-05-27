@@ -67,6 +67,8 @@ struct FCalibrationPointParameters
 	// std::vector<cv::Point3f> objectPoints;
 	TArray<FVector2D> corners;
 	TArray<FVector> objectPoints;
+	float cornerCountX;
+	float cornerCountY;
 
 	FCalibrationPointParameters()
 	{

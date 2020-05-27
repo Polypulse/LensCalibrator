@@ -324,6 +324,8 @@ void FLensSolverWorkerFindCorners::Tick()
 	calibrationPointsWorkUnit.baseParameters								= baseParameters;
 	calibrationPointsWorkUnit.calibrationPointParameters.corners			= corners;
 	calibrationPointsWorkUnit.calibrationPointParameters.objectPoints		= objectPoints;
+	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountX		= textureSearchParameters.checkerBoardCornerCountX
+	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountY		= textureSearchParameters.checkerBoardCornerCountY
 	calibrationPointsWorkUnit.resizeParameters								= resizeParameters;
 
 	QueueCalibrationPointsWorkUnit(calibrationPointsWorkUnit);

@@ -67,8 +67,11 @@ private:
 
 	bool DequeueAllWorkUnits(
 		const FString calibrationID, 
-		std::vector<std::vector<cv::Point2f>> & corners,
-		std::vector<std::vector<cv::Point3f>> & objectPoints);
+		TArray<TArray<FVector2D>> & corners,
+		TArray<TArray<FVector>> & objectPoints,
+		int & cornerCountX, int & cornerCountY);
+		// std::vector<std::vector<cv::Point2f>> & corners,
+		// std::vector<std::vector<cv::Point3f>> & objectPoints);
 
 	bool LatchInQueue();
 

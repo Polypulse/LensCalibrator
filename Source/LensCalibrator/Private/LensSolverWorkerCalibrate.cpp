@@ -114,26 +114,32 @@ void FLensSolverWorkerCalibrate::Tick()
 	FCalibrateLatch latchData;
 	DequeueLatch(latchData);
 
+	/*
 	std::vector<std::vector<cv::Point3f>> objectPoints;
 	std::vector<std::vector<cv::Point2f>> corners;
+	*/
+	TArray<TArray<FVector2D>> corners;
+	TArray<TArray<FVector>> objectPoints;
+	int cornerCountX, cornerCountY;
 
-	if (!DequeueAllWorkUnits(latchData.baseParameters.calibrationID, corners, objectPoints))
+	if (!DequeueAllWorkUnits(latchData.baseParameters.calibrationID, corners, objectPoints, cornerCountX, cornerCountY))
 		return;
 
-	if (corners.size() == 0 || objectPoints.size() == 0)
+	if (corners.Num() == 0 || objectPoints.Num() == 0)
 	{
 		QueueLog("No calibration corners or object points to use in calibration process.");
 		QueueCalibrationResultError(latchData.baseParameters);
 		return;
 	}
 
-	std::random_shuffle(std::begin(corners), std::end(corners));
-
 	if (ShouldExit())
 		return;
 
 	if (Debug())
-		QueueLog(FString::Printf(TEXT("(INFO): Done dequeing work units, preparing calibration using %d sets of points."), corners.size()));
+		QueueLog(FString::Printf(TEXT("(INFO): Done dequeing work units, preparing calibration using %d sets of points."), corners.Num()));
+
+	/*
+	std::random_shuffle(std::begin(corners), std::end(corners));
 
 	std::vector<cv::Mat> rvecs, tvecs;
 	cv::Mat cameraMatrix = cv::Mat::eye(3, 3, cv::DataType<double>::type);
@@ -147,10 +153,8 @@ void FLensSolverWorkerCalibrate::Tick()
 	
 	float sensorHeight = latchData.calibrationParameters.sensorDiagonalSizeMM / FMath::Sqrt(FMath::Square(sourcePixelWidth / (float)sourcePixelHeight) + 1.0f);
 	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
-	/*
-	float sensorHeight = (latchData.calibrationParameters.sensorDiagonalSizeMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
-	float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
-	*/
+	// float sensorHeight = (latchData.calibrationParameters.sensorDiagonalSizeMM * sourcePixelWidth) / FMath::Sqrt(sourcePixelWidth * sourcePixelWidth + sourcePixelHeight * sourcePixelHeight);
+	// float sensorWidth = sensorHeight * (sourcePixelWidth / (float)sourcePixelHeight);
 
 	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): Sensor size: (%f, %f) mm, diagonal: (%f) mm."), sensorWidth, sensorHeight, latchData.calibrationParameters.sensorDiagonalSizeMM));
@@ -202,6 +206,7 @@ void FLensSolverWorkerCalibrate::Tick()
 		tvecs,
 		flags,
 		termCriteria);
+	*/
 	/*
 	try
 	{
@@ -217,24 +222,7 @@ void FLensSolverWorkerCalibrate::Tick()
 			termCriteria);
 	}
 
-	// catch (const cv::Exception& exception)
-	catch (...)
-	{
-		// FString exceptionMsg = UTF8_TO_TCHAR(exception.msg.c_str());
-		// QueueLog(FString::Printf(TEXT("(ERROR): OpenCV exception: \"%s\"."), *exceptionMsg));
-		QueueLog("(ERROR): OpenCV exception occurred.");
-		QueueCalibrationResultError(latchData.baseParameters);
-		return;
-	}
-	*/
-
-	if (ShouldExit())
-		return;
-
-	QueueLog("(INFO): Done.");
-
 	cv::calibrationMatrixValues(cameraMatrix, sourceImageSize, sensorWidth, sensorHeight, fovX, fovY, focalLength, principalPoint, aspectRatio);
-	FMatrix perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(sourceImageSize, principalPoint, focalLength);
 
 	fovX *= 2.0f;
 	fovY *= 2.0f;
@@ -242,6 +230,27 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	principalPoint.x = sourcePixelWidth * (principalPoint.x / sensorWidth);
 	principalPoint.y = sourcePixelHeight * (principalPoint.y / sensorHeight);
+	*/
+
+	FCalibrateLensOutput output;
+	if (GetOpenCVWrapper().CalibrateLens(
+		latchData.resizeParameters,
+		latchData.calibrationParameters,
+		reinterpret_cast<float*>(corners.GetData()),
+		reinterpret_cast<float*>(objectPoints.GetData()),
+		cornerCountX,
+		cornerCountY,
+		corners.Num(),
+		output
+	))
+		return;
+
+	if (ShouldExit())
+		return;
+
+	FMatrix perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(sourceImageSize, principalPoint, focalLength);
+
+	QueueLog("(INFO): Done.");
 
 	QueueLog(FString::Printf(TEXT("(INFO): Completed camera calibration at zoom level: %f "
 		"with solve error: %f "
@@ -265,11 +274,6 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (ShouldExit())
 		return;
 
-	TArray<float> outputDistortionCoefficients;
-	outputDistortionCoefficients.SetNum(5);
-	for (int i = 0; i < distortionCoefficients.rows; i++)
-		outputDistortionCoefficients[i] = static_cast<float>(distortionCoefficients.at<double>(i, 0));
-
 	FCalibrationResult solvedPoints;
 
 	solvedPoints.baseParameters = latchData.baseParameters;
@@ -283,7 +287,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	solvedPoints.resolution.X = latchData.resizeParameters.nativeX;
 	solvedPoints.resolution.Y = latchData.resizeParameters.nativeY;
 	solvedPoints.perspectiveMatrix = perspectiveMatrix;
-	solvedPoints.distortionCoefficients = outputDistortionCoefficients;
+	// solvedPoints.distortionCoefficients = outputDistortionCoefficients;
 
 	if (latchData.calibrationParameters.writeCalibrationResultsToFile)
 		WriteSolvedPointsToJSONFile(solvedPoints, latchData.calibrationParameters.calibrationResultsOutputPath);
@@ -324,9 +328,12 @@ void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrationPoint
 }
 
 bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
-	const FString calibrationID, 
-	std::vector<std::vector<cv::Point2f>> & corners,
-	std::vector<std::vector<cv::Point3f>> & objectPoints)
+		const FString calibrationID, 
+		TArray<TArray<FVector2D>> & corners,
+		TArray<TArray<FVector>> & objectPoints,
+		int & cornerCountX, int & cornerCountY) 
+	// std::vector<std::vector<cv::Point2f>> & corners,
+	// std::vector<std::vector<cv::Point3f>> & objectPoints)
 {
 	Lock();
 	TQueue<FLensSolverCalibrationPointsWorkUnit> ** queuePtr = workQueue.Find(calibrationID);
@@ -340,10 +347,14 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 
 	TQueue<FLensSolverCalibrationPointsWorkUnit>* queue = *queuePtr; 
 
-	while (!queue->IsEmpty())
+	bool isQueued = queue->IsEmpty() == false;
+	cornerCountX = -1, cornerCountY = -1;
+
+	while (isQueued)
 	{
 		FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit;
 		queue->Dequeue(calibrateWorkUnit);
+		isQueued = queue->IsEmpty() == false;
 		workUnitCount--;
 
 		if (calibrateWorkUnit.calibrationPointParameters.corners.Num() == 0 || calibrateWorkUnit.calibrationPointParameters.objectPoints.Num() == 0)
@@ -355,6 +366,28 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 			continue;
 		}
 
+		if (cornerCountX == -1 || cornerCountY == -1)
+		{
+			cornerCountX = calibrateWorkUnit.calibrationPointParameters.cornerCountX;
+			cornerCountY = calibrateWorkUnit.calibrationPointParameters.cornerCountY;
+		}
+
+		else if (cornerCountX != calibrateWorkUnit.calibrationPointParameters.cornerCountX || cornerCountY != calibrateWorkUnit.calibrationPointParameters.cornerCountY)
+		{
+			if (Debug())
+				QueueLog(FString::Printf(TEXT("(ERROR): Detected different chessboard corner count of: (%i, %i) instead of (%i, %i) in calibration queue: \"%s\". Something is broken."),
+					calibrateWorkUnit.calibrationPointParameters.cornerCountX,
+					calibrateWorkUnit.calibrationPointParameters.cornerCountY,
+					cornerCountX,
+					cornerCountY,
+					*calibrateWorkUnit.baseParameters.calibrationID));
+			return false;
+		}
+
+		corners.Add(calibrateWorkUnit.calibrationPointParameters.corners);
+		objectPoints.Add(calibrateWorkUnit.calibrationPointParameters.objectPoints);
+
+		/*
 		corners.push_back(std::vector<cv::Point2f>(calibrateWorkUnit.calibrationPointParameters.corners.Num()));
 		objectPoints.push_back(std::vector<cv::Point3f>(calibrateWorkUnit.calibrationPointParameters.objectPoints.Num()));
 
@@ -370,6 +403,7 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 				calibrateWorkUnit.calibrationPointParameters.objectPoints[i].Y,
 				calibrateWorkUnit.calibrationPointParameters.objectPoints[i].Z
 			));
+		*/
 
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Dequeued %d corner points and %d object points for image: \"%s\" for calibration: \"%s\"."),
