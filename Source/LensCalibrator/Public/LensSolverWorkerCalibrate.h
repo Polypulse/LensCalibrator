@@ -67,7 +67,8 @@ private:
 		const FString calibrationID, 
 		TArray<float> & corners,
 		int & cornerCountX, int & cornerCountY,
-		float & chessboardSquareSizeMM);
+		float & chessboardSquareSizeMM,
+		int & imageCount);
 
 	bool LatchInQueue();
 

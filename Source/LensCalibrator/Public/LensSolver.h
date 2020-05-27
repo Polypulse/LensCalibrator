@@ -53,6 +53,8 @@ private:
 	void QueueLog(FString msg);
 	bool Debug();
 
+	std::string PrepareDebugOutputPath (const FString & debugOutputPath);
+
 public:
 
 	ULensSolver() {}

@@ -70,6 +70,22 @@ bool ULensSolver::Debug()
 	return true;
 }
 
+std::string ULensSolver::PrepareDebugOutputPath(const FString & debugOutputPath)
+{
+	static FString defaultMatFolder = LensSolverUtilities::GenerateGenericOutputPath("DebugImages");
+	static FString defaultFileName = "DebugImage";
+	static FString defaultExtension = "jpg";
+
+	FString outputPath = debugOutputPath;
+	if (!LensSolverUtilities::ValidateFilePath(outputPath, defaultMatFolder, defaultFileName, defaultExtension))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Unable to use use path: \"%s\" to write an image to file."), *outputPath);
+		return std::string("");
+	}
+
+	return TCHAR_TO_UTF8(*outputPath);
+}
+
 void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	TArray<FTextureFolderZoomPair> inputTextures, 
@@ -151,7 +167,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.textureSearchParameters.checkerBoardCornerCountX = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.X,
 			workUnit.textureSearchParameters.checkerBoardCornerCountY = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.Y;
 			workUnit.textureSearchParameters.writeDebugTextureToFile = oneTimeProcessParameters.textureSearchParameters.writeDebugTextureToFile;
-			workUnit.textureSearchParameters.debugTextureOutputPath = TCHAR_TO_UTF8(*oneTimeProcessParameters.textureSearchParameters.debugTextureOutputPath);
+			workUnit.textureSearchParameters.debugTextureOutputPath = PrepareDebugOutputPath(oneTimeProcessParameters.textureSearchParameters.debugTextureOutputPath);
 
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
@@ -213,19 +229,7 @@ void ULensSolver::StartMediaStreamCalibration(
 	workUnit.textureSearchParameters.checkerBoardCornerCountX = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.X,
 	workUnit.textureSearchParameters.checkerBoardCornerCountY = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.Y;
 	workUnit.textureSearchParameters.writeDebugTextureToFile = mediaStreamParameters.textureSearchParameters.writeDebugTextureToFile;
-
-	static FString defaultMatFolder = LensSolverUtilities::GenerateGenericOutputPath("DebugImages");
-	static FString defaultFileName = "DebugImage";
-	static FString defaultExtension = "jpg";
-
-	FString outputPath = mediaStreamParameters.textureSearchParameters.debugTextureOutputPath;
-	if (!LensSolverUtilities::ValidateFilePath(outputPath, defaultMatFolder, defaultFileName, defaultExtension))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Unable to use use path: \"%s\" to write an image to file."), *outputPath);
-		return;
-	}
-
-	workUnit.textureSearchParameters.debugTextureOutputPath = TCHAR_TO_UTF8(*outputPath);
+	workUnit.textureSearchParameters.debugTextureOutputPath = PrepareDebugOutputPath(mediaStreamParameters.textureSearchParameters.debugTextureOutputPath);
 
 	workUnit.mediaStreamParameters								= mediaStreamParameters.mediaStreamParameters;
 	workUnit.mediaStreamParameters.currentStreamSnapshotCount	= 0;

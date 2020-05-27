@@ -61,8 +61,14 @@ void FLensSolverWorkerCalibrate::Tick()
 	TArray<float> corners;
 	int cornerCountX, cornerCountY;
 	float chessboardSquareSizeMM;
+	int imageCount;
 
-	if (!DequeueAllWorkUnits(latchData.baseParameters.calibrationID, corners, cornerCountX, cornerCountY, chessboardSquareSizeMM))
+	if (!DequeueAllWorkUnits(
+		latchData.baseParameters.calibrationID, 
+		corners, cornerCountX, 
+		cornerCountY, 
+		chessboardSquareSizeMM,
+		imageCount))
 		return;
 
 	if (corners.Num() == 0)
@@ -95,14 +101,14 @@ void FLensSolverWorkerCalibrate::Tick()
 
 
 	FCalibrateLensOutput output;
-	if (GetOpenCVWrapper().CalibrateLens(
+	if (!GetOpenCVWrapper().CalibrateLens(
 		latchData.resizeParameters,
 		parameters,
 		reinterpret_cast<float*>(corners.GetData()),
 		chessboardSquareSizeMM,
 		cornerCountX,
 		cornerCountY,
-		corners.Num(),
+		imageCount,
 		output
 	))
 		return;
@@ -189,10 +195,11 @@ void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrationPoint
 }
 
 bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
-		const FString calibrationID, 
-		TArray<float> & corners,
-		int & cornerCountX, int & cornerCountY,
-		float & chessboardSquareSizeMM) 
+	const FString calibrationID, 
+	TArray<float> & corners,
+	int & cornerCountX, int & cornerCountY,
+	float & chessboardSquareSizeMM,
+	int & imageCount) 
 {
 	Lock();
 	TQueue<FLensSolverCalibrationPointsWorkUnit> ** queuePtr = workQueue.Find(calibrationID);
@@ -265,6 +272,8 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 			corners[count + i + 1] = calibrateWorkUnit.calibrationPointParameters.corners[i / 2].Y;
 		}
 
+		imageCount++;
+
 		if (Debug())
 			QueueLog(FString::Printf(TEXT("(INFO): Dequeued %d corner points image: \"%s\" for calibration: \"%s\"."),
 				calibrateWorkUnit.calibrationPointParameters.corners.Num(),
@@ -275,6 +284,13 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 	delete queue;
 	workQueue.Remove(calibrationID);
 	Unlock();
+
+	if (Debug())
+		QueueLog(FString::Printf(TEXT("(INFO): Dequeued %d images corner sets each of size: (%i, %i) for calibration: \"%s\"."),
+			imageCount,
+			cornerCountX,
+			cornerCountY,
+			*calibrationID));
 
 	return true;
 }
