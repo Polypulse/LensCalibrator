@@ -58,7 +58,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	FCalibrateLatch latchData;
 	DequeueLatch(latchData);
 
-	TArray<double> corners;
+	TArray<float> corners;
 	int cornerCountX, cornerCountY;
 	float chessboardSquareSizeMM;
 	int imageCount;
@@ -196,7 +196,7 @@ void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrationPoint
 
 bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 	const FString calibrationID, 
-	TArray<double> & corners,
+	TArray<float> & corners,
 	int & cornerCountX, int & cornerCountY,
 	float & chessboardSquareSizeMM,
 	int & imageCount) 

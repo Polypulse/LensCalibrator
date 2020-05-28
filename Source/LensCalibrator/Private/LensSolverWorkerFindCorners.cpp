@@ -92,7 +92,7 @@ void FLensSolverWorkerFindCorners::Tick()
 	FResizeParameters resizeParameters;
 	FChessboardSearchParameters textureSearchParameters;
 
-	double * data = nullptr;
+	float * data = nullptr;
 	if (!textureFileWorkQueue.IsEmpty())
 	{
 		FLensSolverTextureFileWorkUnit textureFileWorkUnit;
@@ -140,7 +140,7 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	else return;
 
-	TArray<double> corners;
+	TArray<float> corners;
 
 	float inverseResizeRatio = resizeParameters.nativeX / (float)resizeParameters.resizeX;
 
