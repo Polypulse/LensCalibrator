@@ -65,7 +65,7 @@ private:
 
 	bool DequeueAllWorkUnits(
 		const FString calibrationID, 
-		TArray<float> & corners,
+		TArray<double> & corners,
 		int & cornerCountX, int & cornerCountY,
 		float & chessboardSquareSizeMM,
 		int & imageCount);

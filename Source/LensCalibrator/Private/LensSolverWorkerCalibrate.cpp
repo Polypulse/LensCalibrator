@@ -58,7 +58,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	FCalibrateLatch latchData;
 	DequeueLatch(latchData);
 
-	TArray<float> corners;
+	TArray<double> corners;
 	int cornerCountX, cornerCountY;
 	float chessboardSquareSizeMM;
 	int imageCount;
@@ -104,7 +104,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (!GetOpenCVWrapper().CalibrateLens(
 		latchData.resizeParameters,
 		parameters,
-		reinterpret_cast<float*>(corners.GetData()),
+		corners.GetData(),
 		chessboardSquareSizeMM,
 		cornerCountX,
 		cornerCountY,
@@ -196,7 +196,7 @@ void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrationPoint
 
 bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 	const FString calibrationID, 
-	TArray<float> & corners,
+	TArray<double> & corners,
 	int & cornerCountX, int & cornerCountY,
 	float & chessboardSquareSizeMM,
 	int & imageCount) 
@@ -263,6 +263,8 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 			return false;
 		}
 
+		corners.Append(calibrateWorkUnit.calibrationPointParameters.corners);
+		/*
 		int count = corners.Num();
 		int halfCount = count / 2;
 		corners.SetNum(count + calibrateWorkUnit.calibrationPointParameters.corners.Num() * 2);
@@ -271,6 +273,7 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 			corners[count + i] = calibrateWorkUnit.calibrationPointParameters.corners[i / 2].X;
 			corners[count + i + 1] = calibrateWorkUnit.calibrationPointParameters.corners[i / 2].Y;
 		}
+		*/
 
 		imageCount++;
 
