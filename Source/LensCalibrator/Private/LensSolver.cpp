@@ -167,7 +167,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.textureSearchParameters.checkerBoardCornerCountX = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.X,
 			workUnit.textureSearchParameters.checkerBoardCornerCountY = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.Y;
 			workUnit.textureSearchParameters.writeDebugTextureToFile = oneTimeProcessParameters.textureSearchParameters.writeDebugTextureToFile;
-			FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, oneTimeProcessParameters.textureSearchParameters.debugTextureOutputPath);
+			FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, PrepareDebugOutputPath(oneTimeProcessParameters.textureSearchParameters.debugTextureOutputPath));
 
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
@@ -230,7 +230,7 @@ void ULensSolver::StartMediaStreamCalibration(
 	workUnit.textureSearchParameters.checkerBoardCornerCountY = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.Y;
 	workUnit.textureSearchParameters.writeDebugTextureToFile = mediaStreamParameters.textureSearchParameters.writeDebugTextureToFile;
 
-	FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, mediaStreamParameters.textureSearchParameters.debugTextureOutputPath);
+	FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, PrepareDebugOutputPath(mediaStreamParameters.textureSearchParameters.debugTextureOutputPath));
 
 	workUnit.mediaStreamParameters								= mediaStreamParameters.mediaStreamParameters;
 	workUnit.mediaStreamParameters.currentStreamSnapshotCount	= 0;

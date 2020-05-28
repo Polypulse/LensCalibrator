@@ -10,14 +10,12 @@
 
 #define DeclareCharArrayFromFString(arrayName, filePath) \
     char arrayName[260]; \
-     int i = 0; \
-     for (; i < filePath.Len(); i++) \
-     { arrayName[i] = *(TCHAR_TO_UTF8(*filePath) + i); arrayName[i] = '\0'; }
+	memcpy(&arrayName, TCHAR_TO_ANSI(*filePath), sizeof(char) * filePath.Len()); \
+	arrayName[filePath.Len()] = '\0';
 
 #define FillCharArrayFromFString(arrayName, filePath) \
-     int i = 0; \
-     for (; i < filePath.Len(); i++) \
-     { arrayName[i] = *(TCHAR_TO_UTF8(*filePath) + i); arrayName[i] = '\0'; }
+	memcpy(&arrayName, TCHAR_TO_ANSI(*filePath), sizeof(char) * filePath.Len()); \
+	arrayName[filePath.Len()] = '\0';
 
 class LensSolverUtilities
 {
