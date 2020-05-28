@@ -103,10 +103,20 @@ void FLensSolverWorkerFindCorners::Tick()
 		resizeParameters.nativeX = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionX;
 		resizeParameters.nativeY = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionY;
 
+		/*
+		char absoluteFilePath[260];
+		int i = 0;
+
+		for (; i < textureFileWorkUnit.textureFileParameters.absoluteFilePath.Len(); i++)
+			absoluteFilePath[i] = *(TCHAR_TO_UTF8(*textureFileWorkUnit.textureFileParameters.absoluteFilePath) + i);
+			absoluteFilePath[i] = '\0';
+		*/
+		DeclareCharArrayFromFString(absoluteFilePath, textureFileWorkUnit.textureFileParameters.absoluteFilePath);
+
 		if (!GetOpenCVWrapper().ProcessImageFromFile(
 			resizeParameters,
 			textureFileWorkUnit.textureSearchParameters,
-			std::string(TCHAR_TO_UTF8(*textureFileWorkUnit.textureFileParameters.absoluteFilePath)),
+			absoluteFilePath,
 			data))
 		{
 			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);

@@ -70,7 +70,7 @@ bool ULensSolver::Debug()
 	return true;
 }
 
-std::string ULensSolver::PrepareDebugOutputPath(const FString & debugOutputPath)
+FString ULensSolver::PrepareDebugOutputPath(const FString & debugOutputPath)
 {
 	static FString defaultMatFolder = LensSolverUtilities::GenerateGenericOutputPath("DebugImages");
 	static FString defaultFileName = "DebugImage";
@@ -80,10 +80,10 @@ std::string ULensSolver::PrepareDebugOutputPath(const FString & debugOutputPath)
 	if (!LensSolverUtilities::ValidateFilePath(outputPath, defaultMatFolder, defaultFileName, defaultExtension))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Unable to use use path: \"%s\" to write an image to file."), *outputPath);
-		return std::string("");
+		return FString("");
 	}
 
-	return TCHAR_TO_UTF8(*outputPath);
+	return outputPath;
 }
 
 void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
@@ -167,7 +167,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.textureSearchParameters.checkerBoardCornerCountX = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.X,
 			workUnit.textureSearchParameters.checkerBoardCornerCountY = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.Y;
 			workUnit.textureSearchParameters.writeDebugTextureToFile = oneTimeProcessParameters.textureSearchParameters.writeDebugTextureToFile;
-			workUnit.textureSearchParameters.debugTextureOutputPath = PrepareDebugOutputPath(oneTimeProcessParameters.textureSearchParameters.debugTextureOutputPath);
+			FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, oneTimeProcessParameters.textureSearchParameters.debugTextureOutputPath);
 
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
@@ -229,7 +229,8 @@ void ULensSolver::StartMediaStreamCalibration(
 	workUnit.textureSearchParameters.checkerBoardCornerCountX = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.X,
 	workUnit.textureSearchParameters.checkerBoardCornerCountY = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.Y;
 	workUnit.textureSearchParameters.writeDebugTextureToFile = mediaStreamParameters.textureSearchParameters.writeDebugTextureToFile;
-	workUnit.textureSearchParameters.debugTextureOutputPath = PrepareDebugOutputPath(mediaStreamParameters.textureSearchParameters.debugTextureOutputPath);
+
+	FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, mediaStreamParameters.textureSearchParameters.debugTextureOutputPath);
 
 	workUnit.mediaStreamParameters								= mediaStreamParameters.mediaStreamParameters;
 	workUnit.mediaStreamParameters.currentStreamSnapshotCount	= 0;
