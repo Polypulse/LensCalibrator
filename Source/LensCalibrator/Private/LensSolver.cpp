@@ -337,5 +337,5 @@ void ULensSolver::Poll()
 	GetMatQueueWriter().Poll();
 
 	PollLogs();
-	GetWrapperLogQueue().PollLog();
+	WrapperInterface::PollLog();
 }
