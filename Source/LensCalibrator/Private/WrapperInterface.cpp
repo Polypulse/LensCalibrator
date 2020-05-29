@@ -4,7 +4,7 @@
 
 void WrapperInterface::PollLog()
 {
-	if (GetWrapperLogQueue().LogIsQueued())
+	if (!GetWrapperLogQueue().LogIsQueued())
 		return;
 
 	int peekedSize = GetWrapperLogQueue().PeekNextSize();
