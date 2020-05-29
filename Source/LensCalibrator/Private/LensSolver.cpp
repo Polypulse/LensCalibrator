@@ -20,9 +20,10 @@
 
 #include "LensSolverUtilities.h"
 #include "BlitShader.h"
-#include "MatQueueWriter.h"
-
 #include "WorkerRegistry.h"
+
+#include "MatQueueWriter.h"
+#include "WrapperInterface.h"
 
 bool ULensSolver::ValidateMediaTexture(const UMediaTexture* inputTexture)
 {
@@ -336,4 +337,5 @@ void ULensSolver::Poll()
 	GetMatQueueWriter().Poll();
 
 	PollLogs();
+	GetWrapperLogQueue().PollLog();
 }
