@@ -117,7 +117,8 @@ void FLensSolverWorkerFindCorners::Tick()
 			resizeParameters,
 			textureFileWorkUnit.textureSearchParameters,
 			absoluteFilePath,
-			data))
+			data,
+			Debug()))
 		{
 			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 			return;
@@ -141,7 +142,8 @@ void FLensSolverWorkerFindCorners::Tick()
 			4,
 			resizeParameters.resizeX,
 			resizeParameters.resizeY,
-			data))
+			data,
+			Debug()))
 		{
 			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 			return;

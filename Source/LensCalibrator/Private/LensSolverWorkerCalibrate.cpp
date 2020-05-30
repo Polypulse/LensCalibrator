@@ -109,7 +109,8 @@ void FLensSolverWorkerCalibrate::Tick()
 		cornerCountX,
 		cornerCountY,
 		imageCount,
-		output
+		output,
+		Debug()
 	))
 		return;
 
