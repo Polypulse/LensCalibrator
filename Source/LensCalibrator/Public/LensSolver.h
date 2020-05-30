@@ -15,12 +15,11 @@
 #include "LensSolverWorkerCalibrate.h"
 #include "Job.h"
 #include "LensSolverWorkDistributor.h"
-#include "OneTimeProcessParameters.h"
-#include "StartMediaStreamParameters.h"
 
 #include "TextureArrayZoomPair.h"
 #include "TextureFolderZoomPair.h"
 #include "TextureZoomPair.h"
+#include "LensSolverWorkerParameters.h"
 
 #include "LensSolverWorkerInterfaceContainer.h"
 #include "QueueContainers.h"
@@ -63,12 +62,15 @@ public:
 	void OneTimeProcessArrayOfTextureFolderZoomPairs(
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		TArray<FTextureFolderZoomPair> inputTextures, 
-		FOneTimeProcessParameters oneTimeProcessParameters,
+		FTextureSearchParameters textureSearchParameters,
+		FCalibrationParameters calibrationParameters,
 		FJobInfo & ouptutJobInfo);
 
 	void StartMediaStreamCalibration(
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
-		FStartMediaStreamParameters mediaStreamParameters,
+		FTextureSearchParameters textureSearchParameters,
+		FCalibrationParameters calibrationParameters,
+		FMediaStreamParameters mediaStreamParameters,
 		FJobInfo& ouptutJobInfo);
 
 	void StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount);

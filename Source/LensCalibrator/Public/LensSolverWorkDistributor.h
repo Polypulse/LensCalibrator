@@ -10,7 +10,6 @@
 #include "LensSolverWorkerInterfaceContainer.h"
 #include "FindCornerWorkerParameters.h"
 #include "CalibrationWorkerParameters.h"
-#include "StartMediaStreamParameters.h"
 #include "MediaAssets/Public/MediaTexture.h"
 #include "MediaAssets/Public/MediaPlayer.h"
 #include "JobInfo.h"

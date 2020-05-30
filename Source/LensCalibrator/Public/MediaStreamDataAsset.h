@@ -7,8 +7,10 @@
 #include "CoreTypes.h"
 #include "Engine/DataAsset.h"
 
-#include "GenericLensSolverParameters.h"
-#include "StartMediaStreamParameters.h"
+#include "GenericLensSolverParametersDataAsset.h"
+#include "CalibrationParametersDataAsset.h"
+#include "TextureSearchParametersDataAsset.h"
+#include "MediaStreamParametersDataAsset.h"
 
 #include "MediaStreamDataAsset.generated.h"
 
@@ -21,7 +23,16 @@ public:
 	FGenericLensSolverParameters genericLensSolverParameters;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FStartMediaStreamParameters startMediaStreamParameters;
+	UGenericLensSolverParametersDataAsset * genericLensSolverParametersDataAsset;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UTextureSearchParametersDataAsset * textureSearchParametersDataAsset;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UCalibrationParametersDataAsset * calibrationParameterDataAsset;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UMediaStreamParametersDataAsset * mediaStreamParametersDataAsset;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	UMediaPlayer * mediaPlayer;

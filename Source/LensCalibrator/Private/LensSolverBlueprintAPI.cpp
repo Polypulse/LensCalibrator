@@ -8,26 +8,32 @@
 void ULensSolverBlueprintAPI::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	TArray<FTextureFolderZoomPair> inputTextures,
-	FOneTimeProcessParameters oneTimeProcessParameters,
+	FTextureSearchParameters textureSearchParameters,
+	FCalibrationParameters calibrationParameters,
 	FJobInfo& ouptutJobInfo)
 {
 	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->OneTimeProcessArrayOfTextureFolderZoomPairs(
 		eventReceiver,
 		inputTextures,
-		oneTimeProcessParameters,
+		textureSearchParameters,
+		calibrationParameters,
 		ouptutJobInfo
 	);
 }
 
 void ULensSolverBlueprintAPI::StartMediaStreamCalibration(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
-	FStartMediaStreamParameters mediaStreamParameters, 
+	FTextureSearchParameters textureSearchParameters,
+	FCalibrationParameters calibrationParameters,
+	FMediaStreamParameters mediaStreamParameters,
 	FJobInfo& ouptutJobInfo)
 {
 	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->StartMediaStreamCalibration(
 		eventReceiver,
+		textureSearchParameters,
+		calibrationParameters,
 		mediaStreamParameters,
 		ouptutJobInfo);
 }

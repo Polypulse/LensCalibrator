@@ -90,8 +90,9 @@ FString ULensSolver::PrepareDebugOutputPath(const FString & debugOutputPath)
 void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	TArray<FTextureFolderZoomPair> inputTextures, 
-	FOneTimeProcessParameters oneTimeProcessParameters, 
-	FJobInfo& ouptutJobInfo)
+	FTextureSearchParameters textureSearchParameters,
+	FCalibrationParameters calibrationParameters,
+	FJobInfo & ouptutJobInfo)
 {
 	if (inputTextures.Num() == 0)
 	{
@@ -142,7 +143,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		zoomLevels[useIndex] = inputTextures[ti].zoomLevel;
 	}
 
-	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(oneTimeProcessParameters.calibrationParameters);
+	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(calibrationParameters);
 	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, useCount, OneTime);
 	for (int ci = 0; ci < useCount; ci++)
 	{
@@ -154,21 +155,19 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.baseParameters.zoomLevel					= zoomLevels[ci];
 			workUnit.baseParameters.friendlyName				= FPaths::GetBaseFilename(imageFiles[ci][ii]);
 
-			// workUnit.textureSearchParameters					= oneTimeProcessParameters.textureSearchParameters;
-
 			// Ugly, but this is temporary. Currently trying to refactor a larger part of the program.
-			workUnit.textureSearchParameters.nativeFullResolutionX = oneTimeProcessParameters.textureSearchParameters.nativeFullResolution.X;
-			workUnit.textureSearchParameters.nativeFullResolutionY = oneTimeProcessParameters.textureSearchParameters.nativeFullResolution.Y;
-			workUnit.textureSearchParameters.resizePercentage = oneTimeProcessParameters.textureSearchParameters.resizePercentage;
-			workUnit.textureSearchParameters.resize = oneTimeProcessParameters.textureSearchParameters.resize;
-			workUnit.textureSearchParameters.flipX = oneTimeProcessParameters.textureSearchParameters.flipX,
-			workUnit.textureSearchParameters.flipY = oneTimeProcessParameters.textureSearchParameters.flipY;
-			workUnit.textureSearchParameters.exhaustiveSearch = oneTimeProcessParameters.textureSearchParameters.exhaustiveSearch;
-			workUnit.textureSearchParameters.checkerBoardSquareSizeMM = oneTimeProcessParameters.textureSearchParameters.checkerBoardSquareSizeMM;
-			workUnit.textureSearchParameters.checkerBoardCornerCountX = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.X,
-			workUnit.textureSearchParameters.checkerBoardCornerCountY = oneTimeProcessParameters.textureSearchParameters.checkerBoardCornerCount.Y;
-			workUnit.textureSearchParameters.writeDebugTextureToFile = oneTimeProcessParameters.textureSearchParameters.writeDebugTextureToFile;
-			FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, PrepareDebugOutputPath(oneTimeProcessParameters.textureSearchParameters.debugTextureOutputPath));
+			workUnit.textureSearchParameters.nativeFullResolutionX = textureSearchParameters.nativeFullResolution.X;
+			workUnit.textureSearchParameters.nativeFullResolutionY = textureSearchParameters.nativeFullResolution.Y;
+			workUnit.textureSearchParameters.resizePercentage = textureSearchParameters.resizePercentage;
+			workUnit.textureSearchParameters.resize = textureSearchParameters.resize;
+			workUnit.textureSearchParameters.flipX = textureSearchParameters.flipX,
+			workUnit.textureSearchParameters.flipY = textureSearchParameters.flipY;
+			workUnit.textureSearchParameters.exhaustiveSearch = textureSearchParameters.exhaustiveSearch;
+			workUnit.textureSearchParameters.checkerBoardSquareSizeMM = textureSearchParameters.checkerBoardSquareSizeMM;
+			workUnit.textureSearchParameters.checkerBoardCornerCountX = textureSearchParameters.checkerBoardCornerCount.X,
+			workUnit.textureSearchParameters.checkerBoardCornerCountY = textureSearchParameters.checkerBoardCornerCount.Y;
+			workUnit.textureSearchParameters.writeDebugTextureToFile = textureSearchParameters.writeDebugTextureToFile;
+			FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, PrepareDebugOutputPath(textureSearchParameters.debugTextureOutputPath));
 
 			workUnit.textureFileParameters.absoluteFilePath		= imageFiles[ci][ii];
 
@@ -179,61 +178,63 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 
 void ULensSolver::StartMediaStreamCalibration(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
-	FStartMediaStreamParameters mediaStreamParameters,
+	FTextureSearchParameters textureSearchParameters,
+	FCalibrationParameters calibrationParameters,
+	FMediaStreamParameters mediaStreamParameters,
 	FJobInfo& ouptutJobInfo)
 {
-	if (!ValidateMediaTexture(mediaStreamParameters.mediaStreamParameters.mediaTexture))
+	if (!ValidateMediaTexture(mediaStreamParameters.mediaTexture))
 	{
 		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Media Texture\" invalid!"));
 		return;
 	}
 
-	if (mediaStreamParameters.mediaStreamParameters.expectedStreamSnapshotCount <= 0)
+	if (mediaStreamParameters.expectedStreamSnapshotCount <= 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Expected Stream Snapshot Count\" should be a positive number greater than zero!"));
 		return;
 	}
 
-	if (mediaStreamParameters.mediaStreamParameters.streamSnapshotIntervalFrequencyInSeconds <= 0.0f)
+	if (mediaStreamParameters.streamSnapshotIntervalFrequencyInSeconds <= 0.0f)
 	{
 		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Stream Snapshot Interval Frequency In Seconds\" should be a positive number greater than zero!"));
 		return;
 	}
 
-	if (mediaStreamParameters.mediaStreamParameters.zoomLevel < 0.0f || mediaStreamParameters.mediaStreamParameters.zoomLevel > 1.0f)
+	if (mediaStreamParameters.zoomLevel < 0.0f || mediaStreamParameters.zoomLevel > 1.0f)
 	{
 		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Zoom Level\" should be a normalized value between 0 - 1!"));
 		return;
 	}
 
 	TArray<int> expectedImageCounts;
-	expectedImageCounts.Add(mediaStreamParameters.mediaStreamParameters.expectedStreamSnapshotCount);
+	expectedImageCounts.Add(mediaStreamParameters.expectedStreamSnapshotCount);
 
-	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(mediaStreamParameters.calibrationParameters);
+	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(calibrationParameters);
 	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, 1, OneTime);
 
 	FMediaStreamWorkUnit workUnit;
 	workUnit.baseParameters.jobID								= ouptutJobInfo.jobID;
 	workUnit.baseParameters.calibrationID						= ouptutJobInfo.calibrationIDs[0];
 	workUnit.baseParameters.friendlyName						= "stream";
-	workUnit.baseParameters.zoomLevel							= mediaStreamParameters.mediaStreamParameters.zoomLevel;
+	workUnit.baseParameters.zoomLevel							= mediaStreamParameters.zoomLevel;
 	// workUnit.textureSearchParameters							= mediaStreamParameters.textureSearchParameters;
 
-	workUnit.textureSearchParameters.nativeFullResolutionX = mediaStreamParameters.textureSearchParameters.nativeFullResolution.X;
-	workUnit.textureSearchParameters.nativeFullResolutionY = mediaStreamParameters.textureSearchParameters.nativeFullResolution.Y;
-	workUnit.textureSearchParameters.resizePercentage = mediaStreamParameters.textureSearchParameters.resizePercentage;
-	workUnit.textureSearchParameters.resize = mediaStreamParameters.textureSearchParameters.resize;
-	workUnit.textureSearchParameters.flipX = mediaStreamParameters.textureSearchParameters.flipX,
-	workUnit.textureSearchParameters.flipY = mediaStreamParameters.textureSearchParameters.flipY;
-	workUnit.textureSearchParameters.exhaustiveSearch = mediaStreamParameters.textureSearchParameters.exhaustiveSearch;
-	workUnit.textureSearchParameters.checkerBoardSquareSizeMM = mediaStreamParameters.textureSearchParameters.checkerBoardSquareSizeMM;
-	workUnit.textureSearchParameters.checkerBoardCornerCountX = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.X,
-	workUnit.textureSearchParameters.checkerBoardCornerCountY = mediaStreamParameters.textureSearchParameters.checkerBoardCornerCount.Y;
-	workUnit.textureSearchParameters.writeDebugTextureToFile = mediaStreamParameters.textureSearchParameters.writeDebugTextureToFile;
+	workUnit.textureSearchParameters.nativeFullResolutionX = textureSearchParameters.nativeFullResolution.X;
+	workUnit.textureSearchParameters.nativeFullResolutionY = textureSearchParameters.nativeFullResolution.Y;
+	workUnit.textureSearchParameters.resizePercentage = textureSearchParameters.resizePercentage;
+	workUnit.textureSearchParameters.resize = textureSearchParameters.resize;
+	workUnit.textureSearchParameters.flipX = textureSearchParameters.flipX,
+	workUnit.textureSearchParameters.flipY = textureSearchParameters.flipY;
+	workUnit.textureSearchParameters.exhaustiveSearch = textureSearchParameters.exhaustiveSearch;
+	workUnit.textureSearchParameters.checkerBoardSquareSizeMM = textureSearchParameters.checkerBoardSquareSizeMM;
+	workUnit.textureSearchParameters.checkerBoardCornerCountX = textureSearchParameters.checkerBoardCornerCount.X,
+	workUnit.textureSearchParameters.checkerBoardCornerCountY = textureSearchParameters.checkerBoardCornerCount.Y;
+	workUnit.textureSearchParameters.writeDebugTextureToFile = textureSearchParameters.writeDebugTextureToFile;
 
-	FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, PrepareDebugOutputPath(mediaStreamParameters.textureSearchParameters.debugTextureOutputPath));
+	FillCharArrayFromFString(workUnit.textureSearchParameters.debugTextureOutputPath, PrepareDebugOutputPath(textureSearchParameters.debugTextureOutputPath));
 
-	workUnit.mediaStreamParameters								= mediaStreamParameters.mediaStreamParameters;
+	workUnit.mediaStreamParameters								= mediaStreamParameters;
 	workUnit.mediaStreamParameters.currentStreamSnapshotCount	= 0;
 
 	LensSolverWorkDistributor::GetInstance().QueueMediaStreamWorkUnit(workUnit);

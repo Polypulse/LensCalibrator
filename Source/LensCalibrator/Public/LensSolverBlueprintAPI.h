@@ -14,8 +14,6 @@
 #include "DistortTextureWithTextureFileParams.h"
 #include "DistortTextureWithTextureParams.h"
 
-#include "OneTimeProcessParameters.h"
-#include "StartMediaStreamParameters.h"
 #include "TextureFolderZoomPair.h"
 
 #include "ILensSolverEventReceiver.h"
@@ -35,13 +33,16 @@ public:
 	static void OneTimeProcessArrayOfTextureFolderZoomPairs(
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		TArray<FTextureFolderZoomPair> inputTextures, 
-		FOneTimeProcessParameters oneTimeProcessParameters,
+		FTextureSearchParameters textureSearchParameters,
+		FCalibrationParameters calibrationParameters,
 		FJobInfo & ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	static void StartMediaStreamCalibration(
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
-		FStartMediaStreamParameters mediaStreamParameters,
+		FTextureSearchParameters textureSearchParameters,
+		FCalibrationParameters calibrationParameters,
+		FMediaStreamParameters mediaStreamParameters,
 		FJobInfo& ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
