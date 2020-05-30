@@ -34,7 +34,4 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	UCalibrationResultsDataAsset * calibrationResultsDataAsset;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	TArray<FTextureFolderZoomPair> inputs;
 };
