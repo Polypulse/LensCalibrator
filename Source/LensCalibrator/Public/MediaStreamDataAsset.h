@@ -1,6 +1,5 @@
 /* Copyright (C) Polypulse LLC - All Rights Reserved
  * Written by Sean Connor <sean@polypulse.io>, April 2020 */
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -11,6 +10,7 @@
 #include "CalibrationParametersDataAsset.h"
 #include "TextureSearchParametersDataAsset.h"
 #include "MediaStreamParametersDataAsset.h"
+#include "CalibrationResultsDataAsset.h"
 
 #include "MediaStreamDataAsset.generated.h"
 
@@ -33,6 +33,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	UMediaStreamParametersDataAsset * mediaStreamParametersDataAsset;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UCalibrationResultsDataAsset * calibrationResultsDataAsset;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	UMediaPlayer * mediaPlayer;

@@ -1,36 +1,39 @@
 /* Copyright (C) Polypulse LLC - All Rights Reserved
  * Written by Sean Connor <sean@polypulse.io>, April 2020 */
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 #include "Engine/DataAsset.h"
 
-#include "GenericLensSolverParametersDataAsset.h"
-#include "CalibrationParametersDataAsset.h"
-#include "TextureSearchParametersDataAsset.h"
-#include "CalibrationResultsDataAsset.h"
+#include "SolvedPoints.h"
 
-#include "TextureFolderZoomPairDataAsset.generated.h"
+#include "CalibrationResultsDataAsset.generated.h"
 
 UCLASS(BlueprintType)
-class UTextureFolderZoomPairDataAsset : public UDataAsset
+class UCalibrationResultsDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
+
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	UGenericLensSolverParametersDataAsset * genericLensSolverParametersDataAsset;
+	float currentZoomLevel;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	UTextureSearchParametersDataAsset * textureSearchParametersDataAsset;
+	bool inverseDistortionCorrection;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	UCalibrationParametersDataAsset * calibrationParameterDataAsset;
+	UVolumeTexture* lensDistortionVolume;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	UCalibrationResultsDataAsset * calibrationResultsDataAsset;
+	TArray<FCalibrationResult> calibrationResults;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	TArray<FTextureFolderZoomPair> inputs;
+	TArray<float> focalLengths;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	TArray<UTexture2D*> distortionCorrectionMaps;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	TArray<UTexture2D*> distortionUncorrectionMaps;
 };
