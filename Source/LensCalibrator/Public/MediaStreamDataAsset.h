@@ -6,10 +6,10 @@
 #include "CoreTypes.h"
 #include "Engine/DataAsset.h"
 
+#include "MediaStreamParametersDataAsset.h"
 #include "GenericLensSolverParametersDataAsset.h"
 #include "CalibrationParametersDataAsset.h"
 #include "TextureSearchParametersDataAsset.h"
-#include "MediaStreamParametersDataAsset.h"
 #include "CalibrationResultsDataAsset.h"
 
 #include "MediaStreamDataAsset.generated.h"
@@ -19,6 +19,10 @@ class UMediaStreamDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
 public:
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UMediaStreamParametersDataAsset * mediaStreamParametersDataAsset;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FGenericLensSolverParameters genericLensSolverParameters;
 
@@ -32,20 +36,5 @@ public:
 	UCalibrationParametersDataAsset * calibrationParameterDataAsset;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	UMediaStreamParametersDataAsset * mediaStreamParametersDataAsset;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	UCalibrationResultsDataAsset * calibrationResultsDataAsset;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	UMediaPlayer * mediaPlayer;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString url;
-
-	UMediaStreamDataAsset()
-	{
-		mediaPlayer = nullptr;
-		url = FString("");
-	}
 };

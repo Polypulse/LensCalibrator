@@ -7,6 +7,7 @@
 #include "CoreTypes.h"
 #include "Engine/DataAsset.h"
 
+#include "TextureFolderParametersDataAsset.h"
 #include "GenericLensSolverParametersDataAsset.h"
 #include "CalibrationParametersDataAsset.h"
 #include "TextureSearchParametersDataAsset.h"
@@ -19,6 +20,9 @@ class UTextureFolderZoomPairDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UTextureFolderParametersDataAsset * textureFolderParametersDataAsset;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	UGenericLensSolverParametersDataAsset * genericLensSolverParametersDataAsset;
 

@@ -16,4 +16,10 @@ class UMediaStreamParametersDataAsset : public UDataAsset
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FMediaStreamParameters mediaStreamParameters;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UMediaPlayer * mediaPlayer;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FString url;
 };
