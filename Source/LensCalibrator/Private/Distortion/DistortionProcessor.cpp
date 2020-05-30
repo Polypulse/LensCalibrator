@@ -50,11 +50,11 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	message += FString::Printf(TEXT("\n\tNormalized principal point: (%f, %f),\n\tDistortion Coefficients: [k1: %f, k2: %f, p1: %f, p2: %f, k3: %f]\n}"), 
 		normalizedPrincipalPoint.X, 
 		normalizedPrincipalPoint.Y,
-		distortionCorrectionMapGenerationParams.distortionCoefficients[0],
-		distortionCorrectionMapGenerationParams.distortionCoefficients[1],
-		distortionCorrectionMapGenerationParams.distortionCoefficients[2],
-		distortionCorrectionMapGenerationParams.distortionCoefficients[3],
-		distortionCorrectionMapGenerationParams.distortionCoefficients[4]);
+		distortionCorrectionMapGenerationParams.k1,
+		distortionCorrectionMapGenerationParams.k2,
+		distortionCorrectionMapGenerationParams.p1,
+		distortionCorrectionMapGenerationParams.p2,
+		distortionCorrectionMapGenerationParams.k3);
 
 	UE_LOG(LogTemp, Log, TEXT("%s"), *message);
 
@@ -73,13 +73,21 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 	GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
+	TArray<float> distortionCoefficients;
+	distortionCoefficients.SetNum(5);
+	distortionCoefficients[0] = distortionCorrectionMapGenerationParams.k1;
+	distortionCoefficients[1] = distortionCorrectionMapGenerationParams.k2;
+	distortionCoefficients[2] = distortionCorrectionMapGenerationParams.p1;
+	distortionCoefficients[3] = distortionCorrectionMapGenerationParams.p2;
+	distortionCoefficients[4] = distortionCorrectionMapGenerationParams.k3;
+
 	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_DontStore);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
 		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
 		RHICmdList.SetViewport(0, 0, 0.0f, width, height, 1.0f);
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCorrectionMapGenerationParams.distortionCoefficients, false);
+		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCoefficients, false);
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}
 	RHICmdList.EndRenderPass();
@@ -104,7 +112,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
 		RHICmdList.SetViewport(0, 0, 0.0f, width, height, 1.0f);
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
-		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCorrectionMapGenerationParams.distortionCoefficients, true);
+		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCoefficients, true);
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}
 	RHICmdList.EndRenderPass();
@@ -375,12 +383,6 @@ void UDistortionProcessor::GenerateDistortionCorrectionMap(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams)
 {
-	if (distortionCorrectionMapGenerationParams.distortionCoefficients.Num() != 5)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, there should an array of 5 float value distortion coefficients in the calibration result DistortionCorrectionMapParameter member."));
-		return;
-	}
-
 	if (distortionCorrectionMapGenerationParams.outputMapResolution.X <= 3 || distortionCorrectionMapGenerationParams.outputMapResolution.Y <= 3)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, the map resolution DistortionCorrectionMapParameter member is <= 3 pixels on the X or Y axis."));

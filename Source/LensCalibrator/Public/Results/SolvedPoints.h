@@ -41,8 +41,20 @@ struct FCalibrationResult
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FMatrix perspectiveMatrix;
 
-	UPROPERTY(BlueprintReadWrite, Category="Lens Calibrator")
-	TArray<float> distortionCoefficients;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float k1;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float k2;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float p1;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float p2;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float k3;
 
 	FCalibrationResult()
 	{
@@ -55,6 +67,10 @@ struct FCalibrationResult
 		principalPixelPoint = FVector2D(0, 0);
 		resolution = FIntPoint(0, 0);
 		perspectiveMatrix = FMatrix::Identity;
-		distortionCoefficients = TArray<float>();
+		k1 = 0.0f;
+		k2 = 0.0f;
+		p1 = 0.0f;
+		p2 = 0.0f;
+		k3 = 0.0f;
 	}
 };

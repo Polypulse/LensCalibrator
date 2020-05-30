@@ -154,6 +154,11 @@ void FLensSolverWorkerCalibrate::Tick()
 	solvedPoints.resolution.X = latchData.resizeParameters.nativeX;
 	solvedPoints.resolution.Y = latchData.resizeParameters.nativeY;
 	solvedPoints.perspectiveMatrix = perspectiveMatrix;
+	solvedPoints.k1 = output.k1;
+	solvedPoints.k2 = output.k2;
+	solvedPoints.p1 = output.p1;
+	solvedPoints.p2 = output.p2;
+	solvedPoints.k3 = output.k3;
 	// solvedPoints.distortionCoefficients = outputDistortionCoefficients;
 
 	if (latchData.calibrationParameters.writeCalibrationResultsToFile)
@@ -339,8 +344,11 @@ void FLensSolverWorkerCalibrate::WriteSolvedPointsToJSONFile(const FCalibrationR
 	result->SetArrayField("perspectivematrix", matVals);
 
 	TArray<TSharedPtr<FJsonValue>> distortionCoefficients;
-	for (int i = 0; i < solvePoints.distortionCoefficients.Num(); i++)
-		distortionCoefficients.Add(MakeShareable(new FJsonValueNumber(static_cast<float>(solvePoints.distortionCoefficients[i]))));
+	distortionCoefficients.Add(MakeShareable(new FJsonValueNumber(static_cast<float>(solvePoints.k1))));
+	distortionCoefficients.Add(MakeShareable(new FJsonValueNumber(static_cast<float>(solvePoints.k2))));
+	distortionCoefficients.Add(MakeShareable(new FJsonValueNumber(static_cast<float>(solvePoints.p1))));
+	distortionCoefficients.Add(MakeShareable(new FJsonValueNumber(static_cast<float>(solvePoints.p2))));
+	distortionCoefficients.Add(MakeShareable(new FJsonValueNumber(static_cast<float>(solvePoints.k3))));
 
 	result->SetArrayField("distortioncoefficients", distortionCoefficients);
 	obj->SetObjectField("result", result);
