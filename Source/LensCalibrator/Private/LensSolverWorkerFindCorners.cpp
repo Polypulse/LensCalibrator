@@ -149,15 +149,6 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	else return;
 
-	/*
-	float inverseResizeRatio = resizeParameters.nativeX / (float)resizeParameters.resizeX;
-	for (int ci = 0; ci < textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY; ci++)
-	{
-		corners[ci * 2] = *(data + ci * 2) * inverseResizeRatio;
-		corners[ci * 2 + 1] = *(data + ci * 2 + 1) * inverseResizeRatio;
-	}
-	*/
-
 	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;
 
 	calibrationPointsWorkUnit.baseParameters								= baseParameters;
