@@ -334,7 +334,7 @@ void ULensSolver::Poll()
 	PollFinishedJobs();
 
 	LensSolverWorkDistributor::GetInstance().PollMediaTextureStreams();
-	GetMatQueueWriter().Poll();
+	GetMatQueueWriter().Poll(Debug());
 
 	PollLogs();
 	WrapperInterface::PollLog();

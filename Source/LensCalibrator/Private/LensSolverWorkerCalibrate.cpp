@@ -114,7 +114,6 @@ void FLensSolverWorkerCalibrate::Tick()
 	))
 		return;
 
-
 	if (ShouldExit())
 		return;
 
