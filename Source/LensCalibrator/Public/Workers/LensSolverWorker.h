@@ -8,18 +8,6 @@
 #include "Async/AsyncWork.h"
 #include "SolvedPoints.h"
 
-/*
-#pragma push_macro("check")
-#undef check
-#include "opencv2/opencv.hpp"
-#include "opencv2/core.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/core/mat.hpp"
-#include "opencv2/imgproc/types_c.h"
-#pragma pop_macro("check")
-#include <vector>
-*/
-
 #include "JobInfo.h"
 #include "LensSolverUtilities.h"
 #include "LensSolverWorkUnit.h"
@@ -70,22 +58,7 @@ private:
 public:
 	static FString JobDataToString(const FBaseParameters & baseParameters);
 	FLensSolverWorker(FLensSolverWorkerParameters & inputParameters);
-	virtual ~FLensSolverWorker() 
-	{
-		/*
-		isClosingOutputDel->Unbind();
-		getWorkOutputLoadDel->Unbind();
-
-		isClosingOutputDel = nullptr;
-		getWorkOutputLoadDel = nullptr;
-		*/
-		/*
-		if (isClosingOutputDel != nullptr && isClosingOutputDel->IsBound())
-			isClosingOutputDel->Unbind();
-		if (getWorkOutputLoadDel != nullptr && getWorkOutputLoadDel->IsBound())
-			getWorkOutputLoadDel->Unbind();
-		*/
-	};
+	virtual ~FLensSolverWorker() {};
 
 	FORCEINLINE TStatId GetStatId() const
 	{

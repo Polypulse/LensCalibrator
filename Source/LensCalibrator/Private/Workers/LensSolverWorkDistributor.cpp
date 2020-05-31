@@ -667,10 +667,6 @@ bool LensSolverWorkDistributor::ValidateMediaTexture(const UMediaTexture* inputT
 
 void LensSolverWorkDistributor::Lock()
 {
-	/*
-	while (!threadLock.TryLock())
-		continue;
-	*/
 	threadLock.Lock();
 }
 

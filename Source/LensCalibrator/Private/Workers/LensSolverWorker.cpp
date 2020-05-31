@@ -18,11 +18,6 @@ FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters& inputParameter
 	inputParameters.inputGetWorkOutputLoadDel->BindRaw(this, &FLensSolverWorker::GetWorkLoad);
 	inputParameters.inputIsClosingOutputDel->BindRaw(this, &FLensSolverWorker::Exit);
 
-	/*
-	isClosingOutputDel = inputParameters.inputIsClosingOutputDel;
-	getWorkOutputLoadDel = inputParameters.inputGetWorkOutputLoadDel;
-	*/
-
 	flagToExit = false;
 }
 

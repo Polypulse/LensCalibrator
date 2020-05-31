@@ -11,8 +11,6 @@
 #include "LensSolverWorkerFindCorners.h"
 #include "LensSolverWorkUnit.h"
 
-// #include "LensSolverWorkerInterfaceContainer.generated.h"
-
 struct FWorkerInterfaceContainer
 {
 	FString workerID;
