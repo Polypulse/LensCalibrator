@@ -17,14 +17,37 @@ public:
 	}
 
 private:
-	WorkerRegistry() {}
+	WorkerRegistry() 
+	{
+		isShuttingDown = false;
+	}
 	FCriticalSection threadLock;
 	int findCornerWorkerCount = 0;
 	int calibrateWorkerCount = 0;
 
+	bool isShuttingDown;
+
 public:
 	WorkerRegistry(WorkerRegistry const&) = delete;
 	void operator=(WorkerRegistry const&) = delete;
+
+	void FlagExitAllShutdown ()
+	{
+		threadLock.Lock();
+		isShuttingDown = true;
+		threadLock.Unlock();
+	}
+
+	bool ShouldExitAll ()
+	{
+		bool shuttingDown;
+
+		threadLock.Lock();
+		shuttingDown = isShuttingDown;
+		threadLock.Unlock();
+
+		return shuttingDown;
+	}
 
 	void CountCalibrateWorker() 
 	{

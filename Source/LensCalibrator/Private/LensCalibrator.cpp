@@ -9,6 +9,7 @@
 
 #include "LensSolver.h"
 #include "MatQueueWriter.h"
+#include "WorkerRegistry.h"
 
 #define LOCTEXT_NAMESPACE "FLensCalibratorModule"
 
@@ -36,14 +37,15 @@ bool FLensCalibratorModule::Tick(float deltatime)
 
 void FLensCalibratorModule::OnPreExit()
 {
-	// UE_LOG(LogTemp, Log, TEXT("Shutting down lens calibrator module."));
-
 	if (lensSolverInitialized)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Shutting down lens solver."));
 		ULensSolver * lensSolver = GetLensSolver();
+
 		lensSolver->StopBackgroundImageprocessors();
 	}
+
+	WorkerRegistry::Get().FlagExitAllShutdown();
 }
 
 ULensSolver* FLensCalibratorModule::GetLensSolver()
