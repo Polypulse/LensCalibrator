@@ -41,8 +41,7 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 
 		interfaceContainer.baseContainer.workerID = guid;
 
-		if (Debug())
-			QueueLogAsync(FString::Printf(TEXT("(INFO): Starting FindCorner worker: %d"), i));
+		QueueLogAsync(FString::Printf(TEXT("(INFO): Starting FindCorner worker: %d"), i));
 
 		interfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners>(
 			workerParameters,
@@ -58,7 +57,7 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 	for (int i = 0; i < interfaces.Num(); i++)
 		interfaces[i].worker->StartBackgroundTask();
 
-	QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d FindCorner workers"), findCornerWorkerCount));
+	UE_LOG(LogTemp, Log, TEXT("(INFO): Started %d FindCorner workers"), findCornerWorkerCount);
 }
 
 void LensSolverWorkDistributor::PrepareCalibrateWorkers(
@@ -104,7 +103,7 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 	for (int i = 0; i < interfaces.Num(); i++)
 		interfaces[i].worker->StartBackgroundTask();
 
-	QueueLogAsync(FString::Printf(TEXT("(INFO): Started %d Calibrate workers"), calibrateWorkerCount));
+	UE_LOG(LogTemp, Log, TEXT("(INFO): Started %d Calibrate workers"), calibrateWorkerCount);
 }
 
 FJobInfo LensSolverWorkDistributor::RegisterJob(
@@ -643,8 +642,15 @@ void LensSolverWorkDistributor::PollShutdownAllWorkersIfNecessary()
 	}
 
 	findCornersWorkers.Empty();
+	workLoadSortedFindCornerWorkers.Empty();
+
 	calibrateWorkers.Empty();
 	workLoadSortedCalibrateWorkers.Empty();
+	workerCalibrationIDLUT.Empty();
+
+	jobs.Empty();
+	workerCalibrationIDLUT.Empty();
+	mediaTextureJobLUT.Empty();
 }
 
 bool LensSolverWorkDistributor::ValidateMediaTexture(const UMediaTexture* inputTexture)
@@ -683,6 +689,7 @@ int64 LensSolverWorkDistributor::GetTickNow()
 
 void LensSolverWorkDistributor::StopFindCornerWorkers()
 {
+	UE_LOG(LogTemp, Log, TEXT("Stopping find corner workers."));
 	Lock();
 	if (findCornersWorkers.Num() == 0)
 	{
@@ -709,6 +716,7 @@ void LensSolverWorkDistributor::StopFindCornerWorkers()
 
 void LensSolverWorkDistributor::StopCalibrationWorkers()
 {
+	UE_LOG(LogTemp, Log, TEXT("Stopping calibration workers."));
 	Lock();
 	if (calibrateWorkers.Num() == 0)
 	{
@@ -740,6 +748,7 @@ void LensSolverWorkDistributor::StopCalibrationWorkers()
 
 void LensSolverWorkDistributor::StopBackgroundWorkers()
 {
+	UE_LOG(LogTemp, Log, TEXT("Stopping background workers."));
 	StopFindCornerWorkers();
 	StopCalibrationWorkers();
 }
