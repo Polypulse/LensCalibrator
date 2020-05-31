@@ -102,10 +102,10 @@ void FLensSolverWorkerFindCorners::Tick()
 		FLensSolverTextureFileWorkUnit textureFileWorkUnit;
 
 		DequeueTextureFileWorkUnit(textureFileWorkUnit);
-		baseParameters = textureFileWorkUnit.baseParameters;
-		textureSearchParameters = textureFileWorkUnit.textureSearchParameters;
-		resizeParameters.nativeX = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionX;
-		resizeParameters.nativeY = textureFileWorkUnit.textureSearchParameters.nativeFullResolutionY;
+		baseParameters				= textureFileWorkUnit.baseParameters;
+		textureSearchParameters		= textureFileWorkUnit.textureSearchParameters;
+		resizeParameters.nativeX	= textureFileWorkUnit.textureSearchParameters.nativeFullResolutionX;
+		resizeParameters.nativeY	= textureFileWorkUnit.textureSearchParameters.nativeFullResolutionY;
 
 		corners.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY * 2);
 
@@ -127,23 +127,28 @@ void FLensSolverWorkerFindCorners::Tick()
 	{
 		FLensSolverPixelArrayWorkUnit texturePixelArrayUnit;
 		DequeuePixelArrayWorkUnit(texturePixelArrayUnit);
-		baseParameters = texturePixelArrayUnit.baseParameters;
-		textureSearchParameters = texturePixelArrayUnit.textureSearchParameters;
-		resizeParameters = CalculateResizeParameters(textureSearchParameters);
-		resizeParameters.resizeX = texturePixelArrayUnit.resizeParameters.resizeX;
-		resizeParameters.resizeY = texturePixelArrayUnit.resizeParameters.resizeY;
+
+		baseParameters				= texturePixelArrayUnit.baseParameters;
+		textureSearchParameters		= texturePixelArrayUnit.textureSearchParameters;
+		resizeParameters			= CalculateResizeParameters(textureSearchParameters);
+		resizeParameters.resizeX	= texturePixelArrayUnit.resizeParameters.resizeX;
+		resizeParameters.resizeY	= texturePixelArrayUnit.resizeParameters.resizeY;
 
 		corners.SetNum(textureSearchParameters.checkerBoardCornerCountX * textureSearchParameters.checkerBoardCornerCountY * 2);
+
+		uint8_t * pixelData = reinterpret_cast<uint8_t*>(texturePixelArrayUnit.pixelArrayParameters.pixels.GetData());
+		float * cornersData = corners.GetData();
+		bool debug = Debug();
 
 		if (!GetOpenCVWrapper().ProcessImageFromPixels(
 			resizeParameters,
 			texturePixelArrayUnit.textureSearchParameters,
-			reinterpret_cast<uint8_t*>(texturePixelArrayUnit.pixelArrayParameters.pixels.GetData()),
+			pixelData,
 			4,
 			resizeParameters.resizeX,
 			resizeParameters.resizeY,
-			corners.GetData(),
-			Debug()))
+			cornersData,
+			debug))
 		{
 			QueueEmptyCalibrationPointsWorkUnit(baseParameters, resizeParameters);
 			return;
@@ -154,14 +159,15 @@ void FLensSolverWorkerFindCorners::Tick()
 
 	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;
 
-	calibrationPointsWorkUnit.baseParameters								= baseParameters;
-	calibrationPointsWorkUnit.calibrationPointParameters.corners			= corners;
-
+	calibrationPointsWorkUnit.baseParameters										= baseParameters;
+	calibrationPointsWorkUnit.calibrationPointParameters.corners					= corners;
 	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountX				= textureSearchParameters.checkerBoardCornerCountX;
 	calibrationPointsWorkUnit.calibrationPointParameters.cornerCountY				= textureSearchParameters.checkerBoardCornerCountY;
 	calibrationPointsWorkUnit.calibrationPointParameters.chessboardSquareSizeMM		= textureSearchParameters.checkerBoardSquareSizeMM;
+	calibrationPointsWorkUnit.resizeParameters										= resizeParameters;
 
-	calibrationPointsWorkUnit.resizeParameters								= resizeParameters;
+	if (ShouldExit())
+		return;
 
 	QueueCalibrationPointsWorkUnit(calibrationPointsWorkUnit);
 }

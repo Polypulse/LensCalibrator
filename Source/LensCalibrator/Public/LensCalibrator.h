@@ -17,7 +17,10 @@ private:
 
 	UPROPERTY(Category = "APTK")
 	ULensSolver * lensSolver;
+	bool lensSolverInitialized;
+
 	UDistortionProcessor * distortionProcessor;
+	bool distortionProcessorInitialized;
 
 	TMap<FString, void*> dllHandles;
 
@@ -26,6 +29,7 @@ private:
 
 	void Initialize();
 	bool Tick(float deltatime);
+	void OnPreExit();
 
 public:
 	static FLensCalibratorModule& Get() { return FModuleManager::GetModuleChecked<FLensCalibratorModule>(FLensCalibratorModule::ModuleName); };

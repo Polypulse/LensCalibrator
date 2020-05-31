@@ -59,6 +59,9 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (!LatchInQueue())
 		return;
 
+	if (ShouldExit())
+		return;
+
 	FCalibrateLatch latchData;
 	DequeueLatch(latchData);
 
@@ -82,27 +85,23 @@ void FLensSolverWorkerCalibrate::Tick()
 		return;
 	}
 
-	if (ShouldExit())
-		return;
-
 	if (Debug())
 		QueueLog(FString::Printf(TEXT("(INFO): Done dequeing work units, preparing calibration using %d sets of points."), corners.Num()));
 
 	FCalibrateLensParameters parameters; 
-	parameters.sensorDiagonalSizeMM = latchData.calibrationParameters.sensorDiagonalSizeMM;
-	parameters.initialPrincipalPointNativePixelPositionX = latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.X;
-	parameters.initialPrincipalPointNativePixelPositionY = latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.Y;
-	parameters.useInitialIntrinsicValues = latchData.calibrationParameters.useInitialIntrinsicValues;
-	parameters.keepPrincipalPixelPositionFixed = latchData.calibrationParameters.keepPrincipalPixelPositionFixed;
-	parameters.keepAspectRatioFixed = latchData.calibrationParameters.keepAspectRatioFixed;
-	parameters.lensHasTangentalDistortion = latchData.calibrationParameters.lensHasTangentalDistortion;
-	parameters.fixRadialDistortionCoefficientK1 = latchData.calibrationParameters.fixRadialDistortionCoefficientK1;
-	parameters.fixRadialDistortionCoefficientK2 = latchData.calibrationParameters.fixRadialDistortionCoefficientK2;
-	parameters.fixRadialDistortionCoefficientK3 = latchData.calibrationParameters.fixRadialDistortionCoefficientK3;
-	parameters.fixRadialDistortionCoefficientK4 = latchData.calibrationParameters.fixRadialDistortionCoefficientK4;
-	parameters.fixRadialDistortionCoefficientK5 = latchData.calibrationParameters.fixRadialDistortionCoefficientK5;
-	parameters.fixRadialDistortionCoefficientK6 = latchData.calibrationParameters.fixRadialDistortionCoefficientK6;
-
+	parameters.sensorDiagonalSizeMM							= latchData.calibrationParameters.sensorDiagonalSizeMM;
+	parameters.initialPrincipalPointNativePixelPositionX	= latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.X;
+	parameters.initialPrincipalPointNativePixelPositionY	= latchData.calibrationParameters.initialPrincipalPointNativePixelPosition.Y;
+	parameters.useInitialIntrinsicValues					= latchData.calibrationParameters.useInitialIntrinsicValues;
+	parameters.keepPrincipalPixelPositionFixed				= latchData.calibrationParameters.keepPrincipalPixelPositionFixed;
+	parameters.keepAspectRatioFixed							= latchData.calibrationParameters.keepAspectRatioFixed;
+	parameters.lensHasTangentalDistortion					= latchData.calibrationParameters.lensHasTangentalDistortion;
+	parameters.fixRadialDistortionCoefficientK1				= latchData.calibrationParameters.fixRadialDistortionCoefficientK1;
+	parameters.fixRadialDistortionCoefficientK2				= latchData.calibrationParameters.fixRadialDistortionCoefficientK2;
+	parameters.fixRadialDistortionCoefficientK3				= latchData.calibrationParameters.fixRadialDistortionCoefficientK3;
+	parameters.fixRadialDistortionCoefficientK4				= latchData.calibrationParameters.fixRadialDistortionCoefficientK4;
+	parameters.fixRadialDistortionCoefficientK5				= latchData.calibrationParameters.fixRadialDistortionCoefficientK5;
+	parameters.fixRadialDistortionCoefficientK6				= latchData.calibrationParameters.fixRadialDistortionCoefficientK6;
 
 	FCalibrateLensOutput output;
 	if (!GetOpenCVWrapper().CalibrateLens(
@@ -116,9 +115,6 @@ void FLensSolverWorkerCalibrate::Tick()
 		output,
 		Debug()
 	))
-		return;
-
-	if (ShouldExit())
 		return;
 
 	FMatrix perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(
@@ -147,30 +143,32 @@ void FLensSolverWorkerCalibrate::Tick()
 
 	FCalibrationResult solvedPoints;
 
-	solvedPoints.baseParameters = latchData.baseParameters;
-	solvedPoints.success = true;
-	solvedPoints.fovX = output.fovX;
-	solvedPoints.fovY = output.fovY;
-	solvedPoints.focalLengthMM = output.focalLengthMM;
-	solvedPoints.aspectRatio = output.aspectRatio;
-	solvedPoints.sensorSizeMM = FVector2D(output.sensorSizeMMX, output.sensorSizeMMY);
-	solvedPoints.principalPixelPoint = FVector2D(output.principalPixelPointX, output.principalPixelPointY);
-	solvedPoints.resolution.X = latchData.resizeParameters.nativeX;
-	solvedPoints.resolution.Y = latchData.resizeParameters.nativeY;
-	solvedPoints.perspectiveMatrix = perspectiveMatrix;
-	solvedPoints.k1 = output.k1;
-	solvedPoints.k2 = output.k2;
-	solvedPoints.p1 = output.p1;
-	solvedPoints.p2 = output.p2;
-	solvedPoints.k3 = output.k3;
-	solvedPoints.imageCount = imageCount;
-	// solvedPoints.distortionCoefficients = outputDistortionCoefficients;
+	solvedPoints.baseParameters			= latchData.baseParameters;
+	solvedPoints.success				= true;
+	solvedPoints.fovX					= output.fovX;
+	solvedPoints.fovY					= output.fovY;
+	solvedPoints.focalLengthMM			= output.focalLengthMM;
+	solvedPoints.aspectRatio			= output.aspectRatio;
+	solvedPoints.sensorSizeMM			= FVector2D(output.sensorSizeMMX, output.sensorSizeMMY);
+	solvedPoints.principalPixelPoint	= FVector2D(output.principalPixelPointX, output.principalPixelPointY);
+	solvedPoints.resolution.X			= latchData.resizeParameters.nativeX;
+	solvedPoints.resolution.Y			= latchData.resizeParameters.nativeY;
+	solvedPoints.perspectiveMatrix		= perspectiveMatrix;
+	solvedPoints.k1						= output.k1;
+	solvedPoints.k2						= output.k2;
+	solvedPoints.p1						= output.p1;
+	solvedPoints.p2						= output.p2;
+	solvedPoints.k3						= output.k3;
+	solvedPoints.imageCount				= imageCount;
 
 	if (latchData.calibrationParameters.writeCalibrationResultsToFile)
 		WriteSolvedPointsToJSONFile(solvedPoints, latchData.calibrationParameters.calibrationResultsOutputPath);
 
 	if (Debug())
 		QueueLog(FString("(INFO): Finished with work unit."));
+
+	if (ShouldExit())
+		return;
 
 	QueueCalibrationResult(solvedPoints);
 }
@@ -274,17 +272,6 @@ bool FLensSolverWorkerCalibrate::DequeueAllWorkUnits(
 		}
 
 		corners.Append(calibrateWorkUnit.calibrationPointParameters.corners);
-		/*
-		int count = corners.Num();
-		int halfCount = count / 2;
-		corners.SetNum(count + calibrateWorkUnit.calibrationPointParameters.corners.Num() * 2);
-		for (int i = 0; i < calibrateWorkUnit.calibrationPointParameters.corners.Num() * 2; i += 2)
-		{
-			corners[count + i] = calibrateWorkUnit.calibrationPointParameters.corners[i / 2].X;
-			corners[count + i + 1] = calibrateWorkUnit.calibrationPointParameters.corners[i / 2].Y;
-		}
-		*/
-
 		imageCount++;
 
 		if (Debug())

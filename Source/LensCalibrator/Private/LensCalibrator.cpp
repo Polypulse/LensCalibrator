@@ -23,6 +23,7 @@ void FLensCalibratorModule::Initialize()
 	// Create tick delegate to redirect module tick into lens solver.
 	TickDelegate = FTickerDelegate::CreateRaw(this, &FLensCalibratorModule::Tick);
 	TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(TickDelegate);
+	FCoreDelegates::OnPreExit.AddRaw(this, &FLensCalibratorModule::OnPreExit);
 }
 
 bool FLensCalibratorModule::Tick(float deltatime)
@@ -31,6 +32,18 @@ bool FLensCalibratorModule::Tick(float deltatime)
 	GetDistortionProcessor()->Poll();
 
 	return true;
+}
+
+void FLensCalibratorModule::OnPreExit()
+{
+	// UE_LOG(LogTemp, Log, TEXT("Shutting down lens calibrator module."));
+
+	if (lensSolverInitialized)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Shutting down lens solver."));
+		ULensSolver * lensSolver = GetLensSolver();
+		lensSolver->StopBackgroundImageprocessors();
+	}
 }
 
 ULensSolver* FLensCalibratorModule::GetLensSolver()
@@ -42,6 +55,9 @@ ULensSolver* FLensCalibratorModule::GetLensSolver()
 		static ULensSolver* staticLensSolver = NewObject<ULensSolver>(GetTransientPackage(), NAME_None, RF_MarkAsRootSet);
 		lensSolver = staticLensSolver;
 		lensSolver->AddToRoot(); // Prevent lens solver from being garbage collected.
+
+		lensSolverInitialized = true;
+
 		UE_LOG(LogTemp, Log, TEXT("Initialized Lens Solver."));
 	}
 
@@ -56,6 +72,9 @@ UDistortionProcessor* FLensCalibratorModule::GetDistortionProcessor()
 		static UDistortionProcessor* staticDistortionProcessor = NewObject<UDistortionProcessor>(GetTransientPackage(), NAME_None, RF_MarkAsRootSet);
 		distortionProcessor = staticDistortionProcessor;
 		distortionProcessor->AddToRoot(); // Prevent lens solver from being garbage collected.
+
+		distortionProcessorInitialized = true;
+
 		UE_LOG(LogTemp, Log, TEXT("Initialized Distortion Processor."));
 	}
 
@@ -110,14 +129,6 @@ void FLensCalibratorModule::StartupModule()
 
 void FLensCalibratorModule::ShutdownModule()
 {
-	ULensSolver * lensSolver = GetLensSolver();
-	if (lensSolver != nullptr)
-		lensSolver->StopBackgroundImageprocessors();
-
-	// delete GetLensSolver();
-	// delete GetDistortionProcessor();
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
 }
 
 #undef LOCTEXT_NAMESPACE
