@@ -71,7 +71,10 @@ public:
 		UVolumeTexture * volumeTexture);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	static void StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount);
+	static void StartBackgroundImageProcessors(
+		int findCornersWorkerCount,
+		int calibrateWorkerCount,
+		bool shutDownWorkersAfterCompletingTasks = true);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	static void StopBackgroundImageprocessors();

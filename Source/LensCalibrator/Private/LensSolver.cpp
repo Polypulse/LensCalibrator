@@ -240,7 +240,7 @@ void ULensSolver::StartMediaStreamCalibration(
 	LensSolverWorkDistributor::GetInstance().QueueMediaStreamWorkUnit(workUnit);
 }
 
-void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount)
+void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount, bool shutDownWorkersAfterCompletingTasks)
 {
 	if (WorkerRegistry::Get().WorkersRunning())
 	{
@@ -248,7 +248,7 @@ void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int
 		return;
 	}
 
-	LensSolverWorkDistributor::GetInstance().Configure(queueLogOutputDel, queueFinishedJobOutputDel);
+	LensSolverWorkDistributor::GetInstance().Configure(queueLogOutputDel, queueFinishedJobOutputDel, shutDownWorkersAfterCompletingTasks);
 
 	if (queueLogOutputDel->IsBound())
 		queueLogOutputDel->Unbind();

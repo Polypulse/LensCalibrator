@@ -77,4 +77,5 @@ private:
 protected:
 	virtual void Tick() override;
 	virtual int GetWorkLoad() override;
+	virtual void NotifyShutdown () override;
 };

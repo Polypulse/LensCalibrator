@@ -73,7 +73,7 @@ public:
 		FMediaStreamParameters mediaStreamParameters,
 		FJobInfo& ouptutJobInfo);
 
-	void StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount);
+	void StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount, bool shutDownWorkersAfterCompletingTasks);
 	void StopBackgroundImageprocessors();
 
 	void Poll ();

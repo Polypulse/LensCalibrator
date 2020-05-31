@@ -111,4 +111,5 @@ protected:
 
 	virtual void Tick() {};
 	virtual int GetWorkLoad() { return 0; };
+	virtual void NotifyShutdown () {};
 };

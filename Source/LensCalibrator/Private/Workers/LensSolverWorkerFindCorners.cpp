@@ -6,6 +6,8 @@
 #include "MatQueueWriter.h"
 #include "OpenCVWrapper.h"
 
+#include "WorkerRegistry.h"
+
 FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	FLensSolverWorkerParameters & inputParameters,
 	QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,
@@ -18,6 +20,7 @@ FLensSolverWorkerFindCorners::FLensSolverWorkerFindCorners(
 	inputQueuePixelArrayWorkUnitInputDel->BindRaw(this, &FLensSolverWorkerFindCorners::QueuePixelArrayWorkUnit);
 
 	workUnitCount = 0;
+	WorkerRegistry::Get().CountFindCornerWorker();
 }
 
 int FLensSolverWorkerFindCorners::GetWorkLoad()
@@ -206,4 +209,9 @@ FResizeParameters FLensSolverWorkerFindCorners::CalculateResizeParameters(const 
 	}
 
 	return resizeParameters;
+}
+
+void FLensSolverWorkerFindCorners::NotifyShutdown()
+{
+	WorkerRegistry::Get().UncountFindCornerWorker();
 }

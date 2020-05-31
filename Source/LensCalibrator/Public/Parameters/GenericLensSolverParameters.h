@@ -21,9 +21,13 @@ struct FGenericLensSolverParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	int calibrateWorkerCount;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	bool shutDownWorkersAfterCompletedTasks;
+
 	FGenericLensSolverParameters()
 	{
 		cornerWorkerCount = 3;
 		calibrateWorkerCount = 1;
+		shutDownWorkersAfterCompletedTasks = true;
 	}
 };

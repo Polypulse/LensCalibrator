@@ -56,6 +56,9 @@ struct FCalibrationResult
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	float k3;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	int imageCount;
+
 	FCalibrationResult()
 	{
 		success = false;
@@ -72,5 +75,6 @@ struct FCalibrationResult
 		p1 = 0.0f;
 		p2 = 0.0f;
 		k3 = 0.0f;
+		imageCountUsed = 0;
 	}
 };

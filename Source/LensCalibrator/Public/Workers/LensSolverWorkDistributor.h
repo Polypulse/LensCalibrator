@@ -41,6 +41,8 @@ private:
 
 	TMap<FString, FWorkerFindCornersInterfaceContainer> findCornersWorkers;
 	TMap<FString, FWorkerCalibrateInterfaceContainer> calibrateWorkers;
+	bool shutDownWorkersAfterCompletedTasks;
+
 	TArray<FString> workLoadSortedFindCornerWorkers;
 	TArray<FString> workLoadSortedCalibrateWorkers;
 
@@ -71,6 +73,7 @@ private:
 
 	void SortFindCornersWorkersByWorkLoad();
 	void SortCalibrateWorkersByWorkLoad();
+	void PollWorkersAndShutdownWorkLoad();
 
 	bool ValidateMediaTexture(const UMediaTexture* inputTexture);
 
@@ -101,11 +104,14 @@ public:
 	static FString FJobToString(const FJob& job, const int tabcount = 0);
 	*/
 
-	void Configure(QueueLogOutputDel*& inputQueueLogOutputDel,
-		QueueFinishedJobOutputDel*& inputQueueFinishedJobOutputDel)
+	void Configure(
+		QueueLogOutputDel*& inputQueueLogOutputDel,
+		QueueFinishedJobOutputDel*& inputQueueFinishedJobOutputDel,
+		bool inputShutDownWorkersAfterCompletedTasks)
 	{
 		inputQueueFinishedJobOutputDel = &queueFinishedJobOutputDel;
 		inputQueueLogOutputDel = &queueLogOutputDel;
+		shutDownWorkersAfterCompletedTasks = inputShutDownWorkersAfterCompletedTasks;
 	}
 
 	void PrepareFindCornerWorkers(

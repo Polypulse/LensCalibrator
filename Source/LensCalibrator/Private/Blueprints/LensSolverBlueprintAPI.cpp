@@ -153,12 +153,14 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 
 void ULensSolverBlueprintAPI::StartBackgroundImageProcessors(
 	int findCornersWorkerCount,
-	int calibrateWorkerCount)
+	int calibrateWorkerCount,
+	bool shutDownWorkersAfterCompletingTasks)
 {
 	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->StartBackgroundImageProcessors(
 		findCornersWorkerCount,
-		calibrateWorkerCount);
+		calibrateWorkerCount,
+		shutDownWorkersAfterCompletingTasks);
 }
 
 void ULensSolverBlueprintAPI::StopBackgroundImageprocessors()

@@ -19,31 +19,64 @@ public:
 private:
 	WorkerRegistry() {}
 	FCriticalSection threadLock;
-	int workerCount = 0;
+	int findCornerWorkerCount = 0;
+	int calibrateWorkerCount = 0;
 
 public:
 	WorkerRegistry(WorkerRegistry const&) = delete;
 	void operator=(WorkerRegistry const&) = delete;
 
-	void CountWorker() 
+	void CountCalibrateWorker() 
 	{
 		threadLock.Lock();
-		workerCount++; 
+		calibrateWorkerCount++; 
 		threadLock.Unlock();
 	}
 
-	void UncountWorker() 
+	void UncountCalibrateWorker() 
 	{
 		threadLock.Lock();
-		workerCount--; 
+		calibrateWorkerCount--; 
 		threadLock.Unlock();
+	}
+
+	bool CalibrateWorkersRunning()
+	{
+		bool running = false;
+		threadLock.Lock();
+		running = calibrateWorkerCount > 0;
+		threadLock.Unlock();
+		return running;
+	}
+
+	void CountFindCornerWorker() 
+	{
+		threadLock.Lock();
+		findCornerWorkerCount++; 
+		threadLock.Unlock();
+	}
+
+	void UncountFindCornerWorker() 
+	{
+		threadLock.Lock();
+		findCornerWorkerCount--; 
+		threadLock.Unlock();
+	}
+
+	bool FindCornersWorkersRunning()
+	{
+		bool running = false;
+		threadLock.Lock();
+		running = findCornerWorkerCount > 0;
+		threadLock.Unlock();
+		return running;
 	}
 
 	bool WorkersRunning()
 	{
 		bool running = false;
 		threadLock.Lock();
-		running = workerCount > 0;
+		running = findCornerWorkerCount  > 0 && calibrateWorkerCount > 0;
 		threadLock.Unlock();
 		return running;
 	}

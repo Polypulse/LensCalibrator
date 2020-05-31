@@ -5,6 +5,8 @@
 #include "JsonUtilities.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 
+#include "WorkerRegistry.h"
+
 FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	FLensSolverWorkerParameters & inputParameters,
 	QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
@@ -17,6 +19,8 @@ FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	inputSignalLatch->BindRaw(this, &FLensSolverWorkerCalibrate::QueueLatch);
 
 	workUnitCount = 0;
+
+	WorkerRegistry::Get().CountCalibrateWorker();
 }
 
 FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(const FIntPoint& imageSize, const FVector2D& principlePoint, const float focalLength)
@@ -159,6 +163,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	solvedPoints.p1 = output.p1;
 	solvedPoints.p2 = output.p2;
 	solvedPoints.k3 = output.k3;
+	solvedPoints.imageCount = imageCount;
 	// solvedPoints.distortionCoefficients = outputDistortionCoefficients;
 
 	if (latchData.calibrationParameters.writeCalibrationResultsToFile)
@@ -403,4 +408,9 @@ void FLensSolverWorkerCalibrate::DequeueLatch(FCalibrateLatch & latchData)
 bool FLensSolverWorkerCalibrate::LatchInQueue()
 {
 	return latchQueue.IsEmpty() == false;
+}
+
+void FLensSolverWorkerCalibrate::NotifyShutdown()
+{
+	WorkerRegistry::Get().UncountCalibrateWorker();
 }

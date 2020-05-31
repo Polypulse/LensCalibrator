@@ -24,15 +24,6 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 
 	queueCalibrateWorkUnitInputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
 
-	/*
-	isFenceDownDel.BindRaw(this, &LensSolverWorkDistributor::IsFenceDown);
-	fenceUp = true;
-	*/
-	/*
-	lockDel.BindRaw(this, &LensSolverWorkDistributor::Lock);
-	unlockDel.BindRaw(this, &LensSolverWorkDistributor::Unlock);
-	*/
-
 	Lock();
 
 	for (int i = 0; i < findCornerWorkerCount; i++)
@@ -45,9 +36,6 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 			&queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
-			// &isFenceDownDel,
-			// &lockDel,
-			// &unlockDel,
 			guid
 		);
 
@@ -95,9 +83,6 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 			&queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
-			// &isFenceDownDel,
-			// &lockDel,
-			// &unlockDel,
 			guid
 		);
 
@@ -262,7 +247,6 @@ void LensSolverWorkDistributor::SetCalibrateWorkerParameters(FCalibrationParamet
 
 void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit)
 {
-	// static int count = 0;
 	Lock();
 	if (calibrateWorkers.Num() == 0)
 	{
@@ -285,8 +269,6 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 		return;
 	}
 
-	// count++;
-	// QueueLogAsync(FString::Printf(TEXT("Work Distributor received TextureFileWorkUnit of index: %d"), count));
 	interfaceContainerPtr->queueCalibrateWorkUnitDel.Execute(calibrateWorkUnit);
 
 	bool hitExpectedImageCount = IterateImageCount(calibrateWorkUnit.baseParameters.jobID, calibrateWorkUnit.baseParameters.calibrationID);
@@ -299,6 +281,32 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 		latchData.resizeParameters		= calibrateWorkUnit.resizeParameters;
 
 		LatchCalibrateWorker(latchData);
+
+		Lock();
+
+		if (shutDownWorkersAfterCompletedTasks)
+		{
+			bool allImagesProcessed = true;
+			for (auto job : jobs)
+			{
+				for (auto expectedAndCurrentImageCount : job.Value.expectedAndCurrentImageCounts)
+				{
+					if (expectedAndCurrentImageCount.Value.currentImageCount < expectedAndCurrentImageCount.Value.expectedImageCount)
+					{
+						allImagesProcessed = false;
+						break;
+					}
+				}
+			}
+
+			if (allImagesProcessed)
+			{
+				for (auto workerContainer : findCornersWorkers)
+					workerContainer.Value.baseContainer.isClosingDel.Execute();
+			}
+		}
+
+		Unlock();
 	}
 }
 
@@ -365,14 +373,18 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 
 		jobs.Remove(calibrationResult.baseParameters.jobID);
 		done = true;
+
+		if (shutDownWorkersAfterCompletedTasks && jobs.Num() == 0)
+		{
+			for (auto workerContainer : findCornersWorkers)
+				workerContainer.Value.baseContainer.isClosingDel.Execute();
+
+			for (auto workerContainer : calibrateWorkers)
+				workerContainer.Value.baseContainer.isClosingDel.Execute();
+		}
 	}
 
 	Unlock();
-
-	/*
-	if (done && queueFinishedJobOutputDel.IsBound())
-		queueFinishedJobOutputDel.Execute(jobInfo);
-	*/
 }
 
 bool LensSolverWorkDistributor::CalibrationResultIsQueued()
@@ -590,6 +602,10 @@ void LensSolverWorkDistributor::SortCalibrateWorkersByWorkLoad()
 	});
 }
 
+void LensSolverWorkDistributor::PollWorkersAndShutdownWorkLoad()
+{
+}
+
 bool LensSolverWorkDistributor::ValidateMediaTexture(const UMediaTexture* inputTexture)
 {
 	if (inputTexture == nullptr)
@@ -627,64 +643,6 @@ int64 LensSolverWorkDistributor::GetTickNow()
 	FDateTime timeUtc = FDateTime::UtcNow();
 	return timeUtc.ToUnixTimestamp() * 1000 + timeUtc.GetMillisecond();
 }
-
-/*
-void LensSolverWorkDistributor::SetFenceDown()
-{
-	QueueLogAsync("Setting fence down.");
-	fenceUp = false;
-}
-
-bool LensSolverWorkDistributor::IsFenceDown()
-{
-	return !fenceUp;
-}
-*/
-
-/*
-FString LensSolverWorkDistributor::ExpectedAndCurrentImageCountToString(const TMap<FString, FExpectedAndCurrentImageCount> & map, const int tabCount)
-{;
-	FString tabs(tabCount, "\t");
-	TArray<FString> keys;
-	map.GetKeys(keys);
-	FString str = FString::Printf(TEXT("%s;
-	for (FString key : keys)
-	{
-
-	}
-	return FString::Printf(TEXT("%s{\n%s\tExpected: %d,\n\t%sCurrent: %d\n%s}"), 
-		*tabs, 
-		strct.expectedImageCount, 
-		*tabs, 
-		strct.currentImageCount, 
-		*tabs);
-}
-
-FString LensSolverWorkDistributor::FJobInfoToString(const FJobInfo& job, const int tabCount)
-{
-	FString tabs(tabCount, "\t");
-	FString str = FString::Printf(TEXT("%s\tJob ID: \"%s\","), *tabs, job.jobID);
-	FString::Printf(TEXT("%s%s\tCalibration IDs:\n%s\t["), *str, *tabs, *tabs);
-	for (int i = 0; i < job.calibrationIDs.Num() - 1; i++)
-		str = FString::Printf(TEXT("%s\n%s\t\t%s,"), *str, *tabs, *job.calibrationIDs[i]);
-	return FString::Printf(TEXT("%s\n%s\t\t%s\n%s\t],"), *str, *tabs, *job.calibrationIDs[job.calibrationIDs.Num() - 1], *tabs);
-}
-
-FString LensSolverWorkDistributor::FJobToString(const FJob& job, const int tabCount)
-{
-	FString tabs(tabCount, "\t");
-	FString str(TEXT("%s\tJob:\n%s\t{\n%s\t\tExpected Result Count: %d,\n%s\t\tCurrent Result Count: %d,\n%s\t\tJobInfo: \n%s, \n\tExpected and Current Image Counts: \n%s\n%s\t}"),
-		*tabs,
-		*tabs,
-		*tabs,
-		job.currentResultCount,
-		*tabs,
-		job.currentResultCount,
-		*FJobInfoToString(job.jobInfo, tabCount + 2),
-		*ExpectedAndCurrentImageCountToString(job.expectedAndCurrentImageCounts tabCount + 2),
-		*tabs);
-}
-*/
 
 void LensSolverWorkDistributor::StopFindCornerWorkers()
 {
@@ -774,34 +732,8 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	if (!ValidateMediaTexture(mediaStreamWorkUnit.mediaStreamParameters.mediaTexture))
 		return;
 
-	/*
-	int width = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.X * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.X;
-	int height = oneTimeProcessParameters.resize ? oneTimeProcessParameters.currentResolution.Y * oneTimeProcessParameters.resizePercentage : oneTimeProcessParameters.currentResolution.Y;
-	*/
 	int width = mediaStreamWorkUnit.textureSearchParameters.resize ? mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth() * mediaStreamWorkUnit.textureSearchParameters.resizePercentage : mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth();
 	int height = mediaStreamWorkUnit.textureSearchParameters.resize ? mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight() * mediaStreamWorkUnit.textureSearchParameters.resizePercentage : mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight();
-
-	/*
-	if (!blitRenderTextureAllocated)
-	{
-		FRHIResourceCreateInfo createInfo;
-		FTexture2DRHIRef dummyTexRef;
-		RHICreateTargetableShaderResource2D(
-			width,
-			height,
-			EPixelFormat::PF_B8G8R8A8,
-			1,
-			TexCreate_None,
-			TexCreate_RenderTargetable,
-			false,
-			createInfo,
-			blitRenderTexture,
-			dummyTexRef);
-
-		blitRenderTextureAllocated = true;
-		FCollection::AddObjectToCollection(blitRenderTexture);
-	}
-	*/
 
 	FTexture2DRHIRef blitRenderTexture;
 	FRHIResourceCreateInfo createInfo;
@@ -855,7 +787,6 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	ReadDataFlags.SetOutputStencil(false);
 	ReadDataFlags.SetMip(0);
 
-	// UE_LOG(LogTemp, Log, TEXT("Reading pixels from rect: (%d, %d, %d, %d)."), 0, 0, width, height);
 	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), surfaceData, ReadDataFlags);
 
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
@@ -889,53 +820,4 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	pixelArrayWorkUnit.resizeParameters.resizeY = height;
 
 	QueueTextureArrayWorkUnit(pixelArrayWorkUnit.baseParameters.jobID, pixelArrayWorkUnit);
-
-	/*
-	threadLock.Lock();
-	if (workers.Num() == 0)
-	{
-		threadLock.Unlock();
-		return;
-	}
-
-	FString textureName;
-	textureZoomPair.texture->GetName(textureName);
-
-	FLensSolverTextureWorkUnit workerUnit;
-	workerUnit.unitName = textureName;
-	workerUnit.pixels = surfaceData;
-
-	if (nextWorkerIndex < 0 || nextWorkerIndex > workers.Num() - 1)
-		nextWorkerIndex = 0;
-
-	workers[nextWorkerIndex].queueWorkUnitDel.Execute(workerUnit);
-
-	if (latch)
-	{
-		FCalibrateLatch latchData =
-		{
-			jobInfo,
-			oneTimeProcessParameters.workerParameters,
-			latchImageCount,
-			textureZoomPair.zoomLevel,
-			oneTimeProcessParameters.currentResolution,
-			oneTimeProcessParameters.resize,
-			oneTimeProcessParameters.resizePercentage,
-			oneTimeProcessParameters.cornerCount,
-			oneTimeProcessParameters.squareSizeMM,
-			oneTimeProcessParameters.sensorDiagonalSizeMM,
-			oneTimeProcessParameters.initialPrincipalPointNativePixelPosition
-		};
-
-		UE_LOG(LogTemp, Log, TEXT("Latching worker."))
-		workers[nextWorkerIndex].signalLatch.Execute(latchData);
-
-
-		nextWorkerIndex++;
-		if (nextWorkerIndex > workers.Num() - 1)
-			nextWorkerIndex = 0;
-	}
-
-	threadLock.Unlock();
-	*/
 }

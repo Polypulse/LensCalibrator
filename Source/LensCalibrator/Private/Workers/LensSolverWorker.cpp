@@ -8,7 +8,6 @@
 #include "IImageWrapper.h"
 #include "RenderUtils.h"
 #include "Engine/Texture2D.h"
-#include "WorkerRegistry.h"
 
 FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters& inputParameters) :
 	workerID(inputParameters.inputWorkerID),
@@ -25,7 +24,6 @@ FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters& inputParameter
 	*/
 
 	flagToExit = false;
-	WorkerRegistry::Get().CountWorker();
 }
 
 void FLensSolverWorker::QueueLog(FString log)
@@ -87,9 +85,9 @@ void FLensSolverWorker::DoWork()
 	}
 
 	QueueLog("Exited loop.");
-
 	flagToExit = true;
-	WorkerRegistry::Get().UncountWorker();
+
+	NotifyShutdown();
 }
 
 bool FLensSolverWorker::Exit()
