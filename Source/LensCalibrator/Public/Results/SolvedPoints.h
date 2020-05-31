@@ -75,6 +75,6 @@ struct FCalibrationResult
 		p1 = 0.0f;
 		p2 = 0.0f;
 		k3 = 0.0f;
-		imageCountUsed = 0;
+		imageCount = 0;
 	}
 };
