@@ -281,32 +281,7 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 		latchData.resizeParameters		= calibrateWorkUnit.resizeParameters;
 
 		LatchCalibrateWorker(latchData);
-
-		Lock();
-
-		if (shutDownWorkersAfterCompletedTasks)
-		{
-			bool allImagesProcessed = true;
-			for (auto job : jobs)
-			{
-				for (auto expectedAndCurrentImageCount : job.Value.expectedAndCurrentImageCounts)
-				{
-					if (expectedAndCurrentImageCount.Value.currentImageCount < expectedAndCurrentImageCount.Value.expectedImageCount)
-					{
-						allImagesProcessed = false;
-						break;
-					}
-				}
-			}
-
-			if (allImagesProcessed)
-			{
-				for (auto workerContainer : findCornersWorkers)
-					workerContainer.Value.baseContainer.isClosingDel.Execute();
-			}
-		}
-
-		Unlock();
+		PollShutdownFindCornerWorkersIfNecessary();
 	}
 }
 
@@ -373,19 +348,12 @@ void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult 
 
 		jobs.Remove(calibrationResult.baseParameters.jobID);
 		done = true;
-
-		if (shutDownWorkersAfterCompletedTasks && jobs.Num() == 0)
-		{
-			for (auto workerContainer : findCornersWorkers)
-				workerContainer.Value.baseContainer.isClosingDel.Execute();
-
-			for (auto workerContainer : calibrateWorkers)
-				workerContainer.Value.baseContainer.isClosingDel.Execute();
-		}
 	}
 
 	Unlock();
-}
+
+	PollShutdownAllWorkersIfNecessary();
+ }
 
 bool LensSolverWorkDistributor::CalibrationResultIsQueued()
 {
@@ -602,8 +570,81 @@ void LensSolverWorkDistributor::SortCalibrateWorkersByWorkLoad()
 	});
 }
 
-void LensSolverWorkDistributor::PollWorkersAndShutdownWorkLoad()
+void LensSolverWorkDistributor::PollShutdownFindCornerWorkersIfNecessary()
 {
+	if (!shutDownWorkersAfterCompletedTasks)
+		return;
+
+	TQueue<IsClosingOutputDel> isClosingDelQueue;
+	bool allImagesProcessed = true;
+
+	Lock();
+
+	for (auto job : jobs)
+	{
+		for (auto expectedAndCurrentImageCount : job.Value.expectedAndCurrentImageCounts)
+		{
+			if (expectedAndCurrentImageCount.Value.currentImageCount < expectedAndCurrentImageCount.Value.expectedImageCount)
+			{
+				allImagesProcessed = false;
+				break;
+			}
+		}
+	}
+
+	if (allImagesProcessed)
+	{
+		for (auto workerContainer : findCornersWorkers)
+			isClosingDelQueue.Enqueue(workerContainer.Value.baseContainer.isClosingDel);
+	}
+
+	Unlock();
+
+	if (allImagesProcessed)
+	{
+		while (!isClosingDelQueue.IsEmpty())
+		{
+			IsClosingOutputDel isClosingDel;
+			isClosingDelQueue.Dequeue(isClosingDel);
+			if (isClosingDel.IsBound())
+				isClosingDel.Execute();
+		}
+
+		findCornersWorkers.Empty();
+		workLoadSortedFindCornerWorkers.Empty();
+	}
+}
+
+void LensSolverWorkDistributor::PollShutdownAllWorkersIfNecessary()
+{
+	if (!shutDownWorkersAfterCompletedTasks)
+		return;
+
+	TQueue<IsClosingOutputDel*> isClosingDelQueue;
+	Lock();
+
+	if (jobs.Num() == 0)
+	{
+		for (auto workerContainer : findCornersWorkers)
+			isClosingDelQueue.Enqueue(&workerContainer.Value.baseContainer.isClosingDel);
+
+		for (auto workerContainer : calibrateWorkers)
+			isClosingDelQueue.Enqueue(&workerContainer.Value.baseContainer.isClosingDel);
+	}
+
+	Unlock();
+
+	while (!isClosingDelQueue.IsEmpty())
+	{
+		IsClosingOutputDel * isClosingDel;
+		isClosingDelQueue.Dequeue(isClosingDel);
+		if (isClosingDel->IsBound())
+			isClosingDel->Execute();
+	}
+
+	findCornersWorkers.Empty();
+	calibrateWorkers.Empty();
+	workLoadSortedCalibrateWorkers.Empty();
 }
 
 bool LensSolverWorkDistributor::ValidateMediaTexture(const UMediaTexture* inputTexture)

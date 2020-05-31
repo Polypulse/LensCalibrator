@@ -49,28 +49,9 @@ FString FLensSolverWorker::GetWorkerID()
 void FLensSolverWorker::DoWork()
 {
 	FLensSolverWorker* baseWorker = this;
-	/*
-	if (!lockDel->IsBound() || !unlockDel->IsBound())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Lock/Unlock delegates are not bound!"));
-		return;
-	}
-	*/
-	/*
-	while (!isFenceDownDel->Execute())
-		continue;
-	QueueLog("Fence down!");
-	*/
 
-	while (1)
+	while (!ShouldExit())
 	{
-		if (ShouldExit())
-		{
-			if (Debug())
-				QueueLog("Exiting DoWork loop.");
-			break;
-		}
-
 		if (GetWorkLoad() == 0)
 		{
 			// QueueLog("No work units in queue.");
@@ -85,8 +66,6 @@ void FLensSolverWorker::DoWork()
 	}
 
 	QueueLog("Exited loop.");
-	flagToExit = true;
-
 	NotifyShutdown();
 }
 
@@ -119,33 +98,11 @@ bool FLensSolverWorker::Debug()
 
 void FLensSolverWorker::Lock()
 {
-	/*
-	if (!lockDel->IsBound())
-	{
-		flagToExit = true;
-		return;
-	}
-
-	lockDel->Execute();
-	*/
-	/*
-	while (!threadLock.TryLock())
-		continue;
-	*/
 	threadLock.Lock();
 }
 
 void FLensSolverWorker::Unlock()
 {
-	/*
-	if (!unlockDel->IsBound())
-	{
-		flagToExit = true;
-		return;
-	}
-
-	unlockDel->Execute();
-	*/
 	threadLock.Unlock();
 }
 

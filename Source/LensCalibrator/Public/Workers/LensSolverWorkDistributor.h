@@ -73,7 +73,8 @@ private:
 
 	void SortFindCornersWorkersByWorkLoad();
 	void SortCalibrateWorkersByWorkLoad();
-	void PollWorkersAndShutdownWorkLoad();
+	void PollShutdownFindCornerWorkersIfNecessary();
+	void PollShutdownAllWorkersIfNecessary();
 
 	bool ValidateMediaTexture(const UMediaTexture* inputTexture);
 
