@@ -190,8 +190,10 @@ void FLensSolverWorkerFindCorners::QueueEmptyCalibrationPointsWorkUnit(const FBa
 		QueueLog(FString::Printf(TEXT("(INFO): %s: Queuing EMPTY calibration points work unit."), *JobDataToString(baseParameters)));
 
 	FLensSolverCalibrationPointsWorkUnit calibrationPointsWorkUnit;
-	calibrationPointsWorkUnit.baseParameters = baseParameters;
-	calibrationPointsWorkUnit.resizeParameters = resizeParameters;
+
+	calibrationPointsWorkUnit.baseParameters	= baseParameters;
+	calibrationPointsWorkUnit.resizeParameters	= resizeParameters;
+
 	queueFindCornerResultOutputDel->Execute(calibrationPointsWorkUnit);
 }
 
