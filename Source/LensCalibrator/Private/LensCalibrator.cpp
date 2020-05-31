@@ -37,6 +37,7 @@ bool FLensCalibratorModule::Tick(float deltatime)
 
 void FLensCalibratorModule::OnPreExit()
 {
+	/*
 	if (lensSolverInitialized)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Shutting down lens solver."));
@@ -44,6 +45,7 @@ void FLensCalibratorModule::OnPreExit()
 
 		lensSolver->StopBackgroundImageprocessors();
 	}
+	*/
 
 	WorkerRegistry::Get().FlagExitAllShutdown();
 }
