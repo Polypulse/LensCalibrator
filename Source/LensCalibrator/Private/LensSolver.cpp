@@ -184,6 +184,12 @@ void ULensSolver::StartMediaStreamCalibration(
 	FMediaStreamParameters mediaStreamParameters,
 	FJobInfo& ouptutJobInfo)
 {
+	if (LensSolverWorkDistributor::GetInstance().GetFindCornerWorkerCount() <= 0 || LensSolverWorkDistributor::GetInstance().GetCalibrateCount() <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No workers available, make sure you start both background \"FindCorner\" & \"Calibrate\" workers."));
+		return;
+	}
+
 	if (!ValidateMediaTexture(mediaStreamParameters.mediaTexture))
 	{
 		UE_LOG(LogTemp, Error, TEXT("The input MediaStreamParameters member \"Media Texture\" invalid!"));
