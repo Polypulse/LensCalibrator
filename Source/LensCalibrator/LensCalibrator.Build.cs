@@ -42,6 +42,7 @@ public class LensCalibrator : ModuleRules
 				"RenderCore",
 				"ImageWrapper",
 				"ImageWriteQueue",
+				"Composure",
 				"RHI",
 				"Json",
 				"JsonUtilities"

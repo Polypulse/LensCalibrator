@@ -13,6 +13,7 @@
 #include "DistortTextureWithCoefficientsParams.h"
 #include "DistortTextureWithTextureFileParams.h"
 #include "DistortTextureWithTextureParams.h"
+#include "CompositingMaterialPass.h"
 
 #include "TextureFolderZoomPair.h"
 
@@ -69,6 +70,13 @@ public:
 	static bool PackArrayOfDistortionCorrectionMapsIntoVolumeTexture(
 		TArray<UTexture2D*> distortionCorrectionMaps,
 		UVolumeTexture * volumeTexture);
+
+	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
+	static void OverrideCompositingMaterialScalarParam(
+		FCompositingMaterial inputCompositingMaterial,
+		const FName paramName, 
+		float scalarValue,
+		FCompositingMaterial & outputCompositingMaterial);
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	static void StartBackgroundImageProcessors(

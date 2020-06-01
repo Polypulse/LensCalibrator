@@ -151,6 +151,15 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 	return true;
 }
 
+void ULensSolverBlueprintAPI::OverrideCompositingMaterialScalarParam(
+	FCompositingMaterial inputCompositingMaterial,
+	const FName paramName, 
+	float scalarValue,
+	FCompositingMaterial & outputCompositingMaterial)
+{
+	inputCompositingMaterial.SetScalarOverride(paramName, scalarValue);
+}
+
 void ULensSolverBlueprintAPI::StartBackgroundImageProcessors(
 	int findCornersWorkerCount,
 	int calibrateWorkerCount,
