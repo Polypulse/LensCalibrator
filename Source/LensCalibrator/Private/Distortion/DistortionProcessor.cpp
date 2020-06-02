@@ -66,8 +66,8 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	distortionCoefficients[3] = distortionCorrectionMapGenerationParams.p2;
 	distortionCoefficients[4] = distortionCorrectionMapGenerationParams.k3;
 
-	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_DontStore);
-	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
+	FRHIRenderPassInfo distortionCorrectionRPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Load_DontStore);
+	RHICmdList.BeginRenderPass(distortionCorrectionRPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
 		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
@@ -108,7 +108,22 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 
 	UE_LOG(LogTemp, Log, TEXT("Wrote distortion correction map to path: \"%s\"."), *correctionFilePath);
 
-	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateInverseDistortionCorrectionMapPass"));
+	FTexture2DRHIRef distortionUncorrectionRenderTexture;
+
+	RHICreateTargetableShaderResource2D(
+		width,
+		height,
+		EPixelFormat::PF_FloatRGBA,
+		1,
+		TexCreate_Transient,
+		TexCreate_RenderTargetable,
+		false,
+		createInfo,
+		distortionUncorrectionRenderTexture,
+		dummyTexRef);
+
+	FRHIRenderPassInfo distortionUncorrectionRPInfo(distortionUncorrectionRenderTexture, ERenderTargetActions::Load_DontStore);
+	RHICmdList.BeginRenderPass(distortionUncorrectionRPInfo, TEXT("GenerateDistortionUncorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
 		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
@@ -134,7 +149,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	}
 	RHICmdList.EndRenderPass();
 
-	texture2D = distortionCorrectionRenderTexture->GetTexture2D();
+	texture2D = distortionUncorrectionRenderTexture->GetTexture2D();
 	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixels, (ECubeFace)0, 0, 0);
 
 	pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
