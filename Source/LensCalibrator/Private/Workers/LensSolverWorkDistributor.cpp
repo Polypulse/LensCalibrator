@@ -13,6 +13,28 @@
 #include "BlitShader.h"
 #include "LensSolverUtilities.h"
 
+void LensSolverWorkDistributor::PrepareWorkers(
+	int findCornerWorkerCount,
+	int calibrateWorkerCount)
+{
+	if (threadPool != nullptr)
+	{
+		threadPool->Destroy();
+		threadPool = nullptr;
+	}
+
+	threadPool = FQueuedThreadPool::Allocate();
+	uint threadPoolSize = (uint)(findCornerWorkerCount + calibrateWorkerCount);
+	if (!threadPool->Create(threadPoolSize))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Unable to create thread pool of size: %i"), threadPoolSize);
+		return;
+	}
+
+	PrepareFindCornerWorkers(findCornerWorkerCount);
+	PrepareCalibrateWorkers(calibrateWorkerCount);
+}
+
 void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 	int findCornerWorkerCount)
 {
@@ -50,14 +72,16 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 			&queueCalibrateWorkUnitInputDel);
 	}
 
-	TArray<FWorkerFindCornersInterfaceContainer> interfaces;
-	findCornersWorkers.GenerateValueArray(interfaces);
+	int count = 0;
+	for (auto entry : findCornersWorkers)
+	{
+		entry.Value.worker->StartBackgroundTask(threadPool);
+		count++;
+	}
+
 	Unlock();
 
-	for (int i = 0; i < interfaces.Num(); i++)
-		interfaces[i].worker->StartBackgroundTask();
-
-	UE_LOG(LogTemp, Log, TEXT("(INFO): Started %d FindCorner workers"), findCornerWorkerCount);
+	UE_LOG(LogTemp, Log, TEXT("(INFO): Started %d FindCorner workers"), count);
 }
 
 void LensSolverWorkDistributor::PrepareCalibrateWorkers(
@@ -96,14 +120,16 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 			&queueCalibrationResultOutputDel);
 	}
 
-	TArray<FWorkerCalibrateInterfaceContainer> interfaces;
-	calibrateWorkers.GenerateValueArray(interfaces);
+	int count = 0;
+	for (auto entry : calibrateWorkers)
+	{
+		entry.Value.worker->StartBackgroundTask(threadPool);
+		count++;
+	}
+
 	Unlock();
 
-	for (int i = 0; i < interfaces.Num(); i++)
-		interfaces[i].worker->StartBackgroundTask();
-
-	UE_LOG(LogTemp, Log, TEXT("(INFO): Started %d Calibrate workers"), calibrateWorkerCount);
+	UE_LOG(LogTemp, Log, TEXT("(INFO): Started %d Calibrate workers"), count);
 }
 
 FJobInfo LensSolverWorkDistributor::RegisterJob(

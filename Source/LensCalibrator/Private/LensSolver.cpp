@@ -270,8 +270,9 @@ void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int
 
 	UE_LOG(LogTemp, Log, TEXT("Binded finished queue."));
 
-	LensSolverWorkDistributor::GetInstance().PrepareFindCornerWorkers(findCornersWorkerCount);
-	LensSolverWorkDistributor::GetInstance().PrepareCalibrateWorkers(calibrateWorkerCount);
+	// LensSolverWorkDistributor::GetInstance().PrepareFindCornerWorkers(findCornersWorkerCount);
+	// LensSolverWorkDistributor::GetInstance().PrepareCalibrateWorkers(calibrateWorkerCount);
+	LensSolverWorkDistributor::GetInstance().PrepareWorkers(findCornersWorkerCount, calibrateWorkerCount);
 }
 
 void ULensSolver::StopBackgroundImageprocessors()

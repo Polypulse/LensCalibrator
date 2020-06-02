@@ -39,6 +39,7 @@ private:
 
 	FCalibrationParameters cachedCalibrationParameters;
 
+	FQueuedThreadPool * threadPool;
 	TMap<FString, FWorkerFindCornersInterfaceContainer> findCornersWorkers;
 	TMap<FString, FWorkerCalibrateInterfaceContainer> calibrateWorkers;
 	bool shutDownWorkersAfterCompletedTasks;
@@ -78,6 +79,14 @@ private:
 
 	bool ValidateMediaTexture(const UMediaTexture* inputTexture);
 
+	void PrepareFindCornerWorkers(
+		int findCornerWorkerCount);
+	void PrepareCalibrateWorkers(
+		int calibrateWorkerCount);
+
+	void StopFindCornerWorkers();
+	void StopCalibrationWorkers();
+
 	void Lock();
 	void Unlock();
 
@@ -115,13 +124,11 @@ public:
 		shutDownWorkersAfterCompletedTasks = inputShutDownWorkersAfterCompletedTasks;
 	}
 
-	void PrepareFindCornerWorkers(
-		int findCornerWorkerCount);
-	void PrepareCalibrateWorkers(
-		int calibrateWorkerCount);
+	void PrepareWorkers(
+		int findCornerWorkerCount,
+		int calibrateWorkerCount
+	);
 
-	void StopFindCornerWorkers();
-	void StopCalibrationWorkers();
 	void StopBackgroundWorkers();
 
 	int GetFindCornerWorkerCount();
