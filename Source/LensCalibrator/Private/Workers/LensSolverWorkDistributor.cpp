@@ -17,18 +17,28 @@ void LensSolverWorkDistributor::PrepareWorkers(
 	int findCornerWorkerCount,
 	int calibrateWorkerCount)
 {
+	UE_LOG(LogTemp, Log, TEXT("Preparing workers."));
+
+	/*
 	if (threadPool != nullptr)
 	{
 		threadPool->Destroy();
 		threadPool = nullptr;
 	}
+	*/
 
-	threadPool = FQueuedThreadPool::Allocate();
-	uint threadPoolSize = (uint)(findCornerWorkerCount + calibrateWorkerCount);
-	if (!threadPool->Create(threadPoolSize))
+	if (threadPool == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Unable to create thread pool of size: %i"), threadPoolSize);
-		return;
+		threadPool = FQueuedThreadPool::Allocate();
+
+		uint threadPoolSize = 64;
+		if (!threadPool->Create(threadPoolSize))
+		{
+			UE_LOG(LogTemp, Error, TEXT("Unable to create thread pool of size: %i"), threadPoolSize);
+			return;
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("Allocated thread pool of size: %i"), threadPoolSize);
 	}
 
 	PrepareFindCornerWorkers(findCornerWorkerCount);
