@@ -3,44 +3,15 @@
 
 #include "BlitShader.h"
 #include "RHIStaticStates.h"
-// #include "SceneRenderTargetParameters.h"
-/*
-#include "CoreMinimal.h"
-#include "RHI.h"
-#include "RHICommandList.h"
-#include "RenderResource.h"
-#include "ShaderParameters.h"
-#include "Shader.h"
-#include "GlobalShader.h"
-#include "ShaderParameterUtils.h"
-#include "SceneRenderTargetParameters.h"
-*/
 
 FBlitShaderVS::FBlitShaderVS() {}
-
-FBlitShaderVS::FBlitShaderVS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer)
-{
-}
-
-bool FBlitShaderVS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
-{
-	return true;
-}
+FBlitShaderVS::FBlitShaderVS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer) {}
+bool FBlitShaderVS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) { return true; }
 
 template<typename TShaderRHIParamRef>
-void FBlitShaderVS::SetParameters(FRHICommandList& RHICmdList, const TShaderRHIParamRef ShaderRHI, const FGlobalShaderPermutationParameters& ShaderInputData)
-{
-}
-
-/*
-bool FBlitShaderVS::Serialize(FArchive& Ar) 
-{
-	return FGlobalShader::Serialize(Ar);
-}
-*/
+void FBlitShaderVS::SetParameters(FRHICommandList& RHICmdList, const TShaderRHIParamRef ShaderRHI, const FGlobalShaderPermutationParameters& ShaderInputData) {}
 
 FBlitShaderPS::FBlitShaderPS() {}
-
 FBlitShaderPS::FBlitShaderPS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer)
 {
 	InputTextureParameter.Bind(Initializer.ParameterMap, TEXT("InTexture"));
@@ -48,10 +19,7 @@ FBlitShaderPS::FBlitShaderPS(const ShaderMetaType::CompiledShaderInitializerType
 	flipDirectionParameter.Bind(Initializer.ParameterMap, TEXT("InFlipDirection"));
 }
 
-bool FBlitShaderPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
-{
-	return  IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
-}
+bool FBlitShaderPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) { return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5); }
 
 void FBlitShaderPS::SetParameters(
 	FRHICommandListImmediate& RHICmdList,
@@ -63,16 +31,3 @@ void FBlitShaderPS::SetParameters(
 
 	SetShaderValue(RHICmdList, RHICmdList.GetBoundPixelShader(), flipDirectionParameter, flipDirection);
 }
-
-/*
-bool FBlitShaderPS::Serialize(FArchive& Ar) 
-{
-	bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
-	Ar
-		<< InputTextureParameter
-		<< InputTextureSamplerParameter
-		<< flipDirectionParameter;
-
-	return bShaderHasOutdatedParameters;
-}
-*/

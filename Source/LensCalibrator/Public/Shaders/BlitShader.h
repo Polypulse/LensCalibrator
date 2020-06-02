@@ -22,7 +22,6 @@ public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters);
 	template<typename TShaderRHIParamRef>
 	void SetParameters(FRHICommandList& RHICmdList, const TShaderRHIParamRef ShaderRHI, const FGlobalShaderPermutationParameters& ShaderInputData);
-	// virtual bool Serialize(FArchive& Ar) override;
 };
 
 class FBlitShaderPS : public FGlobalShader
@@ -45,7 +44,6 @@ public:
 		FTextureRHIRef InputTexture,
 		FVector2D flipDirection);
 
-	// virtual bool Serialize(FArchive& Ar) override;
 };
 
 IMPLEMENT_GLOBAL_SHADER(FBlitShaderVS, "/LensCalibratorShaders/Private/Blit.usf", "MainVS", SF_Vertex);

@@ -177,11 +177,3 @@ void ULensSolverBlueprintAPI::StopBackgroundImageprocessors()
 	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
 	lensSolver->StopBackgroundImageprocessors();
 }
-
-/*
-void ULensSolverBlueprintAPI::Poll()
-{
-	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
-	lensSolver->Poll();
-}
-*/

@@ -21,7 +21,6 @@ public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters);
 	template<typename TShaderRHIParamRef>
 	void SetParameters(FRHICommandList& RHICmdList, const TShaderRHIParamRef ShaderRHI, const FGlobalShaderPermutationParameters& ShaderInputData);
-	// virtual bool Serialize(FArchive& Ar) override;
 };
 
 class FDistortionCorrectionMapGenerationPS : public FGlobalShader
@@ -29,11 +28,6 @@ class FDistortionCorrectionMapGenerationPS : public FGlobalShader
 	DECLARE_SHADER_TYPE(FDistortionCorrectionMapGenerationPS, Global);
 
 private:
-	/*
-	FShaderResourceParameter InputTextureParameter;
-	FShaderResourceParameter InputTextureSamplerParameter;
-	FShaderParameter flipDirectionParameter;
-	*/
 	LAYOUT_FIELD(FShaderParameter, distortionCoefficientsParameter);
 	LAYOUT_FIELD(FShaderParameter, normalizedPrincipalPointParameter);
 	LAYOUT_FIELD(FShaderParameter, generateInverseMapParameter);
@@ -49,8 +43,6 @@ public:
 		const FVector2D normalizedPrincipalPointParameter,
 		const TArray<float> inputDistortionCoefficients,
 		const bool generateInverseMap);
-
-	// virtual bool Serialize(FArchive& Ar) override;
 };
 
 IMPLEMENT_GLOBAL_SHADER(FDistortionCorrectionMapGenerationVS, "/LensCalibratorShaders/Private/DistortionCorrectionMapGeneration.usf", "MainVS", SF_Vertex);

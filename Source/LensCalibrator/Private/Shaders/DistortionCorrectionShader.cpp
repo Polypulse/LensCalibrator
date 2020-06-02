@@ -3,44 +3,15 @@
 
 #include "DistortionCorrectionShader.h"
 #include "RHIStaticStates.h"
-// #include "SceneRenderTargetParameters.h"
-/*
-#include "CoreMinimal.h"
-#include "RHI.h"
-#include "RHICommandList.h"
-#include "RenderResource.h"
-#include "ShaderParameters.h"
-#include "Shader.h"
-#include "GlobalShader.h"
-#include "ShaderParameterUtils.h"
-#include "SceneRenderTargetParameters.h"
-*/
 
 FDistortionCorrectionShaderVS::FDistortionCorrectionShaderVS() {}
-
-FDistortionCorrectionShaderVS::FDistortionCorrectionShaderVS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer)
-{
-}
-
-bool FDistortionCorrectionShaderVS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
-{
-	return true;
-}
+FDistortionCorrectionShaderVS::FDistortionCorrectionShaderVS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer) {}
+bool FDistortionCorrectionShaderVS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) { return true; }
 
 template<typename TShaderRHIParamRef>
-void FDistortionCorrectionShaderVS::SetParameters(FRHICommandList& RHICmdList, const TShaderRHIParamRef ShaderRHI, const FGlobalShaderPermutationParameters& ShaderInputData)
-{
-}
-
-/*
-bool FDistortionCorrectionShaderVS::Serialize(FArchive& Ar) 
-{
-	return FGlobalShader::Serialize(Ar);
-}
-*/
+void FDistortionCorrectionShaderVS::SetParameters(FRHICommandList& RHICmdList, const TShaderRHIParamRef ShaderRHI, const FGlobalShaderPermutationParameters& ShaderInputData) {}
 
 FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS() {}
-
 FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS(const ShaderMetaType::CompiledShaderInitializerType& Initializer) : FGlobalShader(Initializer)
 {
 	InputDistortedTextureParameter.Bind(Initializer.ParameterMap, TEXT("InDistortedTexture"));
@@ -52,10 +23,7 @@ FDistortionCorrectionShaderPS::FDistortionCorrectionShaderPS(const ShaderMetaTyp
 	reverseParameter.Bind(Initializer.ParameterMap, TEXT("InReverse"));
 }
 
-bool FDistortionCorrectionShaderPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
-{
-	return  IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
-}
+bool FDistortionCorrectionShaderPS::ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) { return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5); }
 
 void FDistortionCorrectionShaderPS::SetParameters(
 	FRHICommandListImmediate& RHICmdList,
@@ -71,18 +39,3 @@ void FDistortionCorrectionShaderPS::SetParameters(
 
 	SetShaderValue(RHICmdList, RHICmdList.GetBoundPixelShader(), reverseParameter, (reverse ? 1 : 0));
 }
-
-/*
-bool FDistortionCorrectionShaderPS::Serialize(FArchive& Ar) 
-{
-	bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
-	Ar
-		<< InputDistortedTextureParameter
-		<< InputDistortedTextureSamplerParameter
-		<< InputDistortionCorrectionTextureParameter
-		<< InputDistortionCorrectionTextureSamplerParameter
-		<< reverseParameter;
-
-	return bShaderHasOutdatedParameters;
-}
-*/

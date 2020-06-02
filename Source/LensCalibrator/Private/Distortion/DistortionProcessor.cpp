@@ -66,8 +66,8 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	distortionCoefficients[3] = distortionCorrectionMapGenerationParams.p2;
 	distortionCoefficients[4] = distortionCorrectionMapGenerationParams.k3;
 
-	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::DontLoad_DontStore);
-	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
+	FRHIRenderPassInfo distortionCorrectionRP(distortionCorrectionRenderTexture, ERenderTargetActions::DontLoad_DontStore);
+	RHICmdList.BeginRenderPass(distortionCorrectionRP, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
 		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
@@ -108,7 +108,8 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 
 	UE_LOG(LogTemp, Log, TEXT("Wrote distortion correction map to path: \"%s\"."), *correctionFilePath);
 
-	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateInverseDistortionCorrectionMapPass"));
+	FRHIRenderPassInfo distortionUncorrectionRP(distortionCorrectionRenderTexture, ERenderTargetActions::DontLoad_DontStore);
+	RHICmdList.BeginRenderPass(distortionUncorrectionRP, TEXT("GenerateInverseDistortionCorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
 		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
