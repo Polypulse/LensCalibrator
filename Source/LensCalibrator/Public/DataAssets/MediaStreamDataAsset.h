@@ -24,9 +24,6 @@ public:
 	UMediaStreamParametersDataAsset * mediaStreamParametersDataAsset;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FGenericLensSolverParameters genericLensSolverParameters;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	UGenericLensSolverParametersDataAsset * genericLensSolverParametersDataAsset;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
