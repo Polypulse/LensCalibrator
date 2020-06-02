@@ -66,7 +66,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	distortionCoefficients[3] = distortionCorrectionMapGenerationParams.p2;
 	distortionCoefficients[4] = distortionCorrectionMapGenerationParams.k3;
 
-	FRHIRenderPassInfo distortionCorrectionRPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Load_DontStore);
+	FRHIRenderPassInfo distortionCorrectionRPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_Store);
 	RHICmdList.BeginRenderPass(distortionCorrectionRPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
@@ -122,7 +122,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 		distortionUncorrectionRenderTexture,
 		dummyTexRef);
 
-	FRHIRenderPassInfo distortionUncorrectionRPInfo(distortionUncorrectionRenderTexture, ERenderTargetActions::Load_DontStore);
+	FRHIRenderPassInfo distortionUncorrectionRPInfo(distortionUncorrectionRenderTexture, ERenderTargetActions::Clear_Store);
 	RHICmdList.BeginRenderPass(distortionUncorrectionRPInfo, TEXT("GenerateDistortionUncorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
