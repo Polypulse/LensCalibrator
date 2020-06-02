@@ -35,7 +35,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 		height,
 		EPixelFormat::PF_FloatRGBA,
 		1,
-		TexCreate_Transient,
+		TexCreate_None,
 		TexCreate_RenderTargetable,
 		false,
 		createInfo,
@@ -58,21 +58,6 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 
 	UE_LOG(LogTemp, Log, TEXT("%s"), *message);
 
-	const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
-	const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
-
-	TShaderMapRef<FDistortionCorrectionMapGenerationVS> VertexShader(GlobalShaderMap);
-	TShaderMapRef<FDistortionCorrectionMapGenerationPS> PixelShader(GlobalShaderMap);
-
-	FGraphicsPipelineStateInitializer GraphicsPSOInit;
-	GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGB, BO_Add, BF_One, BF_SourceAlpha>::GetRHI();
-	GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
-	GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
-	GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
-	GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
-	GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
-	GraphicsPSOInit.PrimitiveType = PT_TriangleList;
-
 	TArray<float> distortionCoefficients;
 	distortionCoefficients.SetNum(5);
 	distortionCoefficients[0] = distortionCorrectionMapGenerationParams.k1;
@@ -84,8 +69,24 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	FRHIRenderPassInfo RPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::DontLoad_DontStore);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
+		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
+		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
+
+		TShaderMapRef<FDistortionCorrectionMapGenerationVS> VertexShader(GlobalShaderMap);
+		TShaderMapRef<FDistortionCorrectionMapGenerationPS> PixelShader(GlobalShaderMap);
+
+		FGraphicsPipelineStateInitializer GraphicsPSOInit;
+		GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGB, BO_Add, BF_One, BF_SourceAlpha>::GetRHI();
+		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
+		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
+		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+
 		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
 		RHICmdList.SetViewport(0, 0, 0.0f, width, height, 1.0f);
+
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
 		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCoefficients, false);
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
@@ -109,8 +110,24 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("GenerateInverseDistortionCorrectionMapPass"));
 	{
+		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
+		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
+
+		TShaderMapRef<FDistortionCorrectionMapGenerationVS> VertexShader(GlobalShaderMap);
+		TShaderMapRef<FDistortionCorrectionMapGenerationPS> PixelShader(GlobalShaderMap);
+
+		FGraphicsPipelineStateInitializer GraphicsPSOInit;
+		GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGB, BO_Add, BF_One, BF_SourceAlpha>::GetRHI();
+		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
+		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
+		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+
 		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
 		RHICmdList.SetViewport(0, 0, 0.0f, width, height, 1.0f);
+
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
 		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCoefficients, true);
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
