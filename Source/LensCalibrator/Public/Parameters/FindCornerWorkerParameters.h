@@ -34,10 +34,10 @@ struct FFindCornerWorkerParameters
 	bool flipY;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	bool writeDebugTextureToFile;
+	bool writeCornerVisualizationTextureToFile;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString debugTextureOutputPath;
+	FString cornerVisualizationTextureOutputPath;
 
 	FFindCornerWorkerParameters()
 	{
@@ -48,8 +48,8 @@ struct FFindCornerWorkerParameters
 		resizePercentage = 0.5f;
 		flipX = false;
 		flipY = false;
-		writeDebugTextureToFile = false;
-		debugTextureOutputPath = "";
+		writeCornerVisualizationTextureToFile = false;
+		cornerVisualizationTextureOutputPath = "";
 	};
 };
 

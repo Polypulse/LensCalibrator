@@ -112,10 +112,18 @@ struct FTextureSearchParameters
 	float checkerBoardSquareSizeMM;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FIntPoint checkerBoardCornerCount;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	bool writeDebugTextureToFile;
+	bool writePreCornerDetectionTextureToFile;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	FString debugTextureOutputPath;
+	FString preCornerDetectionTextureOutputPath;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	bool writeCornerVisualizationTextureToFile;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FString cornerVisualizationTextureOutputPath;
 
 	FTextureSearchParameters()
 	{
@@ -125,8 +133,8 @@ struct FTextureSearchParameters
 		exhaustiveSearch = false;
 		checkerBoardSquareSizeMM = 12.7f;
 		checkerBoardCornerCount = FIntPoint(12, 8);
-		writeDebugTextureToFile = false;
-		debugTextureOutputPath = "";
+		writeCornerVisualizationTextureToFile = false;
+		cornerVisualizationTextureOutputPath = "";
 	}
 };
 
