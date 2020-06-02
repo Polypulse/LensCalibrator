@@ -172,6 +172,12 @@ struct FMediaStreamParameters
 	float zoomLevel;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	bool writePreBlitRenderTextureToFile;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FString preBlitRenderTextureOutputPath;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool writePostBlitRenderTextureToFile;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
@@ -184,5 +190,10 @@ struct FMediaStreamParameters
 		currentStreamSnapshotCount = 0;
 		streamSnapshotIntervalFrequencyInSeconds = 2.0f;
 		zoomLevel = 0.0f;
+
+		writePreBlitRenderTextureToFile = false;
+		preBlitRenderTextureOutputPath = "";
+		writePostBlitRenderTextureToFile = false;
+		postBlitRenderTextureOutputPath = "";
 	}
 };

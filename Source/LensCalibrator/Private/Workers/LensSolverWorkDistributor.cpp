@@ -814,6 +814,33 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	if (!ValidateMediaTexture(mediaStreamWorkUnit.mediaStreamParameters.mediaTexture))
 		return;
 
+	if (mediaStreamWorkUnit.mediaStreamParameters.writePreBlitRenderTextureToFile)
+	{
+		FString outputPath = mediaStreamWorkUnit.mediaStreamParameters.preBlitRenderTextureOutputPath;
+		FString backupOutputDir = FPaths::ProjectSavedDir();
+		FString folder("MediaStreamPreBlitSnapshot");
+
+		backupOutputDir = FPaths::Combine(backupOutputDir, folder);
+
+		if (LensSolverUtilities::ValidateFilePath(outputPath, backupOutputDir, "MediaStreamSnapshot", "bmp"))
+		{
+			FReadSurfaceDataFlags ReadDataFlags;
+			ReadDataFlags.SetLinearToGamma(false);
+			ReadDataFlags.SetOutputStencil(false);
+			ReadDataFlags.SetMip(0);
+
+			int mediaTextureWidth = mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth();
+			int mediaTextureHeight = mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight();
+
+			TArray<FColor> pixels;
+			RHICmdList.ReadSurfaceData(mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->TextureReference.TextureReferenceRHI->GetReferencedTexture(), FIntRect(0, 0, mediaTextureWidth, mediaTextureHeight), pixels, ReadDataFlags);
+			uint32 ExtendXWithMSAA = pixels.Num() / mediaTextureHeight;
+
+			FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, mediaTextureHeight, pixels.GetData());
+			UE_LOG(LogTemp, Log, TEXT("Wrote pre blit input texture to file: \"%s\"."), *outputPath);
+		}
+	}
+
 	int width = mediaStreamWorkUnit.textureSearchParameters.resize ? mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth() * mediaStreamWorkUnit.textureSearchParameters.resizePercentage : mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth();
 	int height = mediaStreamWorkUnit.textureSearchParameters.resize ? mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight() * mediaStreamWorkUnit.textureSearchParameters.resizePercentage : mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight();
 
@@ -876,12 +903,12 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	{
 		FString outputPath = mediaStreamWorkUnit.mediaStreamParameters.postBlitRenderTextureOutputPath;
 		FString backupOutputDir = FPaths::ProjectSavedDir();
-		FString folder("PostBlitRenderTextureOutput");
+		FString folder("MediaStreamPostBlitSnapshot");
 		backupOutputDir = FPaths::Combine(backupOutputDir, folder);
-		if (LensSolverUtilities::ValidateFilePath(outputPath, backupOutputDir, "PostBlitRenderTexture", "bmp"))
+		if (LensSolverUtilities::ValidateFilePath(outputPath, backupOutputDir, "MediaStreamSnapshot", "bmp"))
 		{
 			FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, texture2D->GetSizeY(), surfaceData.GetData());
-			UE_LOG(LogTemp, Log, TEXT("Wrote blit render texture to file: \"%s\"."), *outputPath);
+			UE_LOG(LogTemp, Log, TEXT("Wrote post blit input texture to file: \"%s\"."), *outputPath);
 		}
 	}
 
