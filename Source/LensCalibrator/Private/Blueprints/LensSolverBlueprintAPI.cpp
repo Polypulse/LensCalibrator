@@ -153,10 +153,27 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 
 void ULensSolverBlueprintAPI::OverrideCompositingMaterialScalarParam(
 	FCompositingMaterial inputCompositingMaterial,
+	const FName paramName,
 	float scalarValue,
 	FCompositingMaterial & outputCompositingMaterial)
 {
 	inputCompositingMaterial.SetScalarOverride(paramName, scalarValue);
+	outputCompositingMaterial = inputCompositingMaterial;
+}
+
+UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
+void ULensSolverBlueprintAPI::OverrideArrayOfCompositingMaterialScalarParam(
+	FCompositingMaterial inputCompositingMaterial,
+	const TArray<FName> paramNames,
+	TArray<float> scalarValues,
+	FCompositingMaterial& outputCompositingMaterial)
+{
+	if (paramNames.Num() != scalarValues.Num())
+		UE_LOG(LogTemp, Error, TEXT("The param name and scalar value array count does not match when attempting to override parameters in a compositing material."));
+
+	for (int i = 0; i < paramNames.Num(); i++)
+		inputCompositingMaterial.SetScalarOverride(paramNames[i], scalarValues[i]);
+
 	outputCompositingMaterial = inputCompositingMaterial;
 }
 

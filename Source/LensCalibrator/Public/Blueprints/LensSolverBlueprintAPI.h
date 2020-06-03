@@ -78,6 +78,13 @@ public:
 		float scalarValue,
 		FCompositingMaterial & outputCompositingMaterial);
 
+	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
+	static void OverrideArrayOfCompositingMaterialScalarParam(
+		FCompositingMaterial inputCompositingMaterial,
+		const TArray<FName> paramNames, 
+		TArray<float> scalarValues,
+		FCompositingMaterial & outputCompositingMaterial);
+
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	static void StartBackgroundImageProcessors(
 		int findCornersWorkerCount,
