@@ -153,6 +153,11 @@ FString LensSolverUtilities::GenerateGenericOutputPath(const FString & subFolder
 	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), subFolder));
 }
 
+FString LensSolverUtilities::GenerateGenericDistortionCorrectionMapOutputPath(const FString& subFolder)
+{
+	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectContentDir(), subFolder));
+}
+
 bool LensSolverUtilities::CreateTexture2D(
 	void * rawData, 
 	int width,

@@ -421,16 +421,16 @@ void UDistortionProcessor::GenerateDistortionCorrectionMap(
 		return;
 	}
 
-	static const FString backupOutputPath = LensSolverUtilities::GenerateGenericOutputPath(FString("DistortionCorrectionMaps/"));
+	static const FString backupOutputPath = LensSolverUtilities::GenerateGenericDistortionCorrectionMapOutputPath(FString("DistortionCorrectionMaps/"));
 	FString correctionOutputPath = distortionCorrectionMapGenerationParams.correctionOutputPath;
-	if (!LensSolverUtilities::ValidateFilePath(correctionOutputPath, backupOutputPath, FString("DistortionCorrectionMap"), FString("png")))
+	if (!LensSolverUtilities::ValidateFilePath(correctionOutputPath, backupOutputPath, FString("DistortionCorrectionMap"), FString("exr")))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate distortion correction map, unable to create folder path: \"%s\"."), *correctionOutputPath);
 		return;
 	}
 
 	FString inverseCorrectionOutputPath = distortionCorrectionMapGenerationParams.inverseCorrectionOutputPath;
-	if (!LensSolverUtilities::ValidateFilePath(inverseCorrectionOutputPath, backupOutputPath, FString("InverseDistortionCorrectionMap"), FString("png")))
+	if (!LensSolverUtilities::ValidateFilePath(inverseCorrectionOutputPath, backupOutputPath, FString("DistortionUncorrectionMap"), FString("exr")))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot generate inverse distortion correction map, unable to create folder path: \"%s\"."), *inverseCorrectionOutputPath);
 		return;

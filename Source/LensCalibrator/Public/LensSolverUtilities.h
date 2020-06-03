@@ -26,6 +26,7 @@ public:
 	static bool GetFilesInFolder(const FString& folder, TArray<FString>& files);
 
 	static FString GenerateGenericOutputPath(const FString & subFolder);
+	static FString GenerateGenericDistortionCorrectionMapOutputPath(const FString & subFolder);
 
 	static bool CreateTexture2D(
 		void * rawData,
