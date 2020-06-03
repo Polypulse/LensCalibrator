@@ -1,3 +1,6 @@
+/* Copyright (C) Polypulse LLC - All Rights Reserved
+ * Written by Sean Connor <sean@polypulse.io>, April 2020 */
+
 #include "WrapperInterface.h"
 #include "WrapperLogQueue.h"
 #include <string>

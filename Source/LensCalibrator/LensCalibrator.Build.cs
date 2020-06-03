@@ -5,6 +5,7 @@ using System.IO;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Security.AccessControl;
 
 public class LensCalibrator : ModuleRules
 {
@@ -17,6 +18,7 @@ public class LensCalibrator : ModuleRules
 		PublicIncludePaths.AddRange(
 			new string[]
 			{
+				Path.Combine(EngineDirectory, "Plugins/Compositing/Composure/Source/Composure/Public/CompositingElements"),
 				"Runtime/MediaAssets/Public",
 				"Runtime/ImageWriteQueue/Public"
 			}
@@ -50,6 +52,8 @@ public class LensCalibrator : ModuleRules
 			}
 		);
 
+		string[] directories = Directory.GetDirectories(Path.Combine(ModuleDirectory, "Public/"));
+
 		PrivateIncludePaths.AddRange(
 			new string[]
 			{
@@ -58,13 +62,13 @@ public class LensCalibrator : ModuleRules
 			}
 		);
 
+		if (directories.Length > 0)
+			PrivateIncludePaths.AddRange(directories);
+
 		ConfigureOpenCV(isDebug, new string[1]
-			{
-				// "OpenCV",
-				"OpenCVWrapper"
-			});
-		// ConfigureOpenCVWrapper(isDebug);
-		// ConfigureDynamicOpenCVWrapper(isDebug);
+		{
+			"OpenCVWrapper"
+		});
 	}
 
 	private void ConfigureDynamicOpenCVWrapper (bool isDebug)
