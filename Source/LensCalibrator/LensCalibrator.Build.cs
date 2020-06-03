@@ -43,6 +43,7 @@ public class LensCalibrator : ModuleRules
 				"ImageWrapper",
 				"ImageWriteQueue",
 				"Composure",
+				"MediaFrameworkUtilities",
 				"RHI",
 				"Json",
 				"JsonUtilities"

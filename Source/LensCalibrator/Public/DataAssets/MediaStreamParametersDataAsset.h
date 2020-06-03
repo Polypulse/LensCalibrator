@@ -4,15 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
+#include "MediaBundle.h"
 #include "Engine/DataAsset.h"
 
 #include "MediaStreamParametersDataAsset.generated.h"
 
 UENUM(BlueprintType)
-enum UInputMediaType
+enum class UInputMediaType : uint8
 {
 	MediaPlayer UMETA(DisplayName = "Media Player"),
-	MediaBundlekj UMETA(DisplayName = "Media Bundle")
+	MediaBundle UMETA(DisplayName = "Media Bundle")
 };
 
 UCLASS(BlueprintType)
@@ -34,5 +35,5 @@ public:
 	FString url;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	UMediaBundle mediaBundle;
+	UMediaBundle * mediaBundle;
 };

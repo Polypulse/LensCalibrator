@@ -7,7 +7,7 @@
 #include "JobType.generated.h"
 
 UENUM(BlueprintType)
-enum UJobType
+enum class UJobType : uint8
 {
 	OneTime UMETA(DisplayName = "One Time"),
 	Continuous UMETA(DisplayName = "Continuous")

@@ -9,16 +9,6 @@
 
 #include "LensSolverWorkerParameters.h"
 
-/*
-UENUM(BlueprintType)
-enum class ELensSolverWorkUnitType : uint8
-{
-	PixelArray,
-	TextureFile,
-	Calibrate
-};
-*/
-
 struct FLensSolverTextureWorkUnit
 {
 	FBaseParameters baseParameters;

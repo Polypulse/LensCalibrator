@@ -144,7 +144,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	}
 
 	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(calibrationParameters);
-	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, useCount, OneTime);
+	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, useCount, UJobType::OneTime);
 	for (int ci = 0; ci < useCount; ci++)
 	{
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
@@ -221,7 +221,7 @@ void ULensSolver::StartMediaStreamCalibration(
 	expectedImageCounts.Add(mediaStreamParameters.expectedStreamSnapshotCount);
 
 	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(calibrationParameters);
-	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, 1, OneTime);
+	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, 1, UJobType::Continuous);
 
 	FMediaStreamWorkUnit workUnit;
 	workUnit.baseParameters.jobID												= ouptutJobInfo.jobID;

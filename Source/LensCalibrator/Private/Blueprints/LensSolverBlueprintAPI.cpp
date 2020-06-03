@@ -27,6 +27,7 @@ void ULensSolverBlueprintAPI::StartMediaStreamCalibration(
 	FTextureSearchParameters textureSearchParameters,
 	FCalibrationParameters calibrationParameters,
 	FMediaStreamParameters mediaStreamParameters,
+	UMediaTexture * mediaTexture,
 	FJobInfo& ouptutJobInfo)
 {
 	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
