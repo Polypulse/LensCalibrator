@@ -44,7 +44,6 @@ public:
 		FTextureSearchParameters textureSearchParameters,
 		FCalibrationParameters calibrationParameters,
 		FMediaStreamParameters mediaStreamParameters,
-		UMediaTexture * mediaTexture,
 		FJobInfo& ouptutJobInfo);
 
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")

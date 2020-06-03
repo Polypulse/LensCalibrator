@@ -27,7 +27,6 @@ void ULensSolverBlueprintAPI::StartMediaStreamCalibration(
 	FTextureSearchParameters textureSearchParameters,
 	FCalibrationParameters calibrationParameters,
 	FMediaStreamParameters mediaStreamParameters,
-	UMediaTexture * mediaTexture,
 	FJobInfo& ouptutJobInfo)
 {
 	ULensSolver* lensSolver = FLensCalibratorModule::Get().GetLensSolver();
@@ -154,11 +153,11 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 
 void ULensSolverBlueprintAPI::OverrideCompositingMaterialScalarParam(
 	FCompositingMaterial inputCompositingMaterial,
-	const FName paramName, 
 	float scalarValue,
 	FCompositingMaterial & outputCompositingMaterial)
 {
 	inputCompositingMaterial.SetScalarOverride(paramName, scalarValue);
+	outputCompositingMaterial = inputCompositingMaterial;
 }
 
 void ULensSolverBlueprintAPI::StartBackgroundImageProcessors(
