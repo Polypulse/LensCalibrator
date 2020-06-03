@@ -8,6 +8,13 @@
 
 #include "MediaStreamParametersDataAsset.generated.h"
 
+UENUM(BlueprintType)
+enum UInputMediaType
+{
+	MediaPlayer UMETA(DisplayName = "Media Player"),
+	MediaBundlekj UMETA(DisplayName = "Media Bundle")
+};
+
 UCLASS(BlueprintType)
 class UMediaStreamParametersDataAsset : public UDataAsset
 {
@@ -18,8 +25,14 @@ public:
 	FMediaStreamParameters mediaStreamParameters;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UInputMediaType inputMediaType;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	UMediaPlayer * mediaPlayer;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FString url;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UMediaBundle mediaBundle;
 };
