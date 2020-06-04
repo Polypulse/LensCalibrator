@@ -145,6 +145,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 
 	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(calibrationParameters);
 	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, useCount, UJobType::OneTime);
+
 	for (int ci = 0; ci < useCount; ci++)
 	{
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)

@@ -24,10 +24,19 @@ struct FGenericLensSolverParameters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool shutDownWorkersAfterCompletedTasks;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FString distortionCorrectionMapOutputPath;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	FString distortionUncorrectionMapOutputPath;
+
 	FGenericLensSolverParameters()
 	{
 		cornerWorkerCount = 3;
 		calibrateWorkerCount = 1;
 		shutDownWorkersAfterCompletedTasks = true;
+
+		distortionCorrectionMapOutputPath = "";
+		distortionUncorrectionMapOutputPath = "";
 	}
 };

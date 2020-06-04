@@ -652,20 +652,17 @@ void LensSolverWorkDistributor::PollShutdownFindCornerWorkersIfNecessary()
 
 void LensSolverWorkDistributor::PollShutdownAllWorkersIfNecessary()
 {
-	if (!shutDownWorkersAfterCompletedTasks)
+	if (!shutDownWorkersAfterCompletedTasks || jobs.Num() != 0)
 		return;
 
 	TQueue<IsClosingOutputDel*> isClosingDelQueue;
 	Lock();
 
-	if (jobs.Num() == 0)
-	{
-		for (auto workerContainer : findCornersWorkers)
-			isClosingDelQueue.Enqueue(&workerContainer.Value.baseContainer.isClosingDel);
+	for (auto workerContainer : findCornersWorkers)
+		isClosingDelQueue.Enqueue(&workerContainer.Value.baseContainer.isClosingDel);
 
-		for (auto workerContainer : calibrateWorkers)
-			isClosingDelQueue.Enqueue(&workerContainer.Value.baseContainer.isClosingDel);
-	}
+	for (auto workerContainer : calibrateWorkers)
+		isClosingDelQueue.Enqueue(&workerContainer.Value.baseContainer.isClosingDel);
 
 	Unlock();
 
