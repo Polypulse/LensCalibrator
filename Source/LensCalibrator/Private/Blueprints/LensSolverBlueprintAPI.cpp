@@ -94,6 +94,12 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 		return false;
 	}
 
+	if (distortionCorrectionMaps[0] == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("The first entry of the distortion correction map array is NULL."));
+		return false;
+	}
+
 	int width = distortionCorrectionMaps[0]->GetSizeX();
 	int height = distortionCorrectionMaps[0]->GetSizeY();
 

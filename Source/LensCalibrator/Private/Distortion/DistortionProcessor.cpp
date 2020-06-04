@@ -35,7 +35,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 		height,
 		EPixelFormat::PF_FloatRGBA,
 		1,
-		TexCreate_Transient,
+		TexCreate_None,
 		TexCreate_RenderTargetable,
 		false,
 		createInfo,
@@ -66,7 +66,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	distortionCoefficients[3] = distortionCorrectionMapGenerationParams.p2;
 	distortionCoefficients[4] = distortionCorrectionMapGenerationParams.k3;
 
-	FRHIRenderPassInfo distortionCorrectionRPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_Store);
+	FRHIRenderPassInfo distortionCorrectionRPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_DontStore, distortionCorrectionRenderTexture->GetTextureReference());
 	RHICmdList.BeginRenderPass(distortionCorrectionRPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
@@ -76,8 +76,8 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 		TShaderMapRef<FDistortionCorrectionMapGenerationPS> PixelShader(GlobalShaderMap);
 
 		FGraphicsPipelineStateInitializer GraphicsPSOInit;
-		GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGB, BO_Add, BF_One, BF_SourceAlpha>::GetRHI();
-		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
+		GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
 		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
 		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
 		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
@@ -115,14 +115,14 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 		height,
 		EPixelFormat::PF_FloatRGBA,
 		1,
-		TexCreate_Transient,
+		TexCreate_None,
 		TexCreate_RenderTargetable,
 		false,
 		createInfo,
 		distortionUncorrectionRenderTexture,
 		dummyTexRef);
 
-	FRHIRenderPassInfo distortionUncorrectionRPInfo(distortionUncorrectionRenderTexture, ERenderTargetActions::Clear_Store);
+	FRHIRenderPassInfo distortionUncorrectionRPInfo(distortionUncorrectionRenderTexture, ERenderTargetActions::Clear_DontStore, distortionUncorrectionRenderTexture->GetTextureReference());
 	RHICmdList.BeginRenderPass(distortionUncorrectionRPInfo, TEXT("GenerateDistortionUncorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
@@ -132,9 +132,9 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 		TShaderMapRef<FDistortionCorrectionMapGenerationPS> PixelShader(GlobalShaderMap);
 
 		FGraphicsPipelineStateInitializer GraphicsPSOInit;
-		GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGB, BO_Add, BF_One, BF_SourceAlpha>::GetRHI();
-		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
-		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+		GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<true, CF_Always>::GetRHI();
 		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
 		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
 		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
