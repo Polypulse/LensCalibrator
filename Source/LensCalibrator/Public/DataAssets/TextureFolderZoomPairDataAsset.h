@@ -16,6 +16,15 @@
 #include "TextureFolderZoomPairDataAsset.generated.h"
 
 UCLASS(BlueprintType)
+class UTextureFolderZoomPairDataAssetWrapper : public UDataAsset
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UTextureFolderZoomPairDataAsset * textureFolderZoomPairDataAsset;
+};
+
+UCLASS(BlueprintType)
 class UTextureFolderZoomPairDataAsset : public UDataAsset
 {
 	GENERATED_BODY()

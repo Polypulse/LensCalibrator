@@ -15,6 +15,16 @@
 #include "MediaStreamDataAsset.generated.h"
 
 UCLASS(BlueprintType)
+class UMediaStreamDataAssetWrapper : public UDataAsset
+{
+	GENERATED_BODY()
+public:
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	UMediaStreamDataAsset * mediaStreamDataAsset;
+};
+
+UCLASS(BlueprintType)
 class UMediaStreamDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
