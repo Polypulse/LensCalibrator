@@ -19,28 +19,13 @@
 void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	FRHICommandListImmediate& RHICmdList,
 	const FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
+	UTextureRenderTarget2D* renderTarget,
 	const FString correctionFilePath,
 	const FString inverseCorrectionFilePath)
 {
 	FIntRect rect = FIntRect(0, 0, distortionCorrectionMapGenerationParams.outputMapResolution.X, distortionCorrectionMapGenerationParams.outputMapResolution.Y);
 	int width = distortionCorrectionMapGenerationParams.outputMapResolution.X;
 	int height = distortionCorrectionMapGenerationParams.outputMapResolution.Y;
-
-	FTexture2DRHIRef distortionCorrectionRenderTexture;
-	FRHIResourceCreateInfo createInfo;
-	FTexture2DRHIRef dummyTexRef;
-
-	RHICreateTargetableShaderResource2D(
-		width,
-		height,
-		EPixelFormat::PF_FloatRGBA,
-		1,
-		TexCreate_None,
-		TexCreate_RenderTargetable,
-		false,
-		createInfo,
-		distortionCorrectionRenderTexture,
-		dummyTexRef);
 
 	FVector2D normalizedPrincipalPoint = FVector2D(
 		distortionCorrectionMapGenerationParams.sourcePrincipalPixelPoint.X / (float)distortionCorrectionMapGenerationParams.sourceResolution.X,
@@ -66,7 +51,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	distortionCoefficients[3] = distortionCorrectionMapGenerationParams.p2;
 	distortionCoefficients[4] = distortionCorrectionMapGenerationParams.k3;
 
-	FRHIRenderPassInfo distortionCorrectionRPInfo(distortionCorrectionRenderTexture, ERenderTargetActions::Clear_DontStore, distortionCorrectionRenderTexture->GetTextureReference());
+	FRHIRenderPassInfo distortionCorrectionRPInfo(renderTarget->TextureReference.TextureReferenceRHI->GetReferencedTexture(), ERenderTargetActions::DontLoad_DontStore);
 	RHICmdList.BeginRenderPass(distortionCorrectionRPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
@@ -77,7 +62,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 
 		FGraphicsPipelineStateInitializer GraphicsPSOInit;
 		GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
-		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
 		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
 		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
 		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
@@ -93,10 +78,9 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	}
 	RHICmdList.EndRenderPass();
 
-	FRHITexture2D * texture2D = distortionCorrectionRenderTexture->GetTexture2D();
 	TArray<FFloat16Color> pixels;
 
-	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixels, (ECubeFace)0, 0, 0);
+	RHICmdList.ReadSurfaceFloatData(renderTarget->TextureReference.TextureReferenceRHI->GetReferencedTexture(), rect, pixels, (ECubeFace)0, 0, 0);
 
 	TUniquePtr<TImagePixelData<FFloat16Color>> pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
 	pixelData->Pixels = pixels;
@@ -108,22 +92,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 
 	UE_LOG(LogTemp, Log, TEXT("Wrote distortion correction map to path: \"%s\"."), *correctionFilePath);
 
-	FTexture2DRHIRef distortionUncorrectionRenderTexture;
-
-	RHICreateTargetableShaderResource2D(
-		width,
-		height,
-		EPixelFormat::PF_FloatRGBA,
-		1,
-		TexCreate_None,
-		TexCreate_RenderTargetable,
-		false,
-		createInfo,
-		distortionUncorrectionRenderTexture,
-		dummyTexRef);
-
-	FRHIRenderPassInfo distortionUncorrectionRPInfo(distortionUncorrectionRenderTexture, ERenderTargetActions::Clear_DontStore, distortionUncorrectionRenderTexture->GetTextureReference());
-	RHICmdList.BeginRenderPass(distortionUncorrectionRPInfo, TEXT("GenerateDistortionUncorrectionMapPass"));
+	RHICmdList.BeginRenderPass(distortionCorrectionRPInfo, TEXT("GenerateDistortionUncorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
 		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
@@ -133,8 +102,8 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 
 		FGraphicsPipelineStateInitializer GraphicsPSOInit;
 		GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
-		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
-		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<true, CF_Always>::GetRHI();
+		GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
+		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
 		GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
 		GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
 		GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
@@ -149,8 +118,8 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	}
 	RHICmdList.EndRenderPass();
 
-	texture2D = distortionUncorrectionRenderTexture->GetTexture2D();
-	RHICmdList.ReadSurfaceFloatData(texture2D, rect, pixels, (ECubeFace)0, 0, 0);
+	// texture2D = distortionUncorrectionRenderTexture->GetTexture2D();
+	RHICmdList.ReadSurfaceFloatData(renderTarget->TextureReference.TextureReferenceRHI->GetReferencedTexture(), rect, pixels, (ECubeFace)0, 0, 0);
 
 	pixelData = MakeUnique<TImagePixelData<FFloat16Color>>(rect.Size());
 	pixelData->Pixels = pixels;
@@ -168,8 +137,8 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	distortionCorrectionMapGenerationResults.id = distortionCorrectionMapGenerationParams.id;
 	distortionCorrectionMapGenerationResults.distortionCorrectionPixels = distortionCorrectionPixels;
 	distortionCorrectionMapGenerationResults.inverseDistortionCorrectionPixels = inverseDistortionCorrectionPixels;
-	distortionCorrectionMapGenerationResults.width = texture2D->GetSizeX();
-	distortionCorrectionMapGenerationResults.height = texture2D->GetSizeY();
+	distortionCorrectionMapGenerationResults.width = renderTarget->GetSurfaceWidth();
+	distortionCorrectionMapGenerationResults.height = renderTarget->GetSurfaceHeight();
 
 	queuedDistortionCorrectionMapResults.Enqueue(distortionCorrectionMapGenerationResults);
 }
@@ -452,13 +421,22 @@ void UDistortionProcessor::GenerateDistortionCorrectionMap(
 		distortionCorrectionMapGenerationParams.outputMapResolution.X,
 		distortionCorrectionMapGenerationParams.outputMapResolution.Y);
 
+	UTextureRenderTarget2D* renderTarget = NewObject<UTextureRenderTarget2D>();
+	renderTarget->AddToRoot();
+	renderTarget->ClearColor = FLinearColor(0.0f, 0.0f, 1.0f);
+	renderTarget->ClearColor.A = 1.0f;
+	renderTarget->TargetGamma = 0.0f;
+	renderTarget->SRGB = 0;
+	renderTarget->InitCustomFormat(distortionCorrectionMapGenerationParams.outputMapResolution.X, distortionCorrectionMapGenerationParams.outputMapResolution.Y, EPixelFormat::PF_FloatRGBA, true);
+
 	ENQUEUE_RENDER_COMMAND(GenerateDistortionCorrectionMap)
 	(
-		[distortionProcessor, temp, correctionOutputPath, inverseCorrectionOutputPath](FRHICommandListImmediate& RHICmdList)
+		[distortionProcessor, temp, renderTarget, correctionOutputPath, inverseCorrectionOutputPath](FRHICommandListImmediate& RHICmdList)
 		{
 			distortionProcessor->GenerateDistortionCorrectionMapRenderThread(
 				RHICmdList,
 				temp,
+				renderTarget,
 				correctionOutputPath,
 				inverseCorrectionOutputPath);
 		}

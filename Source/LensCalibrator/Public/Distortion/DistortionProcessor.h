@@ -29,6 +29,7 @@ private:
 	void GenerateDistortionCorrectionMapRenderThread(
 		FRHICommandListImmediate& RHICmdList,
 		FDistortionCorrectionMapGenerationParameters distortionCorrectionMapGenerationParams,
+		UTextureRenderTarget2D* renderTarget,
 		const FString correctionFilePath,
 		const FString inverseCorrectionFilePath);
 
