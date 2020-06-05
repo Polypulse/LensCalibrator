@@ -5,9 +5,9 @@
 
 #include "/Engine/Public/Platform.ush"
 
-float2 InNormalizedPrincipalPoint;
-float InDistortionCoefficients[5];
-int InGenerateInverseMap;
+uniform float2 InNormalizedPrincipalPoint;
+uniform float InDistortionCoefficients[5];
+uniform int InGenerateInverseMap;
 
 struct InputVS
 {
@@ -18,7 +18,7 @@ struct InputVS
 struct OutputVS
 {
 	float4	Position : SV_POSITION;
-	float4	UV : TEXCOORD0;
+	float4	UV : TEXCOORD1;
 };
 
 struct OutputPS

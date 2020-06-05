@@ -24,9 +24,9 @@ bool FDistortionCorrectionMapGenerationPS::ShouldCompilePermutation(const FGloba
 
 void FDistortionCorrectionMapGenerationPS::SetParameters(
 	FRHICommandListImmediate& RHICmdList,
-	const FVector2D normalizedPrincipalPoint,
-	const TArray<float> inputDistortionCoefficients,
-	const bool generateInverseMap)
+	FVector2D normalizedPrincipalPoint,
+	TArray<float> inputDistortionCoefficients,
+	bool generateInverseMap)
 {
 	SetShaderValue(RHICmdList, RHICmdList.GetBoundPixelShader(), normalizedPrincipalPointParameter, normalizedPrincipalPoint);
 	SetShaderValue(RHICmdList, RHICmdList.GetBoundPixelShader(), distortionCoefficientsParameter, inputDistortionCoefficients);

@@ -197,9 +197,6 @@ bool LensSolverUtilities::CreateTexture2D(
 		output->Filter = TextureFilter::TF_Nearest;
 		output->CompressionSettings = TextureCompressionSettings::TC_HDR;
 		output->LODGroup = TextureGroup::TEXTUREGROUP_16BitData;
-		// output->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-		// output->CompressionNone = true;
-		// output->NeverStream = true;
 	}
 
 	if (output == nullptr)

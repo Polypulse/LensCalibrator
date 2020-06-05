@@ -51,7 +51,11 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	distortionCoefficients[3] = distortionCorrectionMapGenerationParams.p2;
 	distortionCoefficients[4] = distortionCorrectionMapGenerationParams.k3;
 
-	FRHIRenderPassInfo distortionCorrectionRPInfo(renderTarget->TextureReference.TextureReferenceRHI->GetReferencedTexture(), ERenderTargetActions::DontLoad_DontStore);
+	// RHICmdList.TransitionResource(EResourceTransitionAccess::EWritable, renderTarget->TextureReference.TextureReferenceRHI->GetReferencedTexture());
+
+	FRHIRenderPassInfo distortionCorrectionRPInfo(renderTarget->TextureReference.TextureReferenceRHI->GetReferencedTexture(), ERenderTargetActions::DontLoad_Store);
+
+	RHICmdList.Flush();
 	RHICmdList.BeginRenderPass(distortionCorrectionRPInfo, TEXT("GenerateDistortionCorrectionMapPass"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
@@ -74,7 +78,9 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
 		PixelShader->SetParameters(RHICmdList, normalizedPrincipalPoint, distortionCoefficients, false);
-		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
+
+		RHICmdList.DrawPrimitive(0, 2, 1);
+		// FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}
 	RHICmdList.EndRenderPass();
 
@@ -130,6 +136,8 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	{
 
 	}
+
+	// RHICmdList.TransitionResource(EResourceTransitionAccess::EReadable, renderTarget->TextureReference.TextureReferenceRHI->GetReferencedTexture());
 
 	UE_LOG(LogTemp, Log, TEXT("Wrote inverse distortion correction map to path: \"%s\"."), *inverseCorrectionFilePath);
 
@@ -422,12 +430,14 @@ void UDistortionProcessor::GenerateDistortionCorrectionMap(
 		distortionCorrectionMapGenerationParams.outputMapResolution.Y);
 
 	UTextureRenderTarget2D* renderTarget = NewObject<UTextureRenderTarget2D>();
-	renderTarget->AddToRoot();
-	renderTarget->ClearColor = FLinearColor(0.0f, 0.0f, 1.0f);
+	// renderTarget->AddToRoot();
+	renderTarget->ClearColor = FLinearColor(0.0f, 0.0f, 0.0f);
 	renderTarget->ClearColor.A = 1.0f;
 	renderTarget->TargetGamma = 0.0f;
 	renderTarget->SRGB = 0;
-	renderTarget->InitCustomFormat(distortionCorrectionMapGenerationParams.outputMapResolution.X, distortionCorrectionMapGenerationParams.outputMapResolution.Y, EPixelFormat::PF_FloatRGBA, true);
+	renderTarget->bAutoGenerateMips = 0;
+	renderTarget->bForceLinearGamma = false;
+	renderTarget->InitCustomFormat(distortionCorrectionMapGenerationParams.outputMapResolution.X, distortionCorrectionMapGenerationParams.outputMapResolution.Y, EPixelFormat::PF_FloatRGBA, false);
 
 	ENQUEUE_RENDER_COMMAND(GenerateDistortionCorrectionMap)
 	(

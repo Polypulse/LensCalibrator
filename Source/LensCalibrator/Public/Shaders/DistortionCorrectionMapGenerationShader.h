@@ -40,9 +40,9 @@ public:
 
 	void SetParameters(
 		FRHICommandListImmediate& RHICmdList,
-		const FVector2D normalizedPrincipalPointParameter,
-		const TArray<float> inputDistortionCoefficients,
-		const bool generateInverseMap);
+		FVector2D normalizedPrincipalPointParameter,
+		TArray<float> inputDistortionCoefficients,
+		bool generateInverseMap);
 };
 
 IMPLEMENT_GLOBAL_SHADER(FDistortionCorrectionMapGenerationVS, "/LensCalibratorShaders/Private/DistortionCorrectionMapGeneration.usf", "MainVS", SF_Vertex);
