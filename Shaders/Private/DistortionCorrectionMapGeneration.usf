@@ -5,9 +5,9 @@
 
 #include "/Engine/Public/Platform.ush"
 
-uniform float2 InNormalizedPrincipalPoint;
-uniform float InDistortionCoefficients[5];
-uniform int InGenerateInverseMap;
+float2 InNormalizedPrincipalPoint;
+int InGenerateInverseMap;
+float k1, k2, p1, p2, k3;
 
 struct InputVS
 {
@@ -18,7 +18,7 @@ struct InputVS
 struct OutputVS
 {
 	float4	Position : SV_POSITION;
-	float4	UV : TEXCOORD1;
+	float4	UV : TEXCOORD0;
 };
 
 struct OutputPS
@@ -40,18 +40,21 @@ OutputPS MainPS(OutputVS IN)
 {
 	OutputPS Out;
 
-	float k1, k2, p1, p2, k3;
-	k1 = InDistortionCoefficients[0] * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
-	k2 = InDistortionCoefficients[1] * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
-	p1 = InDistortionCoefficients[2];
-	p2 = InDistortionCoefficients[3];
-	k3 = InDistortionCoefficients[4] * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
+	// float k1, k2, p1, p2, k3;
+	// k1 = InDistortionCoefficients[0] * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
+	// k2 = InDistortionCoefficients[1] * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
+	// p1 = InDistortionCoefficients[2];
+	// p2 = InDistortionCoefficients[3];
+	// k3 = InDistortionCoefficients[4] * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
 
 	float ppx = InNormalizedPrincipalPoint.x;
 	float ppy = InNormalizedPrincipalPoint.y;
 
 	float uvx = IN.UV.x;
 	float uvy = IN.UV.y;
+
+	// Out.Color = half4(uvx, uvy, 0.0, 1.0);
+	// return Out;
 
 	float cx = (uvx - ppx);
 	float cy = (uvy - ppy);

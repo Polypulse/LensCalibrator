@@ -6,6 +6,8 @@
 #include "RHI.h"
 #include "RHICommandList.h"
 #include "RenderResource.h"
+#include "PipelineStateCache.h"
+#include "RHIStaticStates.h"
 #include "ShaderParameters.h"
 #include "Shader.h"
 #include "GlobalShader.h"
@@ -28,9 +30,13 @@ class FDistortionCorrectionMapGenerationPS : public FGlobalShader
 	DECLARE_SHADER_TYPE(FDistortionCorrectionMapGenerationPS, Global);
 
 private:
-	LAYOUT_FIELD(FShaderParameter, distortionCoefficientsParameter);
 	LAYOUT_FIELD(FShaderParameter, normalizedPrincipalPointParameter);
 	LAYOUT_FIELD(FShaderParameter, generateInverseMapParameter);
+	LAYOUT_FIELD(FShaderParameter, k1Parameter);
+	LAYOUT_FIELD(FShaderParameter, k2Parameter);
+	LAYOUT_FIELD(FShaderParameter, p1Parameter);
+	LAYOUT_FIELD(FShaderParameter, p2Parameter);
+	LAYOUT_FIELD(FShaderParameter, k3Parameter);
 
 public:
 	FDistortionCorrectionMapGenerationPS();
@@ -38,10 +44,16 @@ public:
 
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters);
 
+	template<typename TShaderRHIParamRef>
 	void SetParameters(
 		FRHICommandListImmediate& RHICmdList,
+		const TShaderRHIParamRef ShaderRHI,
 		FVector2D normalizedPrincipalPointParameter,
-		TArray<float> inputDistortionCoefficients,
+		const float k1,
+		const float k2,
+		const float p1,
+		const float p2,
+		const float k3,
 		bool generateInverseMap);
 };
 
