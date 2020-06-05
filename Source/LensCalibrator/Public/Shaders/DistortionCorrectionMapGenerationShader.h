@@ -49,11 +49,11 @@ public:
 		FRHICommandListImmediate& RHICmdList,
 		const TShaderRHIParamRef ShaderRHI,
 		FVector2D normalizedPrincipalPointParameter,
-		const float k1,
-		const float k2,
-		const float p1,
-		const float p2,
-		const float k3,
+		float k1,
+		float k2,
+		float p1,
+		float p2,
+		float k3,
 		bool generateInverseMap);
 };
 

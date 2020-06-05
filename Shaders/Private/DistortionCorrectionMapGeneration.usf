@@ -5,9 +5,13 @@
 
 #include "/Engine/Public/Platform.ush"
 
-float2 InNormalizedPrincipalPoint;
-int InGenerateInverseMap;
-float k1, k2, p1, p2, k3;
+uniform float k1;
+uniform float k2;
+uniform float p1;
+uniform float p2;
+uniform float k3;
+uniform int InGenerateInverseMap;
+uniform float2 InNormalizedPrincipalPoint;
 
 struct InputVS
 {
@@ -46,6 +50,12 @@ OutputPS MainPS(OutputVS IN)
 	// p1 = InDistortionCoefficients[2];
 	// p2 = InDistortionCoefficients[3];
 	// k3 = InDistortionCoefficients[4] * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
+
+	k1 = k1 * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
+	k2 = k2 * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
+	p1 = p1;
+	p2 = p2;
+	k3 = k3 * (InGenerateInverseMap == 1 ? -1.0 : 1.0);
 
 	float ppx = InNormalizedPrincipalPoint.x;
 	float ppy = InNormalizedPrincipalPoint.y;
