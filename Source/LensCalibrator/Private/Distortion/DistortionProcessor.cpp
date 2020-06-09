@@ -175,6 +175,7 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	distortionCorrectionMapGenerationResults.inverseDistortionCorrectionPixels = inverseDistortionCorrectionPixels;
 	distortionCorrectionMapGenerationResults.width = width;
 	distortionCorrectionMapGenerationResults.height = height;
+	distortionCorrectionMapGenerationResults.zoomLevel = distortionCorrectionMapGenerationParams.zoomLevel;
 
 	queuedDistortionCorrectionMapResults.Enqueue(distortionCorrectionMapGenerationResults);
 }
@@ -280,7 +281,7 @@ void UDistortionProcessor::PollDistortionCorrectionMapGenerationResults()
 				LensSolverUtilities::CreateTexture2D(result.inverseDistortionCorrectionPixels.GetData(), result.width, result.height, false, true, unCorrectionMap, EPixelFormat::PF_FloatRGBA))
 			{
 				if (job->eventReceiver.GetObject()->IsValidLowLevel())
-					ILensSolverEventReceiver::Execute_OnGeneratedDistortionMaps(job->eventReceiver.GetObject(), correctionMap, unCorrectionMap);
+					ILensSolverEventReceiver::Execute_OnGeneratedDistortionMaps(job->eventReceiver.GetObject(), correctionMap, unCorrectionMap, result.zoomLevel);
 			}
 
 			else

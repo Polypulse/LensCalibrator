@@ -29,7 +29,7 @@ public:
 	void OnFinishedJob (FJobInfo jobInfo);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
-	void OnGeneratedDistortionMaps (UTexture2D * generatedCorrectionDistortionMap, UTexture2D * generatedUnCorrectionDistortionMap);
+	void OnGeneratedDistortionMaps (UTexture2D * generatedCorrectionDistortionMap, UTexture2D * generatedUnCorrectionDistortionMap, float zoomLevel);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
 	void OnDistortedImageCorrected (UTexture2D * correctedDistortedImage);

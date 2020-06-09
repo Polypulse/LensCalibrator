@@ -77,7 +77,7 @@ public class LensCalibrator : ModuleRules
 			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Binaries/Debug/Dynamic/")) :
 			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Binaries/Release/Dynamic/"));
 
-		string targetDLLFolderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Binaries/ThirdParty/Win64/"));
+		string targetDLLFolderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Win64/"));
 
 		string[] dllFiles = Directory.GetFiles(dllFolderPath).Where(f => Path.GetExtension(f) == ".dll").ToArray();
 		string dllNamesDef = "";
@@ -116,7 +116,7 @@ public class LensCalibrator : ModuleRules
 
 		System.Collections.Generic.Dictionary<string, string> definitions = new System.Collections.Generic.Dictionary<string, string>()
 		{
-			{ "LENS_CALIBRATOR_OPENCV_DLL_PATH", "Binaries/ThirdParty/Win64/" },
+			{ "LENS_CALIBRATOR_OPENCV_DLL_PATH", "Source/ThirdParty/OpenCVWrapper/Win64/" },
 			{ "LENS_CALIBRATOR_OPENCV_DLL_NAMES", dllNamesDef },
 		};
 
@@ -158,7 +158,7 @@ public class LensCalibrator : ModuleRules
 				Path.GetFullPath(Path.Combine(ModuleDirectory, 
 					string.Format("../../Source/ThirdParty/{0}/Binaries/Release/Dynamic/", libraries[li])));
 
-			string targetDLLFolderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Binaries/ThirdParty/Win64/"));
+			string targetDLLFolderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Win64/"));
 
 			string[] libFiles = Directory.GetFiles(libFolderPath).Where(f => Path.GetExtension(f) == ".lib").ToArray();
 			string[] dllFiles = Directory.GetFiles(dllFolderPath).Where(f => Path.GetExtension(f) == ".dll").ToArray();
@@ -216,7 +216,7 @@ public class LensCalibrator : ModuleRules
 
 		System.Collections.Generic.Dictionary<string, string> definitions = new System.Collections.Generic.Dictionary<string, string>()
 		{
-			{ "LENS_CALIBRATOR_OPENCV_DLL_PATH", "Binaries/ThirdParty/Win64/" },
+			{ "LENS_CALIBRATOR_OPENCV_DLL_PATH", "Source/ThirdParty/OpenCVWrapper/Win64/" },
 			{ "LENS_CALIBRATOR_OPENCV_DLL_NAMES", dllNamesDef },
 		};
 

@@ -16,6 +16,8 @@ struct FDistortionCorrectionMapGenerationResults
 	int width;
 	int height;
 
+	float zoomLevel;
+
 	TArray<FFloat16Color> distortionCorrectionPixels;
 	TArray<FFloat16Color> inverseDistortionCorrectionPixels;
 };
