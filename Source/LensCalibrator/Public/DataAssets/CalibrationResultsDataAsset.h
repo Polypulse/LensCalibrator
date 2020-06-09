@@ -32,6 +32,9 @@ public:
 	TArray<float> focalLengths;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	TArray<float> distortionMultipliers;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	TArray<UTexture2D*> distortionCorrectionMaps;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")

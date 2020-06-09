@@ -57,6 +57,15 @@ struct FCalibrationResult
 	float k3;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float k4;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float k5;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	float k6;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	int imageCount;
 
 	FCalibrationResult()
@@ -70,11 +79,16 @@ struct FCalibrationResult
 		principalPixelPoint = FVector2D(0, 0);
 		resolution = FIntPoint(0, 0);
 		perspectiveMatrix = FMatrix::Identity;
+
 		k1 = 0.0f;
 		k2 = 0.0f;
 		p1 = 0.0f;
 		p2 = 0.0f;
 		k3 = 0.0f;
+		k4 = 0.0f;
+		k5 = 0.0f;
+		k6 = 0.0f;
+
 		imageCount = 0;
 	}
 };

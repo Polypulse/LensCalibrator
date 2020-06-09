@@ -102,6 +102,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	parameters.fixRadialDistortionCoefficientK4				= latchData.calibrationParameters.fixRadialDistortionCoefficientK4;
 	parameters.fixRadialDistortionCoefficientK5				= latchData.calibrationParameters.fixRadialDistortionCoefficientK5;
 	parameters.fixRadialDistortionCoefficientK6				= latchData.calibrationParameters.fixRadialDistortionCoefficientK6;
+	parameters.useRationalModel								= latchData.calibrationParameters.useRationalModel;
 
 	FCalibrateLensOutput output;
 	if (!GetOpenCVWrapper().CalibrateLens(
@@ -159,6 +160,9 @@ void FLensSolverWorkerCalibrate::Tick()
 	solvedPoints.p1						= output.p1;
 	solvedPoints.p2						= output.p2;
 	solvedPoints.k3						= output.k3;
+	solvedPoints.k4						= output.k4;
+	solvedPoints.k5						= output.k5;
+	solvedPoints.k6						= output.k6;
 	solvedPoints.imageCount				= imageCount;
 
 	if (latchData.calibrationParameters.writeCalibrationResultsToFile)

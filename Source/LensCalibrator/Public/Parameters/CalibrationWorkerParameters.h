@@ -49,6 +49,9 @@ struct FCalibrationWorkerParameters
 	bool fixRadialDistortionCoefficientK6;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+	bool useRationalModel;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	bool writeCalibrationResultsToFile;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
@@ -69,6 +72,7 @@ struct FCalibrationWorkerParameters
 		fixRadialDistortionCoefficientK4 = false;
 		fixRadialDistortionCoefficientK5 = false;
 		fixRadialDistortionCoefficientK6 = false;
+		useRationalModel = false;
 
 		writeCalibrationResultsToFile = false;
 		calibrationResultsOutputPath = "";
