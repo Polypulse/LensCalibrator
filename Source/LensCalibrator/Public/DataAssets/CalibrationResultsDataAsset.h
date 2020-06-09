@@ -10,6 +10,28 @@
 
 #include "CalibrationResultsDataAsset.generated.h"
 
+USTRUCT(BlueprintType)
+struct FDistortionCorrectionTextureContainer
+{
+	GENERATED_BODY()
+	public:
+		UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+		UTexture2D* distortionMap;
+
+		UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+		float zoomLevel;
+
+		UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+		float distortionMultiplier;
+
+		FDistortionCorrectionTextureContainer()
+		{
+			distortionMap = nullptr;
+			zoomLevel = 0.0f;
+			distortionMultiplier = 0.0f;
+		}
+};
+
 UCLASS(BlueprintType)
 class UCalibrationResultsDataAsset : public UDataAsset
 {
@@ -32,11 +54,8 @@ public:
 	TArray<float> focalLengths;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	TArray<float> distortionMultipliers;
+	TArray<FDistortionCorrectionTextureContainer> distortionCorrectionMaps;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	TArray<UTexture2D*> distortionCorrectionMaps;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
-	TArray<UTexture2D*> distortionUncorrectionMaps;
+	TArray<FDistortionCorrectionTextureContainer> distortionUncorrectionMaps;
 };

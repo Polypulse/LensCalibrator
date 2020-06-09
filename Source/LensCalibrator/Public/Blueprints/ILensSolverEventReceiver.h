@@ -8,6 +8,7 @@
 #include "Engine.h"
 #include "JobInfo.h"
 #include "SolvedPoints.h"
+#include "CalibrationResultsDataAsset.h"
 
 #include "ILensSolverEventReceiver.generated.h"
 
@@ -29,7 +30,7 @@ public:
 	void OnFinishedJob (FJobInfo jobInfo);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
-	void OnGeneratedDistortionMaps (UTexture2D * generatedCorrectionDistortionMap, UTexture2D * generatedUnCorrectionDistortionMap, float zoomLevel);
+	void OnGeneratedDistortionMaps (FDistortionCorrectionTextureContainer generatedCorrectionDistortionMap, FDistortionCorrectionTextureContainer generatedUnCorrectionDistortionMap);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Lens Calibrator")
 	void OnDistortedImageCorrected (UTexture2D * correctedDistortedImage);
