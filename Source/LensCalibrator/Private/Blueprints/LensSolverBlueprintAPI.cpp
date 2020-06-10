@@ -133,7 +133,7 @@ bool ULensSolverBlueprintAPI::PackArrayOfDistortionCorrectionMapsIntoVolumeTextu
 	bool success = volumeTexture->UpdateSourceFromFunction([width, height, dataArray](int ix, int iy, int iz, void* value)
 	{
 		FFloat16* const voxel = static_cast<FFloat16*>(value);
-		const FFloat16Color * data = dataArray[iz];
+		const FFloat16Color * data = dataArray[/*dataArray.Num() - 1 - */iz];
 
 		voxel[0] = data[iy * width + ix].R;
 		voxel[1] = data[iy * width + ix].G;
