@@ -24,11 +24,15 @@ struct FDistortionCorrectionTextureContainer
 		UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 		float distortionMultiplier;
 
+		UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
+		bool invertDistortion;
+
 		FDistortionCorrectionTextureContainer()
 		{
 			distortionMap = nullptr;
 			zoomLevel = 0.0f;
 			distortionMultiplier = 0.0f;
+			invertDistortion = false;
 		}
 };
 

@@ -175,6 +175,11 @@ void UDistortionProcessor::GenerateDistortionCorrectionMapRenderThread(
 	distortionCorrectionMapGenerationResults.inverseDistortionCorrectionPixels = inverseDistortionCorrectionPixels;
 	distortionCorrectionMapGenerationResults.width = width;
 	distortionCorrectionMapGenerationResults.height = height;
+	distortionCorrectionMapGenerationResults.k1 = distortionCorrectionMapGenerationParams.k1;
+	distortionCorrectionMapGenerationResults.k2 = distortionCorrectionMapGenerationParams.k2;
+	distortionCorrectionMapGenerationResults.p1 = distortionCorrectionMapGenerationParams.p1;
+	distortionCorrectionMapGenerationResults.p2 = distortionCorrectionMapGenerationParams.p2;
+	distortionCorrectionMapGenerationResults.k3 = distortionCorrectionMapGenerationParams.k3;
 	distortionCorrectionMapGenerationResults.zoomLevel = distortionCorrectionMapGenerationParams.zoomLevel;
 
 	queuedDistortionCorrectionMapResults.Enqueue(distortionCorrectionMapGenerationResults);
@@ -280,15 +285,18 @@ void UDistortionProcessor::PollDistortionCorrectionMapGenerationResults()
 			if (LensSolverUtilities::CreateTexture2D(result.distortionCorrectionPixels.GetData(), result.width, result.height, false, true, correctionMap, EPixelFormat::PF_FloatRGBA) &&
 				LensSolverUtilities::CreateTexture2D(result.inverseDistortionCorrectionPixels.GetData(), result.width, result.height, false, true, unCorrectionMap, EPixelFormat::PF_FloatRGBA))
 			{
+				bool isPinCushion = result.k1 < 0.0f;
 				FDistortionCorrectionTextureContainer distortionCorrectionTextureContainer;
-				distortionCorrectionTextureContainer.distortionMap = correctionMap;
+				distortionCorrectionTextureContainer.distortionMap = isPinCushion ? correctionMap : unCorrectionMap;
 				distortionCorrectionTextureContainer.distortionMultiplier = 1.0f;
 				distortionCorrectionTextureContainer.zoomLevel = result.zoomLevel;
+				distortionCorrectionTextureContainer.invertDistortion = false;
 
 				FDistortionCorrectionTextureContainer distortionUncorrectionTextureContainer;
-				distortionUncorrectionTextureContainer.distortionMap = unCorrectionMap;
+				distortionUncorrectionTextureContainer.distortionMap = isPinCushion ? unCorrectionMap : correctionMap;
 				distortionUncorrectionTextureContainer.distortionMultiplier = 1.0f;
 				distortionUncorrectionTextureContainer.zoomLevel = result.zoomLevel;
+				distortionCorrectionTextureContainer.invertDistortion = false;
 
 				if (job->eventReceiver.GetObject()->IsValidLowLevel())
 					ILensSolverEventReceiver::Execute_OnGeneratedDistortionMaps(job->eventReceiver.GetObject(), distortionCorrectionTextureContainer, distortionUncorrectionTextureContainer);

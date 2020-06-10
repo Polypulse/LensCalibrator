@@ -18,6 +18,34 @@ struct FDistortionCorrectionMapGenerationResults
 
 	float zoomLevel;
 
+	float k1;
+	float k2;
+	float p1;
+	float p2;
+	float k3;
+
+	float k4;
+	float k5;
+	float k6;
+
 	TArray<FFloat16Color> distortionCorrectionPixels;
 	TArray<FFloat16Color> inverseDistortionCorrectionPixels;
+
+	FDistortionCorrectionMapGenerationResults()
+	{
+		width = 0;
+		height = 0;
+
+		zoomLevel = 0.0f;
+
+		k1 = 0.0f;
+		k2 = 0.0f;
+		p1 = 0.0f;
+		p2 = 0.0f;
+		k3 = 0.0f;
+
+		k4 = 0.0f;
+		k5 = 0.0f;
+		k6 = 0.0f;
+	}
 };
