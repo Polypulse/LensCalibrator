@@ -38,6 +38,7 @@ public class LensCalibrator : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"Projects",
 				"Slate",
 				"SlateCore",
 				"MediaAssets",
@@ -69,76 +70,6 @@ public class LensCalibrator : ModuleRules
 		{
 			"OpenCVWrapper"
 		});
-	}
-
-	private void ConfigureDynamicOpenCVWrapper (bool isDebug)
-	{
-		string dllFolderPath = isDebug ? 
-			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Binaries/Debug/Dynamic/")) :
-			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Binaries/Release/Dynamic/"));
-
-		string targetDLLFolderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Win64/"));
-
-		string[] dllFiles = Directory.GetFiles(dllFolderPath).Where(f => Path.GetExtension(f) == ".dll").ToArray();
-		string dllNamesDef = "";
-		for (int i = 0; i < dllFiles.Length; i++)
-		{
-			string dllFullPath = dllFiles[i];
-			string dllFileName = Path.GetFileName(dllFullPath);
-			string targetDLLFullPath = Path.Combine(targetDLLFolderPath, dllFileName);
-
-			if (!Directory.Exists(targetDLLFolderPath))
-			{
-				Console.WriteLine(string.Format("{0}: Creating directory at path: \"{1}\".", logLabel, targetDLLFolderPath));
-				Directory.CreateDirectory(targetDLLFolderPath);
-			}
-
-			if (!File.Exists(targetDLLFullPath))
-			{
-				Console.WriteLine(string.Format("{0}: Copying DLL from: \"{1}\" to: \"{2}\".", logLabel, dllFullPath, targetDLLFullPath));
-
-				if (!File.Exists(dllFullPath))
-					throw new Exception(string.Format("{0}: Missing DLL at path: \"{1}\".", dllFullPath));
-
-				File.Copy(dllFullPath, targetDLLFullPath, true);
-			}
-
-			Console.WriteLine(string.Format("{0}: Registering runtime DLL: \"{1}\".", logLabel, targetDLLFullPath));
-			PublicDelayLoadDLLs.Add(dllFileName);
-
-			if (i < dllFiles.Length - 1)
-				dllNamesDef += Path.GetFileNameWithoutExtension(dllFileName) + " ";
-			else dllNamesDef += Path.GetFileNameWithoutExtension(dllFileName);
-
-			Console.WriteLine(string.Format("{0}: Registering runtime dependency: \"{1}\".", logLabel, targetDLLFullPath));
-			RuntimeDependencies.Add(targetDLLFullPath);
-		}
-
-		System.Collections.Generic.Dictionary<string, string> definitions = new System.Collections.Generic.Dictionary<string, string>()
-		{
-			{ "LENS_CALIBRATOR_OPENCV_DLL_PATH", "Source/ThirdParty/OpenCVWrapper/Win64/" },
-			{ "LENS_CALIBRATOR_OPENCV_DLL_NAMES", dllNamesDef },
-		};
-
-		string msg = string.Format("{0}: Setting definitions:\n{{\n", logLabel);
-		foreach (KeyValuePair<string, string> definition in definitions)
-		{
-			PublicDefinitions.Add(string.Format("{0}={1}", definition.Key, definition.Value));
-			msg += string.Format("\t{0} = {1}\n", definition.Key, definition.Value);
-		}
-
-		Console.WriteLine(string.Format("{0}\n}}", msg));
-	}
-
-	private void ConfigureStaticOpenCVWrapper (bool isDebug)
-	{
-		string libFolderPath = isDebug ? 
-			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Binaries/Debug/Static/")) :
-			Path.GetFullPath(Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Binaries/Release/Static/"));
-
-		string[] libFiles = Directory.GetFiles(libFolderPath).Where(f => Path.GetExtension(f) == ".lib").ToArray();
-		if (libFiles.Length == 0)
-			throw new Exception(string.Format("{0}: Missing libraries at path: \"{1}\".", libFolderPath));
 	}
 
 	private void ConfigureOpenCV (bool isDebug, string[] libraries)

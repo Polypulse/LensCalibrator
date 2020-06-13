@@ -10,6 +10,7 @@
 #include "LensSolver.h"
 #include "MatQueueWriter.h"
 #include "WorkerRegistry.h"
+#include "Interfaces/IPluginManager.h"
 
 #define LOCTEXT_NAMESPACE "FLensCalibratorModule"
 
@@ -87,8 +88,8 @@ UDistortionProcessor* FLensCalibratorModule::GetDistortionProcessor()
 
 void FLensCalibratorModule::StartupModule()
 {
-	const FString pluginName("LensCalibrator/");
-	const FString openCVDLLFolder = FPaths::Combine(FPaths::ProjectPluginsDir(), pluginName, TEXT(PREPROCESSOR_TO_STRING(LENS_CALIBRATOR_OPENCV_DLL_PATH)));
+	FString pluginDir = IPluginManager::Get().FindPlugin(TEXT("LensCalibrator"))->GetBaseDir();
+	const FString openCVDLLFolder = FPaths::Combine(pluginDir, TEXT(PREPROCESSOR_TO_STRING(LENS_CALIBRATOR_OPENCV_DLL_PATH)));
 	const FString dllNames = TEXT(PREPROCESSOR_TO_STRING(LENS_CALIBRATOR_OPENCV_DLL_NAMES));
 
 	if (dllNames.IsEmpty())
