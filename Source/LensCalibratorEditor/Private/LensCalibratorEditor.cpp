@@ -67,7 +67,7 @@ void FLensCalibratorEditorModule::OpenLensCalibrator()
 	// UE_LOG(LogTemp, Warning, TEXT("It Works!!!"));
 	FAssetRegistryModule* AssetRegistryModule = &FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	FString path = "/LensCalibrator/Blueprints/LensSolver.LensSolver";
-	FAssetData AssetData = AssetRegistryModule->Get().GetAssetByObjectPath(path, false);
+	FAssetData AssetData = AssetRegistryModule->Get().GetAssetByObjectPath(*path, false);
 	if (!AssetData.IsValid())
 	{
 		UE_LOG(LogTemp, Fatal, TEXT("No editor utility widget blueprint at path: \"%s\"."), *path);
@@ -85,7 +85,7 @@ void FLensCalibratorEditorModule::OpenLensCalibrator()
 	UWorld* world = GEditor->GetEditorWorldContext().World();
 	check(world);
 
-	TSubclassOf<UEditorUtilityWidget> widgetClass = blueprint->GeneratedClass;
+	TSubclassOf<UEditorUtilityWidget> widgetClass = (UClass*)blueprint->GeneratedClass;
 	UEditorUtilityWidget* createdUMGWidget = CreateWidget<UEditorUtilityWidget>(world, widgetClass);
 
 	if (createdUMGWidget)
