@@ -128,7 +128,7 @@ void FLensCalibratorModule::StartupModule()
 	distortionProcessor = nullptr;
 
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-    AddShaderSourceDirectoryMapping("/LensCalibratorShaders", FPaths::Combine(FPaths::ProjectDir(), TEXT("Plugins/LensCalibrator/Shaders")));
+    AddShaderSourceDirectoryMapping("/LensCalibratorShaders", FPaths::Combine(pluginDir, TEXT("Shaders")));
 	IConsoleManager::Get().RegisterConsoleVariable(TEXT("LensCalibrator.Debug"), 0, TEXT("Output more log information for debugging."));
 }
 

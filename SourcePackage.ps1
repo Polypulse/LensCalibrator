@@ -11,6 +11,12 @@ echo "Packaging LensCalibrator plugin..."
 Copy-Item -Recurse -Force -Path .\License.txt -Destination "$outputPath\LensCalibrator\License.txt"
 
 New-Item -Force -ItemType Directory "$outputPath\LensCalibrator\Source\ThirdParty\"
+New-Item -Force -ItemType Directory "$outputPath\LensCalibrator\Config\"
+
 Copy-Item -Recurse -Force -Path .\Source\ThirdParty\OpenCV\OpenCV.txt -Destination "$outputPath\LensCalibrator\Source\ThirdParty\OpenCV.txt"
+Copy-Item -Recurse -Force -Path .\Config\FilterPlugin.ini -Destination "$outputPath\LensCalibrator\Config\FilterPlugin.ini"
+
+# Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Intermediate\"
+# Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Binaries\"
 
 pause
