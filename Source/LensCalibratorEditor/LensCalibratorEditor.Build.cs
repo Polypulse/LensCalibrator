@@ -17,20 +17,24 @@ public class LensCalibratorEditor : ModuleRules
 			}
 		);
 
-
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"Core",
+				"LevelEditor",
+				"SlateCore",
+                "Slate",
+                "EditorStyle",
+                "AssetTools",
+                "EditorWidgets",
+                "UnrealEd",
 			}
 		);
-
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
 				"LensCalibrator",
-				"UnrealEd"
 			}
 		);
 	}

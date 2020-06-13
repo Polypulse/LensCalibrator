@@ -20,6 +20,12 @@
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit",
 			"WhitelistPlatforms": [ "Win64" ]
+		},
+		{
+			"Name": "LensCalibratorEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [ "Win64" ]
 		}
 	],
 	"Plugins" : [
