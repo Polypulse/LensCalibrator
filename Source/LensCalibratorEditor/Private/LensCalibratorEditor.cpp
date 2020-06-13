@@ -1,6 +1,10 @@
 #include "LensCalibratorEditor.h"
 #include "LevelEditor.h"
 #include "MultiBoxExtender.h"
+#include "AssetRegistryModule.h"
+#include "EditorUtilityWidgetBlueprint.h"
+#include "EditorUtilityWidget.h"
+#include "UObject/Class.h"
 #include "..\Public\LensCalibratorEditor.h"
 
 #define LOCTEXT_NAMESPACE "FLensCalibratorEditorModule"
@@ -60,7 +64,35 @@ void FLensCalibratorEditorCommands::RegisterCommands()
 
 void FLensCalibratorEditorModule::OpenLensCalibrator()
 {
-	UE_LOG(LogTemp, Warning, TEXT("It Works!!!"));
+	// UE_LOG(LogTemp, Warning, TEXT("It Works!!!"));
+	FAssetRegistryModule* AssetRegistryModule = &FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	FString path = "/LensCalibrator/Blueprints/LensSolver.LensSolver";
+	FAssetData AssetData = AssetRegistryModule->Get().GetAssetByObjectPath(path, false);
+	if (!AssetData.IsValid())
+	{
+		UE_LOG(LogTemp, Fatal, TEXT("No editor utility widget blueprint at path: \"%s\"."), *path);
+		return;
+	}
+
+	UEditorUtilityWidgetBlueprint * blueprint = static_cast<UEditorUtilityWidgetBlueprint*>(AssetData.GetAsset());
+
+	FName RegistrationName = FName(*(blueprint->GetPathName() + TEXT("_ActiveTab")));
+	FText DisplayName = FText::FromString(blueprint->GetName());
+	FLevelEditorModule& levelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
+	TSharedPtr<FTabManager> levelEditorTabManager = levelEditorModule.GetLevelEditorTabManager();
+	TSharedRef<SDockTab> newDockTab = levelEditorTabManager->InvokeTab(RegistrationName);
+
+	UWorld* world = GEditor->GetEditorWorldContext().World();
+	check(world);
+
+	TSubclassOf<UEditorUtilityWidget> widgetClass = blueprint->GeneratedClass;
+	UEditorUtilityWidget* createdUMGWidget = CreateWidget<UEditorUtilityWidget>(world, widgetClass);
+
+	if (createdUMGWidget)
+	{
+		TSharedRef<SWidget> createdSlateWidget = createdUMGWidget->TakeWidget();
+		newDockTab->SetContent(createdSlateWidget);
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

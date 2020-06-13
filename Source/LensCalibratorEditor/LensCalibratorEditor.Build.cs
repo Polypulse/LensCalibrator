@@ -26,8 +26,13 @@ public class LensCalibratorEditor : ModuleRules
                 "Slate",
                 "EditorStyle",
                 "AssetTools",
+				"Blutility",
+				"UMG",
+				"UMGEditor",
                 "EditorWidgets",
+				"CoreUObject",
                 "UnrealEd",
+				"AssetRegistry"
 			}
 		);
 
