@@ -3,10 +3,16 @@
 #include "CoreMinimal.h"
 #include "CoreTypes.h"
 #include "Modules/ModuleManager.h"
-#include "Commands.h"
+#include "Framework/Commands/Commands.h"
 #include "Engine.h"
 #include "SlateBasics.h"
 #include "EditorStyleSet.h"
+#include "LevelEditor.h"
+#include "Framework/MultiBox/MultiBoxExtender.h"
+#include "AssetRegistryModule.h"
+#include "EditorUtilityWidgetBlueprint.h"
+#include "EditorUtilityWidget.h"
+#include "UObject/Class.h"
 
 class FLensCalibratorEditorCommands : public TCommands<FLensCalibratorEditorCommands>
 {
@@ -21,6 +27,7 @@ public:
 
 public:
 	TSharedPtr<FUICommandInfo> openLensCalibrator;
+	TSharedPtr<FUICommandInfo> openExampleLevel;
 };
 
 class FLensCalibratorEditorModule : public IModuleInterface
@@ -29,6 +36,8 @@ private:
 	static constexpr auto ModuleName = TEXT("FLensCalibratorEditorModule");
 
 	TSharedPtr<FUICommandList> pluginCommands;
+	UEditorUtilityWidget* createdUMGWidget;
+	UEditorUtilityWidgetBlueprint * blueprint;
 
 public:
     virtual ~FLensCalibratorEditorModule() {}
@@ -38,5 +47,8 @@ public:
 	void MakeMenuEntry(FMenuBarBuilder &menuBuilder);
 	void MakeMenuSubMenu(FMenuBuilder &menuBuilder);
 
+	void OnMapChanged(UWorld* InWorld, EMapChangeType MapChangeType);
 	void OpenLensCalibrator();
+	void OpenExampleLevel();
+	void OnBeginTearDownLevel(UObject * obj);
 };

@@ -24,6 +24,7 @@ public class LensCalibratorEditor : ModuleRules
 				"LevelEditor",
 				"SlateCore",
                 "Slate",
+				"Engine",
                 "EditorStyle",
                 "AssetTools",
 				"Blutility",
