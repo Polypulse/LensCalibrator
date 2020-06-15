@@ -1,3 +1,5 @@
+/* Copyright (C) Polypulse LLC - All Rights Reserved
+ * Written by Sean Connor <sean@polypulse.io>, April 2020 */
 #include "..\Public\LensCalibratorEditor.h"
 #include "EditorSupportDelegates.h"
 #include "IBlutilityModule.h"

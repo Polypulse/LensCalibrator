@@ -1,4 +1,5 @@
-// Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
+/* Copyright (C) Polypulse LLC - All Rights Reserved
+ * Written by Sean Connor <sean@polypulse.io>, April 2020 */
 
 using UnrealBuildTool;
 using System.IO;

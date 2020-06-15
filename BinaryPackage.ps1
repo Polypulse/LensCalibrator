@@ -14,7 +14,7 @@ New-Item -Force -ItemType Directory "$outputPath\LensCalibrator\Source\ThirdPart
 Copy-Item -Recurse -Force -Path .\Source\ThirdParty\OpenCV\OpenCV.txt -Destination "$outputPath\LensCalibrator\Source\ThirdParty\OpenCV.txt"
 
 Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Source\LensCalibrator\Private"
-Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Intermediate"
+# Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Intermediate"
 Remove-Item -Recurse -Force -Path "$outputPath\LensCalibrator\Binaries\Win64\UE4Editor-LensCalibrator.pdb"
 
 pause
