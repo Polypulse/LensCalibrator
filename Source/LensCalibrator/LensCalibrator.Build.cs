@@ -146,6 +146,7 @@ public class LensCalibrator : ModuleRules
 			}
 		}
 
+		/* (IMPORTANT) These allow us to define where the third party DLLs are. */
 		System.Collections.Generic.Dictionary<string, string> definitions = new System.Collections.Generic.Dictionary<string, string>()
 		{
 			{ "LENS_CALIBRATOR_OPENCV_DLL_PATH", "Source/ThirdParty/OpenCVWrapper/Win64/" },
