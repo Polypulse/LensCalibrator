@@ -38,6 +38,8 @@ struct FLensSolverWorkerParameters
 	}
 };
 
+/* Base class for workers that executes code on a separate thread to provide
+asynchronous calibration throughout this system. */
 class FLensSolverWorker : public FNonAbandonableTask
 {
 	friend class FAutoDeleteAsyncTask<FLensSolverWorker>;

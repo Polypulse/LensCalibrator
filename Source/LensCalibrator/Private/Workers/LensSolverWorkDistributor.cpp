@@ -13,19 +13,12 @@
 #include "BlitShader.h"
 #include "LensSolverUtilities.h"
 
+/* This spawns a thread pool and prepares a set of find corner and calibration workers. */
 void LensSolverWorkDistributor::PrepareWorkers(
 	int findCornerWorkerCount,
 	int calibrateWorkerCount)
 {
 	UE_LOG(LogTemp, Log, TEXT("Preparing workers."));
-
-	/*
-	if (threadPool != nullptr)
-	{
-		threadPool->Destroy();
-		threadPool = nullptr;
-	}
-	*/
 
 	if (threadPool == nullptr)
 	{
@@ -256,8 +249,6 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 		return;
 	}
 
-	// count++;
-	// QueueLogAsync(FString::Printf(TEXT("Work Distributor received TextureFileWorkUnit of index: %d"), count));
 	interfaceContainer->queueTextureFileWorkUnitInputDel.Execute(textureFileWorkUnit);
 }
 

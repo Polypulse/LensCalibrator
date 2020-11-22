@@ -53,10 +53,7 @@ struct FLensSolverTextureFileWorkUnit
 
 struct FCalibrationPointParameters
 {
-	// std::vector<cv::Point2f> corners;
-	// std::vector<cv::Point3f> objectPoints;
 	TArray<float> corners;
-	// TArray<FVector> objectPoints;
 	float chessboardSquareSizeMM;
 	int cornerCountX;
 	int cornerCountY;
@@ -89,7 +86,6 @@ struct FCalibrateLatch
 struct FMediaStreamWorkUnit
 {
 	FBaseParameters baseParameters;
-	// FTextureSearchParameters textureSearchParameters;
 	FChessboardSearchParameters textureSearchParameters;
 	FMediaStreamParameters mediaStreamParameters;
 };

@@ -17,6 +17,7 @@
 #include "QueueContainers.h"
 #include "ILensSolverEventReceiver.h"
 
+
 class LensSolverWorkDistributor
 {
 private:
@@ -26,16 +27,10 @@ private:
 
 	QueueCalibrationResultOutputDel queueCalibrationResultOutputDel;
 	QueueCalibrateWorkUnitInputDel queueCalibrateWorkUnitInputDel;
-	// IsFenceDownDel isFenceDownDel;
-
-	// LockDel lockDel;
-	// UnlockDel unlockDel;
 
 	QueueFinishedJobOutputDel queueFinishedJobOutputDel;
 	QueueLogOutputDel queueLogOutputDel;
 	bool Debug();
-
-	// FThreadSafeBool fenceUp;
 
 	FCalibrationParameters cachedCalibrationParameters;
 
@@ -52,9 +47,6 @@ private:
 	TMap<FString, FMediaStreamWorkUnit> mediaTextureJobLUT;
 
 	TQueue<CalibrationResultQueueContainer, EQueueMode::Mpsc> queuedCalibrationResults;
-
-	// FTexture2DRHIRef blitRenderTexture;
-	// bool blitRenderTextureAllocated;
 
 	void QueueLogAsync(FString msg);
 
@@ -91,7 +83,6 @@ private:
 	void Unlock();
 
 	int64 GetTickNow();
-	// bool IsFenceDown();
 	void MediaTextureRenderThread(
 		FRHICommandListImmediate& RHICmdList,
 		const FMediaStreamWorkUnit mediaStreamParameters);
@@ -107,12 +98,6 @@ public:
 
 	LensSolverWorkDistributor(LensSolverWorkDistributor const&) = delete;
 	void operator=(LensSolverWorkDistributor const&) = delete;
-
-	/*
-	static FString ExpectedAndCurrentImageCountToString(const TMap<FString, FExpectedAndCurrentImageCount> & map, const int tabCount);
-	static FString FJobInfoToString(const FJobInfo& job, const int tabCount = 0);
-	static FString FJobToString(const FJob& job, const int tabcount = 0);
-	*/
 
 	void Configure(
 		QueueLogOutputDel*& inputQueueLogOutputDel,
@@ -148,6 +133,4 @@ public:
 	bool CalibrationResultIsQueued();
 	void DequeueCalibrationResult(CalibrationResultQueueContainer & queueContainer);
 	void PollMediaTextureStreams();
-
-	// void SetFenceDown();
 };

@@ -66,6 +66,7 @@ public:
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		FDistortTextureWithCoefficientsParams distortionCorrectionParams);
 
+	/* Input array of textures and pack them into a floating point 16bit (half) 3D volume texture. */
 	UFUNCTION(BlueprintCallable, Category = "Lens Calibrator")
 	static bool PackArrayOfDistortionCorrectionMapsIntoVolumeTexture(
 		TArray<UTexture2D*> distortionCorrectionMaps,
@@ -93,9 +94,4 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
 	static void StopBackgroundImageprocessors();
-
-	/*
-	UFUNCTION(BlueprintCallable, Category="Lens Calibrator")
-	static void Poll ();
-	*/
 };
