@@ -5,8 +5,13 @@
 #include "CoreTypes.h"
 #include "ILensSolverEventReceiver.h"
 
+/* Distortion map generation job data. */
 struct DistortionJob
 {
+	/* The blueprint class that implements ILensSolverEventReceiver, the reference is stored to 
+	this class in order to call methods throughout distortion map generation. */
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver;
+
+	/* Job ID. */
 	FString id;
 };

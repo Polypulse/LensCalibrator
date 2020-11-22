@@ -10,9 +10,12 @@ DECLARE_DELEGATE_OneParam(QueueTextureFileWorkUnitInputDel, FLensSolverTextureFi
 DECLARE_DELEGATE_OneParam(QueuePixelArrayWorkUnitInputDel, FLensSolverPixelArrayWorkUnit)
 DECLARE_DELEGATE_OneParam(QueueFindCornerResultOutputDel, FLensSolverCalibrationPointsWorkUnit)
 
+/* The purpose of this worker is to provide an parallel asynchronous method of solving 
+for the corners in a calibration pattern. */
 class FLensSolverWorkerFindCorners : public FLensSolverWorker
 {
 public:
+	/* Constructor that takes in the worker parameters and a set of delegates for callbacks. */
 	FLensSolverWorkerFindCorners(
 		FLensSolverWorkerParameters & inputParameters,
 		QueueTextureFileWorkUnitInputDel* inputQueueTextureFileWorkUnitInputDel,

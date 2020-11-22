@@ -5,6 +5,8 @@
 #include "LensCalibrator.h"
 #include "LensSolver.h"
 
+/* This method allows you to perform calibration using a set of folders each containing sets of
+images representing the calibration pattern at each zoom level. */
 void ULensSolverBlueprintAPI::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	TArray<FTextureFolderZoomPair> inputTextures,
@@ -22,6 +24,8 @@ void ULensSolverBlueprintAPI::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	);
 }
 
+/* This method allows you to perform calibration at a specific zoom level using an 
+incoming media stream such as a SDI input via capture card. */
 void ULensSolverBlueprintAPI::StartMediaStreamCalibration(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	FTextureSearchParameters textureSearchParameters,

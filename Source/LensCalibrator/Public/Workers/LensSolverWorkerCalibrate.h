@@ -23,25 +23,6 @@ public:
 
 	~FLensSolverWorkerCalibrate()
 	{
-		/*/
-		queueCalibrateWorkUnitDel->Unbind();
-		signalLatch->Unbind();
-
-		queueCalibrateWorkUnitDel = nullptr;
-		signalLatch = nullptr;
-		/*
-		if (queueCalibrateWorkUnitDel != nullptr && queueCalibrateWorkUnitDel->IsBound())
-		{
-			queueCalibrateWorkUnitDel->Unbind();
-			queueCalibrateWorkUnitDel = nullptr;
-		}
-
-		if (signalLatch != nullptr && signalLatch->IsBound())
-		{
-			signalLatch->Unbind();
-			signalLatch = nullptr;
-		}
-		*/
 	};
 
 private:

@@ -7,17 +7,22 @@
 
 #include "DistortionCorrectionMapGenerationResults.generated.h"
 
+/* Post calibration, a distortion correction map is generated and the data that's used
+to generate that map including the actual pixels is stored in this struct. */
 USTRUCT(BlueprintType)
 struct FDistortionCorrectionMapGenerationResults
 {
 	GENERATED_BODY()
+	/* The associated job ID. */
 	FString id;
 
 	int width;
 	int height;
 
+	/* The zoom level associated with this distortion correction. */
 	float zoomLevel;
 
+	/* k_x distortion coefficients. */
 	float k1;
 	float k2;
 	float p1;
@@ -28,7 +33,10 @@ struct FDistortionCorrectionMapGenerationResults
 	float k5;
 	float k6;
 
+	/* Array of pixels representing the distortion correction.*/
 	TArray<FFloat16Color> distortionCorrectionPixels;
+
+	/* Array of pixels to distort an image.*/
 	TArray<FFloat16Color> inverseDistortionCorrectionPixels;
 
 	FDistortionCorrectionMapGenerationResults()

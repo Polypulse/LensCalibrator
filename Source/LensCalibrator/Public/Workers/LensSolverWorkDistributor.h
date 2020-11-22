@@ -17,7 +17,9 @@
 #include "QueueContainers.h"
 #include "ILensSolverEventReceiver.h"
 
-
+/* This is really where the bulk of the work preparation and distribution occurs for the workers, from blueprints data is feed in
+and this class prepares all the work units, manages the workers and receives the results from the calibration. This class follows
+the singleton pattern, so there should only be one throughout the lifetime of the UE4 instance. */
 class LensSolverWorkDistributor
 {
 private:
@@ -90,6 +92,7 @@ private:
 protected:
 public:
 
+	/* Get instance of class (THERE CAN ONLY BE ONE) */
 	static LensSolverWorkDistributor& GetInstance()
 	{
 		static LensSolverWorkDistributor workDistributor;
