@@ -42,7 +42,10 @@ private:
 
 	bool ValidateMediaTexture(const UMediaTexture* inputTexture);
 
+	/* Workers queue their log data from their own thread, then this method will dequeue 
+	those logs so that they can be printed in the console on the main thread. */
 	void PollLogs();
+
 	void PollCalibrationResults ();
 	void PollFinishedJobs();
 

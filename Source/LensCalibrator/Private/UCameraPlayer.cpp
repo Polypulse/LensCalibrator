@@ -17,11 +17,13 @@ void UCameraPlayer::QueueCameraProjectionMatrix(FMatrix inputPerspectiveMatrix)
 
 FSceneView* UCameraPlayer::CalcSceneView(FSceneViewFamily* ViewFamily, FVector& OutViewLocation, FRotator& OutViewRotation, FViewport* Viewport, FViewElementDrawer* ViewDrawer, EStereoscopicPass StereoPass)
 {
+	/* Get scene view context. */
 	FSceneView* View = Super::CalcSceneView(ViewFamily, OutViewLocation, OutViewRotation, Viewport, ViewDrawer, StereoPass);
 
 	if (!queued)
 		return View;
 
+	/* Here we actually set the projection matrix. */
 	if (View)
 		View->UpdateProjectionMatrix(projectionMatrix);
 
@@ -33,16 +35,19 @@ UCameraPlayer * UCameraPlayer::GetLocalPlayerInstance(UObject * worldContextObje
 {
 	valid = false;
 
+	/* Get the world. */
 	UWorld* world = GEngine->GetWorldFromContextObject(worldContextObject, EGetWorldErrorMode::LogAndReturnNull);
 
 	if (!world)
 		return nullptr;
 
+	/* Get the player from the world. */
 	ULocalPlayer * player = world->GetFirstLocalPlayerFromController();
 	if (!player)
 		return nullptr;
 
 	UCameraPlayer* cameraPlayer = dynamic_cast<UCameraPlayer*>(player);
+	/* If the ULocalPlayer is not overrided in the project settings, then this may spam in the console. */
 	if (!cameraPlayer)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Instance of ULocalPlayer is not a UCameraPlayer!"))

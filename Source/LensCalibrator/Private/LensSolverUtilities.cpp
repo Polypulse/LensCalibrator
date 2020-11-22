@@ -9,16 +9,21 @@
 
 class FDirectoryVisitor;
 
+/* This method returns filename post-fixed with an index by looking for files with matching name and 
+iterating until we find a file that does not exist. */
 FString LensSolverUtilities::GenerateIndexedFilePath(const FString& filePathWithoutExtension, const FString& extension)
 {
 	int index = 0;
+	/* Iterate until we find a filename with a post fix that does not exist. */
 	while (FPaths::FileExists(FString::Printf(TEXT("%s-%d.%s"), *filePathWithoutExtension, index, *extension)))
 		index++;
 	return FString::Printf(TEXT("%s-%d.%s"), *filePathWithoutExtension, index, *extension);
 }
 
+/* This method will validate your file path and create the directory tree if it does not exist. */
 bool LensSolverUtilities::ValidateFolder(FString& folderPath, const FString & backupFolder, const FString& logMessageHeader)
 {
+	/* If you pass in a empty string as the folder path, it will build one with the default path instead. */
 	if (folderPath.IsEmpty())
 	{
 		folderPath = backupFolder;
@@ -31,6 +36,7 @@ bool LensSolverUtilities::ValidateFolder(FString& folderPath, const FString & ba
 
 	else
 	{
+		/* Check the string to insure a valid path. */
 		if (!FPaths::ValidatePath(folderPath))
 		{
 			UE_LOG(LogTemp, Error, TEXT("%sThe path: \"%s\" is not a valid."), *logMessageHeader, *folderPath);

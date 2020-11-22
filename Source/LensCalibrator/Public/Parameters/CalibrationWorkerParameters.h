@@ -7,6 +7,9 @@
 
 #include "CalibrationWorkerParameters.generated.h"
 
+/* This struct is accessible in blueprints and provides a set of parameters 
+that are feed into the calibration workers. It is the primary way of
+configuring how calibration occurs. */
 USTRUCT(BlueprintType)
 struct FCalibrationWorkerParameters
 {

@@ -276,8 +276,6 @@ void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int
 
 	UE_LOG(LogTemp, Log, TEXT("Binded finished queue."));
 
-	// LensSolverWorkDistributor::GetInstance().PrepareFindCornerWorkers(findCornersWorkerCount);
-	// LensSolverWorkDistributor::GetInstance().PrepareCalibrateWorkers(calibrateWorkerCount);
 	LensSolverWorkDistributor::GetInstance().PrepareWorkers(findCornersWorkerCount, calibrateWorkerCount);
 }
 
@@ -288,10 +286,12 @@ void ULensSolver::StopBackgroundImageprocessors()
 
 void ULensSolver::PollLogs()
 {
+	/* Keep looping until we have dequeued the all the logs from the workers. */
 	while (!logQueue.IsEmpty())
 	{
 		FString msg;
 		logQueue.Dequeue(msg);
+		/* Print the dequeued log from the worker threads. */
 		UE_LOG(LogTemp, Log, TEXT("%s"), *msg);
 	}
 }
