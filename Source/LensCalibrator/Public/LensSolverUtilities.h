@@ -8,6 +8,10 @@
 #include "Runtime/ImageWritequeue/Public/ImageWriteTask.h"
 #include "Runtime/ImageWritequeue/Public/ImageWriteQueue.h"
 
+/* These are utility macros to convert an FString to and from a char array. This is 
+primarily used for interoperability between standard library structures and UE4 
+structures. Furthermore, it's the primary method of communicating strings across
+DLL boundaries. */
 #define DeclareCharArrayFromFString(arrayName, filePath) \
     char arrayName[260]; \
 	memcpy(&arrayName, TCHAR_TO_ANSI(*filePath), sizeof(char) * filePath.Len()); \

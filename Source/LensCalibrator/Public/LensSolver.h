@@ -28,12 +28,15 @@
 
 #include "LensSolver.generated.h"
 
+/* This is where lens calibration starts from. */
 UCLASS()
 class LENSCALIBRATOR_API ULensSolver : public UObject
 {
 	GENERATED_BODY()
 
 private:
+	/* This delegate is binded to QueueLog and is passed to LensSolverWorkDistributor
+	so it can pass the logs back here to be processed. */
 	QueueLogOutputDel * queueLogOutputDel;
 	QueueFinishedJobOutputDel * queueFinishedJobOutputDel;
 
@@ -53,8 +56,11 @@ private:
 	bool FinishedJobIsQueued();
 	void DequeuedFinishedJob(FinishedJobQueueContainer &queueContainer);
 	void QueueLog(FString msg);
+
+	/* Determine if debug mode is enabled or not. */
 	bool Debug();
 
+	/* Build path to output debug images. */
 	FString PrepareDebugOutputPath (const FString & debugOutputPath);
 
 public:
@@ -62,6 +68,10 @@ public:
 	ULensSolver() {}
 	~ULensSolver() {}
 
+	/* Start calibration from a set of folders each containing a set of textures
+	representing the calibration pattern at a particular zoom level, then pass in corner 
+	search parameters, calibration parameters and media stream texture 
+	parameters. Also, the workers need to be started and idling before you can start this job. */
 	void OneTimeProcessArrayOfTextureFolderZoomPairs(
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		TArray<FTextureFolderZoomPair> inputTextures, 
@@ -69,6 +79,9 @@ public:
 		FCalibrationParameters calibrationParameters,
 		FJobInfo & ouptutJobInfo);
 
+	/* Start calibration from a media stream and pass in corner search parameters, calibration 
+	parameters and media stream texture parameters. Also, the workers need to be started
+	and idling before you can start this job. */
 	void StartMediaStreamCalibration(
 		TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 		FTextureSearchParameters textureSearchParameters,

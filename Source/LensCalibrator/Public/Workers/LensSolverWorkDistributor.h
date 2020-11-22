@@ -36,20 +36,34 @@ private:
 
 	FCalibrationParameters cachedCalibrationParameters;
 
+	/* The thread pool for spawning any kind of workers. */
 	FQueuedThreadPool * threadPool;
+
+	/* Find corner workers keyed via worker ID. */
 	TMap<FString, FWorkerFindCornersInterfaceContainer> findCornersWorkers;
+
+	/* Calibration workers keyed via worker ID. */
 	TMap<FString, FWorkerCalibrateInterfaceContainer> calibrateWorkers;
+
 	bool shutDownWorkersAfterCompletedTasks;
 
+	/* Array of find corner worker IDs sorted each frame by work load. */
 	TArray<FString> workLoadSortedFindCornerWorkers;
+
+	/* Array of calibration worker IDs sorted each frame by work load. */
 	TArray<FString> workLoadSortedCalibrateWorkers;
 
 	TMap<FString, FJob> jobs;
 	TMap<FString, const FString> workerCalibrationIDLUT;
 	TMap<FString, FMediaStreamWorkUnit> mediaTextureJobLUT;
 
+	/* After the calibration workers complete their work units, the 
+	results are queued in this structure. Here we also need to
+	explicitly state that we are declaring a queue with multiple
+	producers and a single consumer of data. */
 	TQueue<CalibrationResultQueueContainer, EQueueMode::Mpsc> queuedCalibrationResults;
 
+	/* This method is called by the workers to queue log messages onto the main thread. */
 	void QueueLogAsync(FString msg);
 
 	bool GetFindCornersContainerInterfacePtr(
@@ -68,6 +82,7 @@ private:
 
 	void SortFindCornersWorkersByWorkLoad();
 	void SortCalibrateWorkersByWorkLoad();
+
 	void PollShutdownFindCornerWorkersIfNecessary();
 	void PollShutdownAllWorkersIfNecessary();
 
@@ -81,7 +96,11 @@ private:
 	void StopFindCornerWorkers();
 	void StopCalibrationWorkers();
 
+	/* Lock access to the variables within this class, locks 
+	may occur on the main thread or the worker's threads. */
 	void Lock();
+
+	/* Unlock access to the variables within this class. */
 	void Unlock();
 
 	int64 GetTickNow();

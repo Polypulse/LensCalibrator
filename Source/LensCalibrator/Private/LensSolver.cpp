@@ -63,6 +63,7 @@ void ULensSolver::QueueLog(FString msg)
 	logQueue.Enqueue(msg);
 }
 
+/* Determine if debug mode is enabled or not. */
 bool ULensSolver::Debug()
 {
 	static IConsoleVariable* variable = IConsoleManager::Get().FindConsoleVariable(TEXT("LensCalibrator.Debug"));
@@ -107,6 +108,10 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	}
 
 	int useCount = 0, useIndex = 0, offset = 0;
+	/* Initially loop through all the texture folders to determine
+	if any of the zoom levels are disabled/enabled and count the
+	enabled ones so that we can pre-allocate our arrays with
+	the correct size. */
 	for (int ti = 0; ti < inputTextures.Num(); ti++)
 		useCount += inputTextures[ti].use;
 
@@ -114,13 +119,19 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	TArray<int> expectedImageCounts;
 	TArray<float> zoomLevels;
 
+	/* Preallocate our arrays. */
 	imageFiles.SetNum(useCount);
 	expectedImageCounts.SetNum(useCount);
 	zoomLevels.SetNum(useCount);
 
+	/* Loop through folders each containing sets of textures representing a 
+	particular zoom level of the calibration pattern. */
 	for (int ti = 0; ti < inputTextures.Num(); ti++)
 	{
+		/* If we are skipping a folder, then shift the index so we can
+		keep the index consistent. */
 		useIndex = ti - offset;
+
 		TArray<FString> imagesInDirectory;
 		TArray<UTexture2D*> textures;
 
@@ -130,6 +141,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			continue;
 		}
 
+		/* Fill imageFiles array at each zoom level with absolute file path to texture. */
 		if (!LensSolverUtilities::GetFilesInFolder(inputTextures[ti].absoluteFolderPath, imageFiles[useIndex]))
 			return;
 
@@ -139,6 +151,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			return;
 		}
 
+		/* Store the expected number of images and zoom level for calibration. */
 		expectedImageCounts[useIndex] = imageFiles[useIndex].Num();
 		zoomLevels[useIndex] = inputTextures[ti].zoomLevel;
 	}
@@ -146,8 +159,11 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(calibrationParameters);
 	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, useCount, UJobType::OneTime);
 
+	/* Loop through zoom levels. */
 	for (int ci = 0; ci < useCount; ci++)
 	{
+		/* Loop through images for zoom level, build work unit and 
+		queue that work unit to be consumed by the workers. */
 		for (int ii = 0; ii < imageFiles[ci].Num(); ii++)
 		{
 			FLensSolverTextureFileWorkUnit workUnit;
@@ -156,7 +172,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 			workUnit.baseParameters.zoomLevel					= zoomLevels[ci];
 			workUnit.baseParameters.friendlyName				= FPaths::GetBaseFilename(imageFiles[ci][ii]);
 
-			// Ugly, but this is temporary. Currently trying to refactor a larger part of the program.
+			/* Ugly */
 			workUnit.textureSearchParameters.nativeFullResolutionX					= textureSearchParameters.nativeFullResolution.X;
 			workUnit.textureSearchParameters.nativeFullResolutionY					= textureSearchParameters.nativeFullResolution.Y;
 			workUnit.textureSearchParameters.resizePercentage						= textureSearchParameters.resizePercentage;
@@ -170,17 +186,21 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 
 			workUnit.textureFileParameters.absoluteFilePath							= imageFiles[ci][ii];
 
+			/* Setup debug output texture paths. */
 			workUnit.textureSearchParameters.writeCornerVisualizationTextureToFile	= textureSearchParameters.writeCornerVisualizationTextureToFile;
 			FillCharArrayFromFString(workUnit.textureSearchParameters.cornerVisualizationTextureOutputPath, PrepareDebugOutputPath(textureSearchParameters.cornerVisualizationTextureOutputPath));
-
 			workUnit.textureSearchParameters.writePreCornerDetectionTextureToFile	= textureSearchParameters.writePreCornerDetectionTextureToFile;
 			FillCharArrayFromFString(workUnit.textureSearchParameters.preCornerDetectionTextureOutputPath, PrepareDebugOutputPath(textureSearchParameters.preCornerDetectionTextureOutputPath));
 
+			/* Queue the work unit to be consumed by the workers. */
 			LensSolverWorkDistributor::GetInstance().QueueTextureFileWorkUnit(ouptutJobInfo.jobID, workUnit);
 		}
 	}
 }
 
+/* Start calibration from a media stream and pass in corner search parameters, calibration 
+parameters and media stream texture parameters. Also, the workers need to be started
+and idling before you can start this job. */
 void ULensSolver::StartMediaStreamCalibration(
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
 	FTextureSearchParameters textureSearchParameters,
@@ -221,9 +241,11 @@ void ULensSolver::StartMediaStreamCalibration(
 	TArray<int> expectedImageCounts;
 	expectedImageCounts.Add(mediaStreamParameters.expectedStreamSnapshotCount);
 
+	/* Set the calibration parameters for all workers. */
 	LensSolverWorkDistributor::GetInstance().SetCalibrateWorkerParameters(calibrationParameters);
 	ouptutJobInfo = LensSolverWorkDistributor::GetInstance().RegisterJob(eventReceiver, expectedImageCounts, 1, UJobType::Continuous);
 
+	/* Setup work unit. */
 	FMediaStreamWorkUnit workUnit;
 	workUnit.baseParameters.jobID												= ouptutJobInfo.jobID;
 	workUnit.baseParameters.calibrationID										= ouptutJobInfo.calibrationIDs[0];
@@ -243,12 +265,13 @@ void ULensSolver::StartMediaStreamCalibration(
 	workUnit.mediaStreamParameters												= mediaStreamParameters;
 	workUnit.mediaStreamParameters.currentStreamSnapshotCount					= 0;
 
+	/* Setup debug output texture paths. */
 	workUnit.textureSearchParameters.writeCornerVisualizationTextureToFile		= textureSearchParameters.writeCornerVisualizationTextureToFile;
 	FillCharArrayFromFString(workUnit.textureSearchParameters.cornerVisualizationTextureOutputPath, PrepareDebugOutputPath(textureSearchParameters.cornerVisualizationTextureOutputPath));
-
 	workUnit.textureSearchParameters.writePreCornerDetectionTextureToFile		= textureSearchParameters.writePreCornerDetectionTextureToFile;
 	FillCharArrayFromFString(workUnit.textureSearchParameters.preCornerDetectionTextureOutputPath, PrepareDebugOutputPath(textureSearchParameters.preCornerDetectionTextureOutputPath));
 
+	/* Queue the work unit for the workers to consume. */
 	LensSolverWorkDistributor::GetInstance().QueueMediaStreamWorkUnit(workUnit);
 }
 
