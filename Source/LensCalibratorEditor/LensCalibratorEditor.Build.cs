@@ -12,6 +12,9 @@ public class LensCalibratorEditor : ModuleRules
 {
 	public LensCalibratorEditor (ReadOnlyTargetRules Target) : base(Target)
 	{
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		DefaultBuildSettings = BuildSettingsVersion.V2;
+
 		PublicIncludePaths.AddRange(
 			new string[]
 			{

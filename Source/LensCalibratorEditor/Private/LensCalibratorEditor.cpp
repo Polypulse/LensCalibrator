@@ -87,7 +87,7 @@ void FLensCalibratorEditorModule::OpenLensCalibrator()
 	FText DisplayName = FText::FromString(blueprint->GetName());
 	FLevelEditorModule& levelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
 	TSharedPtr<FTabManager> levelEditorTabManager = levelEditorModule.GetLevelEditorTabManager();
-	TSharedRef<SDockTab> newDockTab = levelEditorTabManager->InvokeTab(RegistrationName);
+	TSharedPtr<SDockTab> newDockTab = levelEditorTabManager->TryInvokeTab(RegistrationName);
 
 	UWorld* world = GEditor->GetEditorWorldContext().World();
 

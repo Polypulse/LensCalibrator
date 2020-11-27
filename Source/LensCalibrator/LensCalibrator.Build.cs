@@ -13,6 +13,9 @@ public class LensCalibrator : ModuleRules
 	const string logLabel = "[Lens Calibrator]";
 	public LensCalibrator(ReadOnlyTargetRules Target) : base(Target)
 	{
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		DefaultBuildSettings = BuildSettingsVersion.V2;
+
 		bool isDebug = Target.Configuration == UnrealTargetConfiguration.Debug && Target.bDebugBuildsActuallyUseDebugCRT;
 		Console.WriteLine(string.Format("{0}: {1}", logLabel, isDebug ? "Compiling debug build." : "Compiling release build."));
 
@@ -25,13 +28,11 @@ public class LensCalibrator : ModuleRules
 			}
 		);
 
-
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
 			}
 		);
-
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
