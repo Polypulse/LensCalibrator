@@ -17,8 +17,8 @@
 #include "QueueContainers.h"
 #include "ILensSolverEventReceiver.h"
 
-/* This is really where the bulk of the work preparation and distribution occurs for the workers, from blueprints data is feed in
-and this class prepares all the work units, manages the workers and receives the results from the calibration. This class follows
+/* This is really where the bulk of the work preparation and distribution occurs for the workers, data is feed in from ULensSolver
+and this class handles queuing all the work units, manages the workers and receives the results from the calibration. This class follows
 the singleton pattern, so there should only be one throughout the lifetime of the UE4 instance. */
 class LensSolverWorkDistributor
 {
@@ -121,6 +121,8 @@ public:
 	LensSolverWorkDistributor(LensSolverWorkDistributor const&) = delete;
 	void operator=(LensSolverWorkDistributor const&) = delete;
 
+	/* Pass in delegates and configuration from ULensSolver 
+	so that this distributor class can pass data back to ULensSolver. */
 	void Configure(
 		QueueLogOutputDel*& inputQueueLogOutputDel,
 		QueueFinishedJobOutputDel*& inputQueueFinishedJobOutputDel,

@@ -142,31 +142,31 @@ void FLensSolverWorkerCalibrate::Tick()
 		output.principalPixelPointX, output.principalPixelPointY,
 		output.aspectRatio));
 
-	FCalibrationResult solvedPoints;
+	FCalibrationResult result;
 
-	solvedPoints.baseParameters			= latchData.baseParameters;
-	solvedPoints.success				= true;
-	solvedPoints.fovX					= output.fovX;
-	solvedPoints.fovY					= output.fovY;
-	solvedPoints.focalLengthMM			= output.focalLengthMM;
-	solvedPoints.aspectRatio			= output.aspectRatio;
-	solvedPoints.sensorSizeMM			= FVector2D(output.sensorSizeMMX, output.sensorSizeMMY);
-	solvedPoints.principalPixelPoint	= FVector2D(output.principalPixelPointX, output.principalPixelPointY);
-	solvedPoints.resolution.X			= latchData.resizeParameters.nativeX;
-	solvedPoints.resolution.Y			= latchData.resizeParameters.nativeY;
-	solvedPoints.perspectiveMatrix		= perspectiveMatrix;
-	solvedPoints.k1						= output.k1;
-	solvedPoints.k2						= output.k2;
-	solvedPoints.p1						= output.p1;
-	solvedPoints.p2						= output.p2;
-	solvedPoints.k3						= output.k3;
-	solvedPoints.k4						= output.k4;
-	solvedPoints.k5						= output.k5;
-	solvedPoints.k6						= output.k6;
-	solvedPoints.imageCount				= imageCount;
+	result.baseParameters			= latchData.baseParameters;
+	result.success					= true;
+	result.fovX						= output.fovX;
+	result.fovY						= output.fovY;
+	result.focalLengthMM			= output.focalLengthMM;
+	result.aspectRatio				= output.aspectRatio;
+	result.sensorSizeMM				= FVector2D(output.sensorSizeMMX, output.sensorSizeMMY);
+	result.principalPixelPoint		= FVector2D(output.principalPixelPointX, output.principalPixelPointY);
+	result.resolution.X				= latchData.resizeParameters.nativeX;
+	result.resolution.Y				= latchData.resizeParameters.nativeY;
+	result.perspectiveMatrix		= perspectiveMatrix;
+	result.k1						= output.k1;
+	result.k2						= output.k2;
+	result.p1						= output.p1;
+	result.p2						= output.p2;
+	result.k3						= output.k3;
+	result.k4						= output.k4;
+	result.k5						= output.k5;
+	result.k6						= output.k6;
+	result.imageCount				= imageCount;
 
 	if (latchData.calibrationParameters.writeCalibrationResultsToFile)
-		WriteSolvedPointsToJSONFile(solvedPoints, latchData.calibrationParameters.calibrationResultsOutputPath);
+		WriteSolvedPointsToJSONFile(result, latchData.calibrationParameters.calibrationResultsOutputPath);
 
 	if (Debug())
 		QueueLog(FString("(INFO): Finished with work unit."));
@@ -174,7 +174,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (ShouldExit())
 		return;
 
-	QueueCalibrationResult(solvedPoints);
+	QueueCalibrationResult(result);
 }
 
 int FLensSolverWorkerCalibrate::GetWorkLoad()
