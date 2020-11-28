@@ -275,8 +275,10 @@ void ULensSolver::StartMediaStreamCalibration(
 	LensSolverWorkDistributor::GetInstance().QueueMediaStreamWorkUnit(workUnit);
 }
 
+/* Start find corner and calibration background workers. */
 void ULensSolver::StartBackgroundImageProcessors(int findCornersWorkerCount, int calibrateWorkerCount, bool shutDownWorkersAfterCompletingTasks)
 {
+	/* Are the workers already running? */
 	if (WorkerRegistry::Get().WorkersRunning())
 	{
 		UE_LOG(LogTemp, Error, TEXT("You already have workers running, stop them before starting more."));
@@ -355,6 +357,7 @@ void ULensSolver::PollFinishedJobs()
 	}
 }
 
+/* Called each frame from blueprints to keep the calibration system ticking. */
 void ULensSolver::Poll()
 {
 	PollCalibrationResults();
