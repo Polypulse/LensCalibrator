@@ -47,7 +47,9 @@ class FLensSolverWorker : public FNonAbandonableTask
 public:
 
 private:
+	/* Cross thread communication mutex. */
 	FCriticalSection threadLock;
+
 	FString workerID;
 	bool flagToExit;
 
@@ -79,9 +81,13 @@ protected:
 	bool ShouldExit();
 	bool Debug();
 
+	/* Lock in this thread.*/
 	void Lock();
+
+	/* Unlock in this thread.*/
 	void Unlock();
 
+	/* Queue log message to main thread so that it can be dequeued and printed to the console on the main thread. */
 	void QueueLog(FString log);
 
 	virtual void Tick() {};

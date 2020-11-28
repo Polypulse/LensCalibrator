@@ -22,6 +22,7 @@ FLensSolverWorker::FLensSolverWorker(FLensSolverWorkerParameters& inputParameter
 	flagToExit = false;
 }
 
+/* Queue log message to main thread so that it can be dequeued and printed to the console on the main thread. */
 void FLensSolverWorker::QueueLog(FString log)
 {
 	log = FString::Printf(TEXT("Worker (%s): %s"), *workerID, *log);
@@ -33,6 +34,7 @@ void FLensSolverWorker::QueueLog(FString log)
 	queueLogOutputDel->Execute(log);
 }
 
+/* Used by ULensSolverWorkDistributor for identification purposes. */
 FString FLensSolverWorker::GetWorkerID()
 {
 	FString copyOfWorkerID;
@@ -42,26 +44,37 @@ FString FLensSolverWorker::GetWorkerID()
 	return copyOfWorkerID;
 }
 
+/* All background work for any derived classes stem from this call and is executed in a separate thread. */
 void FLensSolverWorker::DoWork()
 {
 	FLensSolverWorker* baseWorker = this;
 
+	/* Keep the thread alive in this while loop until the worker has been flagged to exit. */
 	while (!ShouldExit())
 	{
+		/* Determine if there is any work to do. */
 		if (GetWorkLoad() == 0)
 		{
+			/* Sleep for 1 second to reduce CPU load when this worker is idling. */
 			FPlatformProcess::Sleep(1.0f);
+
+			/* Continue to the next loop if we still don't have work to do. */
 			if (GetWorkLoad() == 0)
 				continue;
 		}
 
+		/* Call the overrided calculation method that implements this class. */
 		baseWorker->Tick();
 	}
 
+	/* Log to main thread that this worker has exited it's loop. */
 	QueueLog("Exited loop.");
+
+	/* Notify derived class that were shutting down, so clean up. */
 	NotifyShutdown();
 }
 
+/* Exit worker loop, reset anything and queue a message log to the main thread that we've exited. */
 bool FLensSolverWorker::Exit()
 {
 	Lock();
@@ -72,6 +85,7 @@ bool FLensSolverWorker::Exit()
 	return true;
 }
 
+/* Check flags from main thread whether this worker should exit it's loop. */
 bool FLensSolverWorker::ShouldExit()
 {
 	bool shouldExit = false;
@@ -80,11 +94,14 @@ bool FLensSolverWorker::ShouldExit()
 	shouldExit = flagToExit;
 	Unlock();
 
+	/* Check whether only this worker has been flagged to exit, or whether all workers have been flagged to exit. */
 	return shouldExit || WorkerRegistry::Get().ShouldExitAll();
 }
 
+/* Is debug mode enabled? */
 bool FLensSolverWorker::Debug()
 {
+	/* This console variable is registered in the plugin module: ULensSolver */
 	static IConsoleVariable * variable = IConsoleManager::Get().FindConsoleVariable(TEXT("LensCalibrator.Debug"));
 	if (variable != nullptr && variable->GetInt() == 0)
 		return false;
@@ -101,9 +118,9 @@ void FLensSolverWorker::Unlock()
 	threadLock.Unlock();
 }
 
+/* Build debugging log string. */
 FString FLensSolverWorker::JobDataToString(const FBaseParameters & baseParameters)
 {
 	return FString::Printf(TEXT("Calibration ID: (%s)"), *baseParameters.calibrationID);
-	// return FString::Printf(TEXT("(Job ID: \"%s\", Calibration ID: \"%s\", Friendly Name: \"%s\", Zoom Level: %f"), *baseParameters.jobID, *baseParameters.calibrationID, *baseParameters.friendlyName, baseParameters.zoomLevel);
 }
 

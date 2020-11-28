@@ -9,6 +9,11 @@
 
 #include "LensSolverWorkerParameters.h"
 
+/* Work units are containers that contain both configuration parameters and data 
+to process. They are feed to back and forth between ULensSolverWorkDistributor
+and the background workers. */
+
+
 struct FLensSolverTextureWorkUnit
 {
 	FBaseParameters baseParameters;

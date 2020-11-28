@@ -11,15 +11,17 @@ FLensSolverWorkerCalibrate::FLensSolverWorkerCalibrate(
 	FLensSolverWorkerParameters & inputParameters,
 	QueueCalibrateWorkUnitInputDel* inputQueueCalibrateWorkUnitDel,
 	QueueLatchInputDel* inputSignalLatch,
-	QueueCalibrationResultOutputDel* inputOnSolvePointsDel) :
-	FLensSolverWorker(inputParameters),
-	onSolvePointsDel(inputOnSolvePointsDel)
+	QueueCalibrationResultOutputDel* inputOnSolvePointsDel) : 
+	FLensSolverWorker(inputParameters), /* Call base class constructor and pass generic input parameters. */
+	onSolvePointsDel(inputOnSolvePointsDel) /* Initialize class member delegate with input. */
 {
+	/* Bind internal methods to delegates so they can be called from ULensSolverWorkDistributor. */
 	inputQueueCalibrateWorkUnitDel->BindRaw(this, &FLensSolverWorkerCalibrate::QueueWorkUnit);
 	inputSignalLatch->BindRaw(this, &FLensSolverWorkerCalibrate::QueueLatch);
 
 	workUnitCount = 0;
 
+	/* Register that this worker has been initialized. */
 	WorkerRegistry::Get().CountCalibrateWorker();
 }
 
@@ -54,20 +56,32 @@ FMatrix FLensSolverWorkerCalibrate::GeneratePerspectiveMatrixFromFocalLength(con
 	return perspectiveMatrix;
 }
 
+/* Overridden method from ULensSolverWorker, only gets called within the worker thread when there is work queued. */
 void FLensSolverWorkerCalibrate::Tick()
 {
+	/* Work is queued in batches since parameters can change between those batches, therefore if this latch is set
+	it means that all the necessary work has been queued and we should start. */
 	if (!LatchInQueue())
 		return;
 
+	/* Don't do anything if the worker thread is supposed to exit, see the base class ULensSolverWorker. */
 	if (ShouldExit())
 		return;
 
+	/* Dequeue the latch which also contains parameters for this specific task. */
 	FCalibrateLatch latchData;
 	DequeueLatch(latchData);
 
-	TArray<float> corners;
+	/* Found calibration patterns is put in this float array, this array has x & y coordinates packed into it via: x,y,x,y,x,y,x,y. */
+	TArray<float> corners; 
+
+	/* The number of corners along the width and height that are expected to be found in the calibration pattern.*/
 	int cornerCountX, cornerCountY;
+
+	/* The size of a single square in the calibration pattern. */
 	float chessboardSquareSizeMM;
+
+	/* The number images in the work units. */
 	int imageCount;
 
 	if (!DequeueAllWorkUnits(
@@ -105,24 +119,27 @@ void FLensSolverWorkerCalibrate::Tick()
 	parameters.useRationalModel								= latchData.calibrationParameters.useRationalModel;
 
 	FCalibrateLensOutput output;
-	if (!GetOpenCVWrapper().CalibrateLens(
+
+	/* Send data across DLL boundary to be prepared and processed in OpenCV, currently this method will always return true */
+	GetOpenCVWrapper().CalibrateLens(
 		latchData.resizeParameters,
 		parameters,
-		corners.GetData(),
+		corners.GetData(), /* Do not pass any UE4 class types across the DLL boundary, passing the pointer is fine. */
 		chessboardSquareSizeMM,
 		cornerCountX,
 		cornerCountY,
 		imageCount,
 		output,
-		Debug()
-	))
-		return;
+		Debug()) /* Pass the debug mode across the DLL boundary. */
 
+	/* This isn't really necessary unless the lens has extreme lens shift, then the projection matrix will 
+	need to be overridden, so we calculate it anyways for now. */
 	FMatrix perspectiveMatrix = GeneratePerspectiveMatrixFromFocalLength(
 		FIntPoint(latchData.resizeParameters.nativeX, latchData.resizeParameters.nativeY), 
 		FVector2D(output.principalPixelPointX, output.principalPixelPointY), 
 		output.focalLengthMM);
 
+	/* Queue result message log to the main thread to be printed to the console. */
 	QueueLog(FString::Printf(TEXT("(INFO): Completed camera calibration at zoom level: %f "
 		"with solve error: %f "
 		"with results: ("
@@ -142,8 +159,8 @@ void FLensSolverWorkerCalibrate::Tick()
 		output.principalPixelPointX, output.principalPixelPointY,
 		output.aspectRatio));
 
+	/* Store all the relevant data the user may need in this result struct. */
 	FCalibrationResult result;
-
 	result.baseParameters			= latchData.baseParameters;
 	result.success					= true;
 	result.fovX						= output.fovX;
@@ -165,6 +182,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	result.k6						= output.k6;
 	result.imageCount				= imageCount;
 
+	/* Write the calibration results to a JSON file if the parameter is toggled. */
 	if (latchData.calibrationParameters.writeCalibrationResultsToFile)
 		WriteSolvedPointsToJSONFile(result, latchData.calibrationParameters.calibrationResultsOutputPath);
 
@@ -174,6 +192,7 @@ void FLensSolverWorkerCalibrate::Tick()
 	if (ShouldExit())
 		return;
 
+	/* Queue the result back to the main thread and send to blueprint interface class. */
 	QueueCalibrationResult(result);
 }
 
@@ -186,6 +205,7 @@ int FLensSolverWorkerCalibrate::GetWorkLoad()
 	return count;
 }
 
+/* Called by the main thread via a delegate registered in this class's constructor. */
 void FLensSolverWorkerCalibrate::QueueWorkUnit(const FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit)
 {
 	Lock();
