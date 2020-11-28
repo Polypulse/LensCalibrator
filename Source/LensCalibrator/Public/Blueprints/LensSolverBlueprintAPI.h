@@ -22,6 +22,8 @@
 
 #include "LensSolverBlueprintAPI.generated.h"
 
+/* This class provides a static set of methods accessible from any
+blueprint class for performing lens calibration. */
 UCLASS(BlueprintType, Category = "Lens Calibrator", meta = (Keywords = ""))
 class LENSCALIBRATOR_API ULensSolverBlueprintAPI : public UObject
 {

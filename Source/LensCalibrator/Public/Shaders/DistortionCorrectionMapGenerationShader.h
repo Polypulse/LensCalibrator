@@ -13,6 +13,7 @@
 #include "GlobalShader.h"
 #include "ShaderParameterUtils.h"
 
+/* This is a basic vertex shader that just renders a full screen quad. */
 class FDistortionCorrectionMapGenerationVS : public FGlobalShader
 {
 	DECLARE_SHADER_TYPE(FDistortionCorrectionMapGenerationVS, Global);
@@ -25,13 +26,21 @@ public:
 	void SetParameters(FRHICommandList& RHICmdList, const TShaderRHIParamRef ShaderRHI, const FGlobalShaderPermutationParameters& ShaderInputData);
 };
 
+/* The purpose of this shader is to generate a distortion or
+inverse distortion map from kth distortion coefficients
+determined during the lens calibration process. */
 class FDistortionCorrectionMapGenerationPS : public FGlobalShader
 {
 	DECLARE_SHADER_TYPE(FDistortionCorrectionMapGenerationPS, Global);
 
 private:
+	/* Center of the lens. */
 	LAYOUT_FIELD(FShaderParameter, normalizedPrincipalPointParameter);
+
+	/* Generate distortion removal/add toggle. */
 	LAYOUT_FIELD(FShaderParameter, generateInverseMapParameter);
+
+	/* Kth distortion coefficients, see: https://en.wikipedia.org/wiki/Distortion_(optics) */
 	LAYOUT_FIELD(FShaderParameter, k1Parameter);
 	LAYOUT_FIELD(FShaderParameter, k2Parameter);
 	LAYOUT_FIELD(FShaderParameter, p1Parameter);
@@ -45,6 +54,7 @@ public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters);
 
 	template<typename TShaderRHIParamRef>
+	/* Apply shader parameters. */
 	void SetParameters(
 		FRHICommandListImmediate& RHICmdList,
 		const TShaderRHIParamRef ShaderRHI,
@@ -57,5 +67,6 @@ public:
 		bool generateInverseMap);
 };
 
+/* Paths to vertex/pixel shader files. */
 IMPLEMENT_GLOBAL_SHADER(FDistortionCorrectionMapGenerationVS, "/LensCalibratorShaders/Private/DistortionCorrectionMapGeneration.usf", "MainVS", SF_Vertex);
 IMPLEMENT_GLOBAL_SHADER(FDistortionCorrectionMapGenerationPS, "/LensCalibratorShaders/Private/DistortionCorrectionMapGeneration.usf", "MainPS", SF_Pixel);

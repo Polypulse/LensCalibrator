@@ -7,6 +7,7 @@
 
 #include "TextureZoomPair.generated.h"
 
+/* Tuple associating single image with a zoom level. */
 USTRUCT(BlueprintType)
 struct FTextureZoomPair
 {

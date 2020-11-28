@@ -10,6 +10,10 @@
 
 #include "GenericLensSolverParametersDataAsset.generated.h"
 
+/* Since you can perform lens calibration via a media stream or
+via folders of images, each of those approaches requires a different
+set of parameters for configuration. Therefore, this is the base
+data asset that abstracts across those two calibration modes. */
 UCLASS(BlueprintType)
 class UGenericLensSolverParametersDataAsset : public UDataAsset
 {

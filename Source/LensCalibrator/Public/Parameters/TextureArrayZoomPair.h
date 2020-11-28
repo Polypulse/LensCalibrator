@@ -7,6 +7,8 @@
 
 #include "TextureArrayZoomPair.generated.h"
 
+/* This struct provides a blueprint accessible container that 
+contains a set of images associated with a zoom level. */
 USTRUCT(BlueprintType)
 struct FTextureArrayZoomPair
 {

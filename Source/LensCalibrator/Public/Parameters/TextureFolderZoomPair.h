@@ -7,6 +7,9 @@
 
 #include "TextureFolderZoomPair.generated.h"
 
+/* This struct provides a blueprint compatible container for associating
+a folder path associated with a zoom level where what folder contains
+a set of images. */
 USTRUCT(BlueprintType)
 struct FTextureFolderZoomPair
 {
