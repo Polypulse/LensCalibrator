@@ -135,22 +135,35 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 	UE_LOG(LogTemp, Log, TEXT("(INFO): Started %d Calibrate workers"), count);
 }
 
+/* Create job a one time or continuous job and return the job info. */
 FJobInfo LensSolverWorkDistributor::RegisterJob(
-	TScriptInterface<ILensSolverEventReceiver> eventReceiver,
-	const TArray<int> & expectedImageCounts,
-	const int expectedResultCount,
-	const UJobType jobType)
+	TScriptInterface<ILensSolverEventReceiver> eventReceiver, /* The interface that a blueprint class implements for callbacks. */
+
+	/* The expected number of images for this job, if this is a media stream its the number of snapshots of 
+	that stream, if its texture folders its the number of images in those folders. */
+	const TArray<int> & expectedImageCounts, 
+
+	/* The expected number of results for this job, for a media stream job this should only be 1, if its a set of texture folders
+	it should be the number of texture folders associated with each zoom level. */
+	const int expectedResultCount, 
+	const UJobType jobType /* Job type either continuous or one shot. */ )
 {
 	TArray<FString> calibrationIDs;
 	TMap<FString, FExpectedAndCurrentImageCount> mapOfExpectedAndCurrentImageCounts;
 
+	/* If there are 3 folders of images where each folder represents a zoom level, this means
+	there will be 3 calibration IDs and 3 expected results. */
 	calibrationIDs.SetNum(expectedImageCounts.Num());
+
+	/* Loop through calibrations. */
 	for (int i = 0; i < calibrationIDs.Num(); i++)
 	{
 		calibrationIDs[i] = FGuid::NewGuid().ToString();
+		/* Map expected images to calibration IDs. */
 		mapOfExpectedAndCurrentImageCounts.Add(calibrationIDs[i], FExpectedAndCurrentImageCount(expectedImageCounts[i], 0));
 	}
 
+	/* Handle to new job. */
 	FJobInfo jobInfo;
 	{
 		jobInfo.jobID = FGuid::NewGuid().ToString();
@@ -169,7 +182,10 @@ FJobInfo LensSolverWorkDistributor::RegisterJob(
 	}
 
 	Lock();
+
+	/* Map job to job ID. */
 	jobs.Add(jobInfo.jobID, job);
+
 	Unlock();
 
 	QueueLogAsync(FString::Printf(TEXT("(INFO): Registered job with ID: \"%s\"."), *job.jobInfo.jobID));
@@ -187,8 +203,10 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 		return;
 	}
 
+	/* Sort our corner finding background workers by least busy to most busy so we can load balance correctly. */
 	SortFindCornersWorkersByWorkLoad();
 
+	/* Get first corner finding background worker. */
 	const FString workerID = workLoadSortedFindCornerWorkers[0];
 	if (workerID.IsEmpty())
 	{
@@ -197,6 +215,7 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 		return;
 	}
 
+	/* Get interface to worker. */
 	FWorkerFindCornersInterfaceContainer* interfaceContainer =nullptr;
 	if (!GetFindCornersContainerInterfacePtr(workerID, interfaceContainer))
 	{
@@ -205,12 +224,14 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 	}
 	Unlock();
 
+	/* Determine if we have a valid delegate to execute methods in our background worker. */
 	if (!interfaceContainer->queuePixelArrayWorkUnitInputDel.IsBound())
 	{
 		QueueLogAsync(FString::Printf(TEXT("(ERROR): FindCornerWorker: \"%s\" does not have a QueueWorkUnit delegate binded!"), *workerID));
 		return;
 	}
 
+	/* Queue pixel data work unit to worker to find calibration pattern corners in the image. */
 	interfaceContainer->queuePixelArrayWorkUnitInputDel.Execute(pixelArrayWorkUnit);
 }
 
@@ -252,6 +273,7 @@ void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, 
 	interfaceContainer->queueTextureFileWorkUnitInputDel.Execute(textureFileWorkUnit);
 }
 
+/* Queuing work unit for taking snapshots of media stream. */
 void LensSolverWorkDistributor::QueueMediaStreamWorkUnit(const FMediaStreamWorkUnit mediaStreamWorkUnit)
 {
 	if (mediaTextureJobLUT.Contains(mediaStreamWorkUnit.baseParameters.jobID))
@@ -263,6 +285,7 @@ void LensSolverWorkDistributor::QueueMediaStreamWorkUnit(const FMediaStreamWorkU
 	if (Debug())
 		QueueLogAsync(FString::Printf(TEXT("Queued MediaStreamWorkUnit for calibration"), *mediaStreamWorkUnit.baseParameters.calibrationID));
 
+	/* Media stream calibration job mapping between work unit and job ID. */
 	mediaTextureJobLUT.Add(mediaStreamWorkUnit.baseParameters.jobID, mediaStreamWorkUnit);
 }
 
@@ -391,6 +414,8 @@ void LensSolverWorkDistributor::DequeueCalibrationResult(CalibrationResultQueueC
 	queuedCalibrationResults.Dequeue(queueContainer);
 }
 
+/* This is called from blueprints every frame in order to continue 
+feeding new frames into the system for calibration. */
 void LensSolverWorkDistributor::PollMediaTextureStreams()
 {
 	Lock();
@@ -402,20 +427,23 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 
 	LensSolverWorkDistributor* workDistributor = this;
 
-	TArray<FString> keys;
-	mediaTextureJobLUT.GetKeys(keys);
+	TArray<FString> jobIDs;
+	mediaTextureJobLUT.GetKeys(jobIDs);
 
-	for (int i = 0; i < keys.Num(); i++)
+	/* Loop through job IDs related to media stream calibration work units. */
+	for (int i = 0; i < jobIDs.Num(); i++)
 	{
-		FMediaStreamWorkUnit * mediaStreamWorkUnit = mediaTextureJobLUT.Find(keys[i]);
+		FMediaStreamWorkUnit * mediaStreamWorkUnit = mediaTextureJobLUT.Find(jobIDs[i]);
 
 		int64 tickNow = GetTickNow();
 
+		/* Snapshots are taken from the media stream at a frequency that the user defines, so if our tick has not met the snapshot to frame, then skip this frame.  */
 		if ((tickNow - mediaStreamWorkUnit->mediaStreamParameters.previousSnapshotTime) / 1000.0f < mediaStreamWorkUnit->mediaStreamParameters.streamSnapshotIntervalFrequencyInSeconds)
 			continue;
 
 		mediaStreamWorkUnit->mediaStreamParameters.previousSnapshotTime = tickNow;
 
+		/* Determine whether the media stream texture is valid. */
 		if (!ValidateMediaTexture(mediaStreamWorkUnit->mediaStreamParameters.mediaTexture))
 		{
 			QueueLogAsync(FString::Printf(TEXT("Media texture in media stream work unit is invalid for calibration: \"%s\""), *mediaStreamWorkUnit->baseParameters.calibrationID));
@@ -424,8 +452,15 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 
 		FMediaStreamWorkUnit copyMediaSreamWorkUnit = *mediaStreamWorkUnit;
 
+		/* Queue command to take a snapshot of the render stream to the rendering thread. */
 		ENQUEUE_RENDER_COMMAND(MediaStreamSnapshotRenderCommand)
 		(
+			/* This works like so:
+			[{variables local to scope that you want to use on the render thread}]({UE4 variables}) 
+			{
+				{code executed on render thread. }
+			}
+			*/
 			[workDistributor, copyMediaSreamWorkUnit](FRHICommandListImmediate& RHICmdList)
 			{
 				workDistributor->MediaTextureRenderThread(
@@ -434,7 +469,10 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 			}
 		);
 
+		/* Render command has been queued to take a snapshot of the media stream, so perform a count. */
 		mediaStreamWorkUnit->mediaStreamParameters.currentStreamSnapshotCount++;
+
+		/* If we reached the expected snapshot count, finish the job. */
 		if (mediaStreamWorkUnit->mediaStreamParameters.currentStreamSnapshotCount > mediaStreamWorkUnit->mediaStreamParameters.expectedStreamSnapshotCount - 1)
 		{
 			QueueLogAsync(FString::Printf(TEXT("(INFO): Completed queuing media stream snapshots %d/%d to render thread for calibration: \"%s\"."), 
@@ -442,7 +480,7 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 				mediaStreamWorkUnit->mediaStreamParameters.expectedStreamSnapshotCount, 
 				*mediaStreamWorkUnit->baseParameters.calibrationID));
 
-			mediaTextureJobLUT.Remove(keys[i]);
+			mediaTextureJobLUT.Remove(jobIDs[i]);
 			continue;
 		}
 
@@ -799,9 +837,11 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	FRHICommandListImmediate& RHICmdList,
 	const FMediaStreamWorkUnit mediaStreamWorkUnit)
 {
+	/* We should check again whether the media stream texture is still valid since we are in the render thread. */
 	if (!ValidateMediaTexture(mediaStreamWorkUnit.mediaStreamParameters.mediaTexture))
 		return;
 
+	/* If this boolean is toggled in the calibration parameters, then we will save a snapshot of the stream before we do any processing on it. */
 	if (mediaStreamWorkUnit.mediaStreamParameters.writePreBlitRenderTextureToFile)
 	{
 		FString outputPath = mediaStreamWorkUnit.mediaStreamParameters.preBlitRenderTextureOutputPath;
@@ -821,23 +861,28 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 			int mediaTextureHeight = mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight();
 
 			TArray<FColor> pixels;
+			/* Read the pixel data from the texture into the pixels array. */
 			RHICmdList.ReadSurfaceData(mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->TextureReference.TextureReferenceRHI->GetReferencedTexture(), FIntRect(0, 0, mediaTextureWidth, mediaTextureHeight), pixels, ReadDataFlags);
 			uint32 ExtendXWithMSAA = pixels.Num() / mediaTextureHeight;
 
+			/* Write the pixels to the file. */
 			FFileHelper::CreateBitmap(*outputPath, ExtendXWithMSAA, mediaTextureHeight, pixels.GetData());
 			UE_LOG(LogTemp, Log, TEXT("Wrote pre blit input texture to file: \"%s\"."), *outputPath);
 		}
 	}
 
+	/* Determine what the size of our snapshot buffer should be. */
 	int width = mediaStreamWorkUnit.textureSearchParameters.resize ? mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth() * mediaStreamWorkUnit.textureSearchParameters.resizePercentage : mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetWidth();
 	int height = mediaStreamWorkUnit.textureSearchParameters.resize ? mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight() * mediaStreamWorkUnit.textureSearchParameters.resizePercentage : mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->GetHeight();
 
 	FTexture2DRHIRef blitRenderTexture;
 	FRHIResourceCreateInfo createInfo;
 	FTexture2DRHIRef dummyTexRef;
+	/* Create render texture for media stream snapshot. */
 	RHICreateTargetableShaderResource2D(
 		width,
 		height,
+		/* BGRA with all channels 8 bits. */
 		EPixelFormat::PF_B8G8R8A8,
 		1,
 		TexCreate_Transient,
@@ -847,17 +892,20 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 		blitRenderTexture,
 		dummyTexRef);
 
+	/* Clear the color, but not the depth (Since there is none). */
 	FRHIRenderPassInfo RPInfo(blitRenderTexture, ERenderTargetActions::Clear_DontStore);
 	RHICmdList.BeginRenderPass(RPInfo, TEXT("PresentAndCopyMediaTexture"));
 	{
 		const ERHIFeatureLevel::Type RenderFeatureLevel = GMaxRHIFeatureLevel;
 		const auto GlobalShaderMap = GetGlobalShaderMap(RenderFeatureLevel);
 
+		/* Initialize vertex/pixel shader. */
 		TShaderMapRef<FBlitShaderVS> VertexShader(GlobalShaderMap);
 		TShaderMapRef<FBlitShaderPS> PixelShader(GlobalShaderMap);
 
 		FGraphicsPipelineStateInitializer GraphicsPSOInit;
 		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+		/* Set render size. */
 		RHICmdList.SetViewport(0, 0, 0.0f, width, height, 1.0f);
 
 		GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGB, BO_Add, BF_One, BF_SourceAlpha>::GetRHI();
@@ -869,8 +917,11 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 		GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
 		SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+
+		/* Submit data to shader. */
 		PixelShader->SetParameters(RHICmdList, mediaStreamWorkUnit.mediaStreamParameters.mediaTexture->TextureReference.TextureReferenceRHI.GetReference(), FVector2D(mediaStreamWorkUnit.textureSearchParameters.flipX ? -1.0f : 1.0f, mediaStreamWorkUnit.textureSearchParameters.flipY ? 1.0f : -1.0f));
 
+		/* Perform the render. */
 		FPixelShaderUtils::DrawFullscreenQuad(RHICmdList, 1);
 	}
 
@@ -884,9 +935,12 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 	ReadDataFlags.SetOutputStencil(false);
 	ReadDataFlags.SetMip(0);
 
+	/* Read pixels from texture into surfaceData pixel array. */
 	RHICmdList.ReadSurfaceData(texture2D, FIntRect(0, 0, width, height), surfaceData, ReadDataFlags);
 
 	uint32 ExtendXWithMSAA = surfaceData.Num() / texture2D->GetSizeY();
+
+	/* After media stream snapshot occurs, we can also write that snapshot to to a file for debugging. */
 	if (mediaStreamWorkUnit.mediaStreamParameters.writePostBlitRenderTextureToFile)
 	{
 		FString outputPath = mediaStreamWorkUnit.mediaStreamParameters.postBlitRenderTextureOutputPath;
@@ -905,6 +959,7 @@ void LensSolverWorkDistributor::MediaTextureRenderThread(
 			mediaStreamWorkUnit.mediaStreamParameters.expectedStreamSnapshotCount, 
 			*mediaStreamWorkUnit.baseParameters.calibrationID));
 
+	/* Prepare work unit with pixel data for calibration corner search and calibration.  */
 	FLensSolverPixelArrayWorkUnit pixelArrayWorkUnit;
 	pixelArrayWorkUnit.baseParameters = mediaStreamWorkUnit.baseParameters;
 	pixelArrayWorkUnit.textureSearchParameters = mediaStreamWorkUnit.textureSearchParameters;

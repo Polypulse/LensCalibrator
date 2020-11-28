@@ -247,8 +247,8 @@ void ULensSolver::StartMediaStreamCalibration(
 
 	/* Setup work unit. */
 	FMediaStreamWorkUnit workUnit;
-	workUnit.baseParameters.jobID												= ouptutJobInfo.jobID;
-	workUnit.baseParameters.calibrationID										= ouptutJobInfo.calibrationIDs[0];
+	workUnit.baseParameters.jobID												= ouptutJobInfo.jobID; /* Associate this work unit with a job. */
+	workUnit.baseParameters.calibrationID										= ouptutJobInfo.calibrationIDs[0]; /* Associate this work unit with a calibration ID (There can be multiple calibration IDs per job). */
 	workUnit.baseParameters.friendlyName										= "stream";
 	workUnit.baseParameters.zoomLevel											= mediaStreamParameters.zoomLevel;
 
