@@ -47,27 +47,33 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 		return;
 	}
 
+	/* Bind the delegate that allows the find corner worker to queue a calibration work unit directly to a 
+	calibration worker. This will get passed to the find corner worker. */
 	queueCalibrateWorkUnitInputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrateWorkUnit);
 
 	Lock();
 
+	/* Loop through the expected number of workers we want to initialize. */
 	for (int i = 0; i < findCornerWorkerCount; i++)
 	{
-		FString guid = FGuid::NewGuid().ToString();
-		workLoadSortedFindCornerWorkers.Add(guid);
-		FWorkerFindCornersInterfaceContainer & interfaceContainer = findCornersWorkers.Add(guid, FWorkerFindCornersInterfaceContainer());
+		FString workerID = FGuid::NewGuid().ToString();
+		workLoadSortedFindCornerWorkers.Add(workerID);
+
+		/* Setup interface to the worker and map it via worker ID. */
+		FWorkerFindCornersInterfaceContainer & interfaceContainer = findCornersWorkers.Add(workerID, FWorkerFindCornersInterfaceContainer());
 
 		FLensSolverWorkerParameters workerParameters(
 			&queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
-			guid
+			workerID
 		);
-
-		interfaceContainer.baseContainer.workerID = guid;
+.
+		interfaceContainer.baseContainer.workerID = workerID;
 
 		QueueLogAsync(FString::Printf(TEXT("(INFO): Starting FindCorner worker: %d"), i));
 
+		/* Here is where we actually create the find corner background worker. */
 		interfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorkerFindCorners>(
 			workerParameters,
 			&interfaceContainer.queueTextureFileWorkUnitInputDel,
@@ -75,6 +81,7 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 			&queueCalibrateWorkUnitInputDel);
 	}
 
+	/* After the workers have been constructed, start the threads. */
 	int count = 0;
 	for (auto entry : findCornersWorkers)
 	{
@@ -96,26 +103,31 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 		return;
 	}
 
+	/* Bind the delegate that allows the find corner worker to queue a calibration result back onto the main thread
+	so it can be accessed by this class and accessed from blueprints This will get passed to the find calibration worker. */
 	queueCalibrationResultOutputDel.BindRaw(this, &LensSolverWorkDistributor::QueueCalibrationResult);
 	Lock();
 
 	for (int i = 0; i < calibrateWorkerCount; i++)
 	{
-		FString guid = FGuid::NewGuid().ToString();
-		workLoadSortedCalibrateWorkers.Add(guid);
-		FWorkerCalibrateInterfaceContainer & interfaceContainer = calibrateWorkers.Add(guid, FWorkerCalibrateInterfaceContainer());
+		FString workerID = FGuid::NewGuid().ToString();
+		workLoadSortedCalibrateWorkers.Add(workerID);
+
+		/* Setup interface to the worker and map it via worker ID. */
+		FWorkerCalibrateInterfaceContainer & interfaceContainer = calibrateWorkers.Add(workerID, FWorkerCalibrateInterfaceContainer());
 
 		FLensSolverWorkerParameters workerParameters(
 			&queueLogOutputDel,
 			&interfaceContainer.baseContainer.isClosingDel,
 			&interfaceContainer.baseContainer.getWorkLoadDel,
-			guid
+			workerID
 		);
 
-		interfaceContainer.baseContainer.workerID = guid;
+		interfaceContainer.baseContainer.workerID = workerID;
 		if (Debug())
 			QueueLogAsync(FString::Printf(TEXT("(INFO): Starting Calibrate worker: %d"), i));
 
+		/* Here is where we actually create the find corner background worker. */
 		interfaceContainer.worker = new FAutoDeleteAsyncTask<FLensSolverWorkerCalibrate>(
 			workerParameters,
 			&interfaceContainer.queueCalibrateWorkUnitDel,
@@ -123,6 +135,7 @@ void LensSolverWorkDistributor::PrepareCalibrateWorkers(
 			&queueCalibrationResultOutputDel);
 	}
 
+	/* After the workers have been constructed, start the threads. */
 	int count = 0;
 	for (auto entry : calibrateWorkers)
 	{
@@ -237,7 +250,6 @@ void LensSolverWorkDistributor::QueueTextureArrayWorkUnit(const FString & jobID,
 
 void LensSolverWorkDistributor::QueueTextureFileWorkUnit(const FString & jobID, FLensSolverTextureFileWorkUnit textureFileWorkUnit)
 {
-	// static int count = 0;
 	Lock();
 	if (workLoadSortedFindCornerWorkers.Num() == 0)
 	{
@@ -294,6 +306,8 @@ void LensSolverWorkDistributor::SetCalibrateWorkerParameters(FCalibrationParamet
 	cachedCalibrationParameters = calibrationParameters;
 }
 
+/* After corners are found by the find corner workers, the results are polled, put 
+into a calibrate work unit and queued to calibration background workers for processing. */
 void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit)
 {
 	Lock();
@@ -320,6 +334,7 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 
 	interfaceContainerPtr->queueCalibrateWorkUnitDel.Execute(calibrateWorkUnit);
 
+	/* We've processed an image, so iterate the current image count and determine whether we have processed all the images and return true if we have. */
 	bool hitExpectedImageCount = IterateImageCount(calibrateWorkUnit.baseParameters.jobID, calibrateWorkUnit.baseParameters.calibrationID);
 
 	if (hitExpectedImageCount)
@@ -329,7 +344,10 @@ void LensSolverWorkDistributor::QueueCalibrateWorkUnit(FLensSolverCalibrationPoi
 		latchData.calibrationParameters	= cachedCalibrationParameters;
 		latchData.resizeParameters		= calibrateWorkUnit.resizeParameters;
 
+		/* Submit data and flag to the calibration workers that we've finished attempting to find all corners in the calibration pattern in all images. */
 		LatchCalibrateWorker(latchData);
+
+		/* Do we need to shutdwon find corner background workers? */
 		PollShutdownFindCornerWorkersIfNecessary();
 	}
 }
@@ -344,6 +362,7 @@ void LensSolverWorkDistributor::LatchCalibrateWorker(const FCalibrateLatch& latc
 
 	Lock();
 	FWorkerCalibrateInterfaceContainer* interfaceContainerPtr;
+	/* Get reference to interface container to calibration worker. */
 	if (!GetCalibrateWorkerInterfaceContainerPtr(latchData.baseParameters.calibrationID, interfaceContainerPtr))
 	{
 		Unlock();
@@ -357,13 +376,17 @@ void LensSolverWorkDistributor::LatchCalibrateWorker(const FCalibrateLatch& latc
 		return;
 	}
 
+	/* Call a delegate binded to a calibration worker method to submit the latch and the data. */
 	interfaceContainerPtr->signalLatch.Execute(latchData);
 }
 
+/* When calibration is complete, calibration background workers call this method via a 
+delegate to queue the results back onto the main thread in this class. */
 void LensSolverWorkDistributor::QueueCalibrationResult(const FCalibrationResult calibrationResult)
 {
 	Lock();
 
+	/* Get a handle to the job to access the data. */
 	FJob* jobPtr = jobs.Find(calibrationResult.baseParameters.jobID);
 	if (jobPtr == nullptr)
 	{
@@ -493,6 +516,7 @@ void LensSolverWorkDistributor::PollMediaTextureStreams()
 	Unlock();
 }
 
+/* Are we in debug mode? */
 bool LensSolverWorkDistributor::Debug()
 {
 	static IConsoleVariable * variable = IConsoleManager::Get().FindConsoleVariable(TEXT("LensCalibrator.Debug"));
@@ -501,6 +525,7 @@ bool LensSolverWorkDistributor::Debug()
 	return true;
 }
 
+/* Queue log message from background workers threads. */
 void LensSolverWorkDistributor::QueueLogAsync(FString msg)
 {
 	msg = FString::Printf(TEXT("Work Distributor: %s"), *msg);
@@ -560,9 +585,13 @@ bool LensSolverWorkDistributor::GetCalibrateWorkerInterfaceContainerPtr(
 	return true;
 }
 
+/* After we have processed an image by a find corner workers, this method will be called to iterate the current processed image 
+count and returns true if we have processed all images by the find corner background workers. */
 bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const FString& calibrationID)
 {
 	Lock();
+
+	/* Get the job to retrieve information about that job. */
 	FJob* job = jobs.Find(jobID);
 	if (job == nullptr)
 	{
@@ -571,6 +600,7 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 		return false;
 	}
 
+	/* Get container with current and expected processed image counts. */
 	FExpectedAndCurrentImageCount* expectedAndCurrentImageCount = job->expectedAndCurrentImageCounts.Find(calibrationID);
 	if (expectedAndCurrentImageCount == nullptr)
 	{
@@ -585,17 +615,21 @@ bool LensSolverWorkDistributor::IterateImageCount(const FString & jobID, const F
 	currentImageCount++;
 	expectedAndCurrentImageCount->currentImageCount = currentImageCount;
 
+	/* Have we processed all the images? */
 	if (currentImageCount > expectedImageCount - 1)
 	{
 		QueueLogAsync(FString::Printf(TEXT("(INFO): Completed processing all images of count %d/%d for calibration: \"%s\"."), currentImageCount, expectedImageCount, *calibrationID));
 
 		Unlock();
+
+		/* We have processed all the images. */
 		return true;
 	}
 
 	Unlock();
 	QueueLogAsync(FString::Printf(TEXT("(INFO): Iterate image count %d/%d for calibration: \"%s\"."), currentImageCount, expectedImageCount, *calibrationID));
 
+	/* We have not processed all the images. */
 	return false;
 }
 
@@ -759,19 +793,22 @@ void LensSolverWorkDistributor::StopFindCornerWorkers()
 		return;
 	}
 
-	TArray<FString> keys;
-	findCornersWorkers.GetKeys(keys);
-	for (int i = 0; i < keys.Num(); i++)
+	TArray<FString> workerIDs;
+	findCornersWorkers.GetKeys(workerIDs);
+	for (int i = 0; i < workerIDs.Num(); i++)
 	{
-		FWorkerFindCornersInterfaceContainer* interfaceContainerPtr = findCornersWorkers.Find(keys[i]);
+		FWorkerFindCornersInterfaceContainer* interfaceContainerPtr = findCornersWorkers.Find(workerIDs[i]);
 		if (interfaceContainerPtr == nullptr)
 			continue;
 
+		/* Flag to the find corner workers that they shut exit their loops. */
 		if (interfaceContainerPtr->baseContainer.isClosingDel.IsBound())
 			interfaceContainerPtr->baseContainer.isClosingDel.Execute();
 	}
 
 	Unlock();
+
+	/* Clean up relevant structures. */
 	findCornersWorkers.Empty();
 	workLoadSortedFindCornerWorkers.Empty();
 }
@@ -786,18 +823,20 @@ void LensSolverWorkDistributor::StopCalibrationWorkers()
 		return;
 	}
 
-	TArray<FString> keys;
-	calibrateWorkers.GetKeys(keys);
-	for (int i = 0; i < keys.Num(); i++)
+	TArray<FString> workerIDs;
+	calibrateWorkers.GetKeys(workerIDs);
+	for (int i = 0; i < workerIDs.Num(); i++)
 	{
-		FWorkerCalibrateInterfaceContainer* interfaceContainerPtr = calibrateWorkers.Find(keys[i]);
+		FWorkerCalibrateInterfaceContainer* interfaceContainerPtr = calibrateWorkers.Find(workerIDs[i]);
 		if (interfaceContainerPtr == nullptr)
 			continue;
 
+		/* Flag to the calibration workers that they shut exit their loops. */
 		if (interfaceContainerPtr->baseContainer.isClosingDel.IsBound())
 			interfaceContainerPtr->baseContainer.isClosingDel.Execute();
 	}
 
+	/* Clean up structures. */
 	calibrateWorkers.Empty();
 	workLoadSortedCalibrateWorkers.Empty();
 	workerCalibrationIDLUT.Empty();

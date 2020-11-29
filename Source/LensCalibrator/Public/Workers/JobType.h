@@ -9,6 +9,8 @@
 UENUM(BlueprintType)
 enum class UJobType : uint8
 {
+	/* One time job performed for calibration of texture folders. */
 	OneTime UMETA(DisplayName = "One Time"),
+	/* Continuous job for calibration via media stream. */
 	Continuous UMETA(DisplayName = "Continuous")
 };

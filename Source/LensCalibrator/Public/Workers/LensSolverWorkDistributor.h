@@ -32,6 +32,8 @@ private:
 
 	QueueFinishedJobOutputDel queueFinishedJobOutputDel;
 	QueueLogOutputDel queueLogOutputDel;
+
+	/* Are we in debug mode? */
 	bool Debug();
 
 	FCalibrationParameters cachedCalibrationParameters;
@@ -53,7 +55,9 @@ private:
 	/* Array of calibration worker IDs sorted each frame by work load. */
 	TArray<FString> workLoadSortedCalibrateWorkers;
 
+	/* Job ID and job mapping. */
 	TMap<FString, FJob> jobs;
+
 	TMap<FString, const FString> workerCalibrationIDLUT;
 	TMap<FString, FMediaStreamWorkUnit> mediaTextureJobLUT;
 
@@ -66,16 +70,23 @@ private:
 	/* This method is called by the workers to queue log messages onto the main thread. */
 	void QueueLogAsync(FString msg);
 
+	/* This returns an interface to a find corner worker via worker ID. */
 	bool GetFindCornersContainerInterfacePtr(
 		const FString workerID,
-		FWorkerFindCornersInterfaceContainer*& outputInterfaceContainerPtr);
+		FWorkerFindCornersInterfaceContainer *& outputInterfaceContainerPtr);
 
+	/* This returns an interface to a calibration worker via worker ID. */
 	bool GetCalibrateWorkerInterfaceContainerPtr(
 		const FString calibrationID,
 		FWorkerCalibrateInterfaceContainer *& outputInterfaceContainerPtr);
 
+	/* After corners are found by the find corner workers, the results are polled, put 
+	into a calibrate work unit and queued to calibration background workers for processing. */
 	void QueueCalibrateWorkUnit(FLensSolverCalibrationPointsWorkUnit calibrateWorkUnit);
+
 	void LatchCalibrateWorker(const FCalibrateLatch& latchData);
+
+	/* When calibration is complete, calibration background workers will queue the results back onto the main thread in this class. */
 	void QueueCalibrationResult(const FCalibrationResult calibrationResult);
 
 	bool IterateImageCount(const FString & jobID, const FString& calibrationID);

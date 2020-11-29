@@ -11,6 +11,7 @@
 
 #include "Job.generated.h"
 
+/* This struct contains expected and current image counts for a single zoom level and is associated with a calibration ID. */
 USTRUCT(BlueprintType)
 struct FExpectedAndCurrentImageCount
 {
@@ -30,22 +31,27 @@ struct FExpectedAndCurrentImageCount
 	}
 };
 
+/* Container to store various job information including a reference to the callback interface. */
 USTRUCT(BlueprintType)
 struct FJob
 {
 	GENERATED_BODY()
 
+	/* A handle to the interface instance that the blueprint is implementing for callbacks. */
 	TScriptInterface<ILensSolverEventReceiver> eventReceiver;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	FJobInfo jobInfo;
 
+	/* The expected number of calibration results per zoom level. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	int expectedResultCount;
 
+	/* The current number of calibration results per zoom level. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	int currentResultCount;
 
+	/* Mapping of calibration IDs (one per zoom level) to expected and current image counts associated with that zoom level. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Lens Calibrator")
 	TMap<FString, FExpectedAndCurrentImageCount> expectedAndCurrentImageCounts;
 
