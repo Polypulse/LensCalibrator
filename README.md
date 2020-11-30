@@ -1,4 +1,16 @@
 # Lens Calibrator - Unreal Engine Plugin
+## Trailer
+[![Lens Calibrator - Unreal Engine - Trailer](https://img.youtube.com/vi/HfIi4gkH9Es/0.jpg)](https://www.youtube.com/watch?vHfIi4gkH9Es)
+
+## Full Walkthrough (~40 min)
+If documentation is preferred that can be found [here](https://docs.google.com/document/d/1HNYupII7wy-lZkVENv9LS7f7xqjnMhFPVWmATGc8Xoc/edit?usp=sharing).
+
+[![Lens Calibrator - Full Walkthrough](https://img.youtube.com/vi/CBvmpoI9hAs/0.jpg)](https://www.youtube.com/watch?CBvmpoI9hAs)
+
+## Supported Unreal Engine Versions
+- 4.24
+- 4.25
+- 4.26
 
 # Plugin Installation
 1. Navigate to the UE4 project that you want to install the plugin into.
