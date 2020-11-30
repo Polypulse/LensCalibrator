@@ -73,10 +73,8 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
-
 PluginPackaged/*
-
 Content/TestImages/*
-
-Source/ThirdParty/*
+Source/ThirdParty/**
 OpenCVWrapper.zip
+EnginePath.txt
