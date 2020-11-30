@@ -50,9 +50,6 @@ Binaries/*
 Binaries/**
 Plugins/*/Binaries/*
 
-# ThirdParty/lib/**
-# ThirdParty/bin/**
-
 # Builds
 Build/*
 

@@ -130,7 +130,7 @@ void FLensSolverWorkerCalibrate::Tick()
 		cornerCountY,
 		imageCount,
 		output,
-		Debug()) /* Pass the debug mode across the DLL boundary. */
+		Debug()); /* Pass the debug mode across the DLL boundary. */
 
 	/* This isn't really necessary unless the lens has extreme lens shift, then the projection matrix will 
 	need to be overridden, so we calculate it anyways for now. */

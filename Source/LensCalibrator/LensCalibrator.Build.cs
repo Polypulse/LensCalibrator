@@ -60,7 +60,7 @@ public class LensCalibrator : ModuleRules
 		PrivateIncludePaths.AddRange(
 			new string[]
 			{
-				Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCV/Include"),
+				Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/OpenCV/Include"),
 				Path.Combine(ModuleDirectory, "../../Source/ThirdParty/OpenCVWrapper/Include")
 			}
 		);

@@ -68,7 +68,7 @@ void LensSolverWorkDistributor::PrepareFindCornerWorkers(
 			&interfaceContainer.baseContainer.getWorkLoadDel,
 			workerID
 		);
-.
+
 		interfaceContainer.baseContainer.workerID = workerID;
 
 		QueueLogAsync(FString::Printf(TEXT("(INFO): Starting FindCorner worker: %d"), i));

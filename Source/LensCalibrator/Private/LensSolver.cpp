@@ -142,7 +142,7 @@ void ULensSolver::OneTimeProcessArrayOfTextureFolderZoomPairs(
 		}
 
 		/* Fill imageFiles array at each zoom level with absolute file path to texture. */
-		if (!LensSolverUtilities::GetFilesInFolder(inputTextures[ti].absoluteFolderPath, imageFiles[useIndex]))
+		if (!LensSolverUtilities::GetImageFilesInFolder(inputTextures[ti].absoluteFolderPath, imageFiles[useIndex]))
 			return;
 
 		if (imageFiles[useIndex].Num() == 0)
