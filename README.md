@@ -33,3 +33,10 @@ The easiest way to install the plugin is to grab one of the [release binaries](h
 Currently the plugin's documentation is located in this [document](https://docs.google.com/document/d/1HNYupII7wy-lZkVENv9LS7f7xqjnMhFPVWmATGc8Xoc/edit?usp=sharing). However, in the future this may be refatored into the readme file.
 
 Link: [https://docs.google.com/document/d/1HNYupII7wy-lZkVENv9LS7f7xqjnMhFPVWmATGc8Xoc/edit?usp=sharing](https://docs.google.com/document/d/1HNYupII7wy-lZkVENv9LS7f7xqjnMhFPVWmATGc8Xoc/edit?usp=sharing)
+
+## Architecture
+
+### Overview Communication Pipe
+In order to avoid DLL boundary data curroption between UE4 objects and standard library objects, the OpenCVWrapper acts as an interface to OpenCV and converts any data going to and from.
+
+![Communication Pipe](./Resources/dllboundary.png)
