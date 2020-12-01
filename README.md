@@ -8,6 +8,8 @@ The purpose of this plugin is to provide an easy method of solving for the physi
 
 [Discord Server](https://discord.gg/QfyreCkC) - for asking questions.
 
+[Documentation](https://docs.google.com/document/d/1HNYupII7wy-lZkVENv9LS7f7xqjnMhFPVWmATGc8Xoc/edit?usp=sharing) - Maybe this will eventually be refactored into the readme.
+
 ## Trailer
 [![Lens Calibrator - Unreal Engine - Trailer](https://img.youtube.com/vi/HfIi4gkH9Es/0.jpg)](https://www.youtube.com/watch?v=HfIi4gkH9Es)
 

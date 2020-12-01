@@ -1,3 +1,4 @@
 [submodule "OpenCVWrapper"]
 	path = OpenCVWrapper
 	url = git@github.com:Polypulse/OpenCVWrapper.git
+	branch = master
