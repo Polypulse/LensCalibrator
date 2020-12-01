@@ -1,4 +1,13 @@
-# Lens Calibrator - Unreal Engine Project
+# Lens Calibrator - Unreal Engine Plugin
+The purpose of this plugin is to provide an easy method of solving for the physical lens characteristics of a camera. These characteristics include:
+- Lens Calibration from MediaPlayer, MediaBundle and MediaTexture.
+- Lens Calibration from Folders of images.
+- Lens Distortion Correction with interpolation between camera zoom levels in composure.
+- Fast setup and and asynchronous calibration procedure.
+- Runtime and Editor Blueprint support.
+
+[Discord Server](https://discord.gg/QfyreCkC) - for asking questions.
+
 ## Trailer
 [![Lens Calibrator - Unreal Engine - Trailer](https://img.youtube.com/vi/HfIi4gkH9Es/0.jpg)](https://www.youtube.com/watch?v=HfIi4gkH9Es)
 
