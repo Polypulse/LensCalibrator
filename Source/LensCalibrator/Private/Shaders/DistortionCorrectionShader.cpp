@@ -1,5 +1,5 @@
-/* Copyright (C) Polypulse LLC - All Rights Reserved
- * Written by Sean Connor <sean@polypulse.io>, April 2020 */
+/* Licensed under Apache 2.0 license, see License.txt at the root of this project. */
+
 
 #include "DistortionCorrectionShader.h"
 #include "RHIStaticStates.h"
