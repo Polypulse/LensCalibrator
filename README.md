@@ -19,6 +19,7 @@ If documentation is preferred that can be found [here](https://docs.google.com/d
 [![Lens Calibrator - Full Walkthrough](https://img.youtube.com/vi/CBvmpoI9hAs/0.jpg)](https://www.youtube.com/watch?v=CBvmpoI9hAs)
 
 ## Supported Unreal Engine Versions
+- 4.26
 - 4.24
 - 4.25
 - 4.26
