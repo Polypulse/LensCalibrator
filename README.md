@@ -22,7 +22,6 @@ If documentation is preferred that can be found [here](https://docs.google.com/d
 - 4.26
 - 4.24
 - 4.25
-- 4.26
 
 # Plugin Installation
 ## Easy Mode
